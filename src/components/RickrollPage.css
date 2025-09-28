@@ -1,0 +1,19 @@
+.rickroll-loading, .rickroll-redirect {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  font-size: 1.1rem;
+  color: var(--text-medium, #555);
+}
+
+.rickroll-loading p {
+  background: #fff;
+  padding: 16px 20px;
+  border-radius: 12px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+}
+
+.rickroll-redirect p {
+  margin-right: 12px;
+}

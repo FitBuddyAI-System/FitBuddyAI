@@ -1,0 +1,658 @@
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 20px;
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+
+.workout-modal {
+  background: white;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 24px;
+  border-bottom: 1px solid var(--border-light);
+  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+}
+
+.modal-title-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.workout-type-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: white;
+}
+
+.workout-type-badge.strength {
+  background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+}
+
+.workout-type-badge.cardio {
+  background: linear-gradient(135deg, #4ecdc4, #44a08d);
+}
+
+.workout-type-badge.flexibility {
+  background: linear-gradient(135deg, #a8e6cf, #88d8a3);
+}
+
+.workout-type-badge.mixed {
+  background: linear-gradient(135deg, #ffd93d, #ff9f1c);
+}
+
+.workout-type-badge.rest {
+  background: linear-gradient(135deg, #b8b8b8, #999999);
+}
+
+.modal-header h2 {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin: 0;
+}
+
+.completed-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: var(--primary-green);
+  color: white;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: 8px;
+}
+
+.close-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: transparent;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  color: var(--text-medium);
+  transition: all 0.2s ease;
+}
+
+.close-button:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--text-dark);
+}
+
+.modal-content {
+  padding: 20px;
+  padding-bottom: 80px; /* extra space at bottom for deeper scrolling */
+  max-height: 60vh; /* Increased to allow more space for buttons */
+  overflow-y: auto; /* Ensure scrolling if content exceeds height */
+}
+
+.exercise-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-bottom: 20px; /* prevent last card from being cut off */
+  margin-bottom: 40px; /* extra space so last exercise card is visible */
+}
+
+/* Rest Day Content */
+.rest-day-content {
+  text-align: center;
+}
+
+.rest-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 96px;
+  height: 96px;
+  background: linear-gradient(135deg, var(--accent-yellow), var(--accent-orange));
+  border-radius: 50%;
+  color: white;
+  margin: 0 auto 24px;
+}
+
+.rest-day-content h3 {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin-bottom: 16px;
+}
+
+.rest-day-content p {
+  font-size: 16px;
+  color: var(--text-medium);
+  line-height: 1.6;
+  margin-bottom: 32px;
+  max-width: 400px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.rest-activities {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+/* Rickroll rest day special styling */
+.rickroll-rest {
+  background: linear-gradient(135deg, #ffefc1, #ffd9d9);
+  border-radius: 16px;
+  padding: 20px;
+  text-align: center;
+  box-shadow: 0 8px 24px rgba(255, 105, 97, 0.08);
+}
+
+.rickroll-rest .rest-icon {
+  background: linear-gradient(135deg, #ff6b6b, #ff9a9a);
+  width: 112px;
+  height: 112px;
+}
+
+.rickroll-caption {
+  font-size: 18px;
+  color: #6b1b1b;
+  margin-bottom: 18px;
+}
+
+.rickroll-embed {
+  width: 100%;
+  height: 220px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 2px solid rgba(107, 27, 27, 0.08);
+}
+
+.activity-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: var(--background-light);
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-dark);
+}
+
+.activity-item span:first-child {
+  font-size: 24px;
+}
+
+/* Workout Content */
+.workout-toggle {
+  display: flex;
+  background: var(--background-light);
+  border-radius: 12px;
+  padding: 4px;
+  margin-bottom: 24px;
+}
+
+.toggle-button {
+  flex: 1;
+  padding: 12px 16px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-medium);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.toggle-button.active {
+  background: white;
+  color: var(--primary-green);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.exercise-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-bottom: 20px; /* prevent last card from being cut off */
+  margin-bottom: 40px; /* extra space so last exercise card is visible */
+}
+
+.exercise-card {
+  background: var(--background-light);
+  border-radius: 16px;
+  padding: 20px;
+  transition: all 0.2s ease;
+}
+
+.exercise-card:hover {
+  background: white;
+  box-shadow: 0 4px 20px var(--shadow-light);
+}
+
+.exercise-card[role="button"] {
+  cursor: pointer;
+}
+
+.exercise-card[role="button"]:focus {
+  outline: 3px solid rgba(30, 203, 123, 0.18);
+  outline-offset: 4px;
+}
+
+.exercise-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.exercise-title-section {
+  display: flex;
+  flex-direction: column; /* title above badge for left alignment */
+  gap: 6px;
+  align-items: flex-start;
+  flex: 1;
+}
+
+.exercise-title-section h4 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.difficulty-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 6px; /* keep horizontal padding, remove vertical */
+  height: 18px;
+  min-width: 28px; /* allow small width for short labels */
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: white;
+  text-transform: none;
+  align-self: flex-start; /* left-align the badge under the title */
+}
+
+.difficulty-easy {
+  background: linear-gradient(135deg, #66bb6a, #43a047); /* green */
+}
+.difficulty-medium {
+  background: linear-gradient(135deg, #ffd54f, #ffb300); /* yellow */
+  color: #222;
+}
+.difficulty-hard {
+  background: linear-gradient(135deg, #ef5350, #e53935); /* red */
+}
+.difficulty-beginner {
+  background: linear-gradient(135deg, #66bb6a, #43a047);
+}
+
+.exercise-actions {
+  display: flex;
+  gap: 8px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.exercise-card:hover .exercise-actions {
+  opacity: 1;
+}
+
+.button-spinner {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.generating-text {
+  margin-left: 8px;
+  font-weight: 600;
+  color: var(--text-medium);
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: var(--bg-secondary);
+}
+
+.action-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.swap-btn {
+  color: var(--accent-blue);
+}
+
+.swap-btn:hover {
+  background: var(--accent-blue);
+  color: white;
+}
+
+.delete-btn {
+  color: var(--accent-red);
+}
+
+.delete-btn:hover {
+  background: var(--accent-red);
+  color: white;
+}
+
+.exercise-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.exercise-detail-link {
+  margin-top: 12px;
+}
+
+.btn-link {
+  background: transparent;
+  border: none;
+  color: var(--accent-blue);
+  font-weight: 700;
+  cursor: pointer;
+  padding: 6px 0;
+}
+
+.btn-link:hover { text-decoration: underline; }
+
+.detail-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--text-medium);
+  font-weight: 500;
+}
+
+.detail-item svg {
+  color: var(--primary-green);
+}
+
+.exercise-description {
+  font-size: 14px;
+  color: var(--text-medium);
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+
+.equipment-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.equipment-tag {
+  padding: 4px 8px;
+  background: rgba(88, 204, 2, 0.1);
+  color: var(--primary-green);
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.modal-footer {
+  padding: 20px;
+  position: sticky;
+  bottom: 0;
+  background: white; /* Ensure footer is always visible */
+  z-index: 10;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.action-buttons .btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 140px;
+  justify-content: center;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .modal-overlay {
+    padding: 16px;
+  }
+  
+  .workout-modal {
+    max-height: 95vh;
+  }
+  
+  .modal-header {
+    padding: 20px;
+  }
+  
+  .modal-header h2 {
+    font-size: 20px;
+  }
+  
+  .modal-content {
+    padding: 20px;
+    padding-bottom: 40px; /* extra space at bottom for scrolling */
+    max-height: 50vh;
+  }
+  
+  .modal-footer {
+    padding: 20px;
+  }
+  
+  .action-buttons {
+    flex-direction: column;
+  }
+  
+  .action-buttons .btn {
+    width: 100%;
+  }
+  
+  .rest-activities {
+    grid-template-columns: 1fr;
+  }
+  
+  .exercise-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .exercise-details {
+    flex-direction: column;
+    gap: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .modal-header {
+    padding: 16px;
+  }
+  
+  .modal-content {
+    padding: 16px;
+  }
+  
+  .modal-footer {
+    padding: 16px;
+  }
+  
+  .rest-icon {
+    width: 80px;
+    height: 80px;
+  }
+  
+  .rest-day-content h3 {
+    font-size: 24px;
+  }
+  
+  .exercise-card {
+    padding: 16px;
+  }
+}
+
+/* Exercise editing styles */
+.exercise-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.exercise-title-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+.exercise-title-section h4 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.exercise-actions {
+  display: flex;
+  gap: 8px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.exercise-card:hover .exercise-actions {
+  opacity: 1;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: var(--bg-secondary);
+}
+
+.action-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.swap-btn {
+  color: var(--accent-blue);
+}
+
+.swap-btn:hover {
+  background: var(--accent-blue);
+  color: white;
+}
+
+.delete-btn {
+  color: var(--accent-red);
+}
+
+.delete-btn:hover {
+  background: var(--accent-red);
+  color: white;
+}
+
+/* Modal footer button arrangements */
+.modal-footer .action-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.modal-footer .action-buttons .btn {
+  min-width: 120px;
+}
+
+.modal-footer .action-buttons .btn:first-child {
+  margin-right: auto;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .exercise-actions {
+    opacity: 1;
+  }
+  
+  .action-btn {
+    width: 28px;
+    height: 28px;
+  }
+  
+  .modal-footer .action-buttons {
+    flex-direction: column;
+  }
+  
+  .modal-footer .action-buttons .btn {
+    min-width: auto;
+    width: 100%;
+  }
+  
+  .modal-footer .action-buttons .btn:first-child {
+    margin-right: 0;
+    margin-bottom: 8px;
+  }
+}

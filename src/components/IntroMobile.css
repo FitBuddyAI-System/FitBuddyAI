@@ -1,0 +1,19 @@
+.intro-mobile-root{ position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background: linear-gradient(180deg, rgba(30,203,123,0.06), rgba(30,144,203,0.02)); z-index:2000; }
+.intro-card{ width:94%; max-width:420px; background:#fff; border-radius:16px; padding:18px 14px; display:flex; align-items:center; gap:12px; box-shadow:0 12px 36px rgba(0,0,0,0.12); transform:translateY(0); animation: cardPop 380ms cubic-bezier(.2,.9,.3,1); }
+.intro-badge{ width:56px; height:56px; border-radius:12px; background: linear-gradient(135deg,#1ecb7b,#1e90cb); display:flex; align-items:center; justify-content:center; box-shadow:0 8px 24px rgba(30,203,123,0.14); transform-origin:center; animation: badgeFloat 1400ms ease-in-out infinite; }
+@keyframes badgeFloat{ 0%{ transform:translateY(0) } 50%{ transform:translateY(-6px) } 100%{ transform:translateY(0) } }
+.intro-title-wrap{ display:flex; flex-direction:column; gap:2px; }
+.intro-title{ font-size:20px; font-weight:800; margin:0; background: linear-gradient(90deg,#1ecb7b 30%, #1e90cb 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+.intro-sub{ font-size:12px; margin:0; color:var(--text-medium,#555); }
+.intro-bubbles{ position:absolute; right:14%; top:20%; pointer-events:none; }
+.bubble{ display:block; position:absolute; border-radius:50%; opacity:0.9; }
+.b1{ width:8px; height:8px; background:rgba(30,203,123,0.12); right:18%; top:12%; animation: bub1 1600ms infinite ease-in-out; }
+.b2{ width:12px; height:12px; background:rgba(30,144,203,0.12); right:8%; top:26%; animation: bub2 1800ms infinite ease-in-out; }
+.b3{ width:6px; height:6px; background:rgba(255,180,71,0.12); right:22%; top:36%; animation: bub3 1400ms infinite ease-in-out; }
+@keyframes bub1{ 0%{ transform:translateY(0) scale(.9); opacity:.2 } 50%{ transform:translateY(-10px) scale(1.05); opacity:1 } 100%{ transform:translateY(0) scale(.9); opacity:.2 } }
+@keyframes bub2{ 0%{ transform:translateY(0) scale(.9); opacity:.18 } 50%{ transform:translateY(-14px) scale(1.08); opacity:.95 } 100%{ transform:translateY(0) scale(.9); opacity:.18 } }
+@keyframes bub3{ 0%{ transform:translateY(0) scale(.9); opacity:.16 } 50%{ transform:translateY(-8px) scale(1.02); opacity:.9 } 100%{ transform:translateY(0) scale(.9); opacity:.16 } }
+@keyframes cardPop{ 0%{ transform:scale(.95) translateY(6px); opacity:0 } 60%{ transform:scale(1.03) translateY(-6px); opacity:1 } 100%{ transform:scale(1) translateY(0); opacity:1 } }
+
+/* Compact adjustments for very small phones */
+@media (max-width:375px){ .intro-card{ padding:12px 10px; gap:8px; border-radius:12px } .intro-badge{ width:48px; height:48px } .intro-title{ font-size:18px } }

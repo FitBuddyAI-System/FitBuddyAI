@@ -1,0 +1,1532 @@
+/* No Workout Plan (404-style) */
+.calendar-no-plan-container {
+  min-height: 80vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--gradient-primary, linear-gradient(135deg, #f7f7f7 0%, #e8f5e8 100%));
+}
+
+.calendar-no-plan-content {
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 4px 24px 0 rgba(30, 203, 123, 0.10), 0 1.5px 6px 0 rgba(30, 144, 203, 0.10);
+  padding: 48px 32px 40px 32px;
+  text-align: center;
+  max-width: 350px;
+  animation: fadeInBounce 0.8s cubic-bezier(.68,-0.55,.27,1.55);
+}
+
+.calendar-no-plan-icon-bg {
+  background: linear-gradient(135deg, var(--primary-green), var(--secondary-blue));
+  border-radius: 50%;
+  width: 72px;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 18px auto;
+  box-shadow: 0 2px 12px 0 rgba(30, 203, 123, 0.15);
+}
+
+.calendar-no-plan-title {
+  font-size: 48px;
+  font-weight: 800;
+  background: linear-gradient(90deg, #1ecb7b 30%, #1e90cb 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin: 0 0 8px 0;
+}
+
+.calendar-no-plan-message {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-dark, #222);
+  margin-bottom: 8px;
+}
+
+.calendar-no-plan-desc {
+  font-size: 16px;
+  color: var(--text-medium, #555);
+  margin-bottom: 24px;
+}
+
+.calendar-no-plan-btn {
+  display: inline-block;
+  background: var(--gradient-primary);
+  color: #fff;
+  font-weight: 600;
+  font-size: 18px;
+  border: none;
+  border-radius: 20px;
+  padding: 14px 32px;
+  text-decoration: none;
+  transition: background 0.2s;
+  box-shadow: 0 2px 8px 0 rgba(30, 203, 123, 0.10);
+  margin-top: 8px;
+}
+.calendar-no-plan-btn:hover {
+  background: #17b86d;
+}
+.calendar-page {
+  min-height: calc(100vh - 60px);
+  background: linear-gradient(135deg, #f7f7f7 0%, #e8f5e8 100%);
+  padding: 20px;
+}
+
+/* Ensure calendar content starts below the sticky header on small screens */
+@media (max-width: 480px) {
+  .calendar-page { padding-top: 86px; }
+}
+
+.calendar-container {
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+.calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 40px;
+  gap: 40px;
+}
+
+/* Ensure the header's user-info (title + description) is left-aligned */
+.calendar-header .user-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+}
+
+.user-info h1 {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin-bottom: 8px;
+}
+
+.user-info p {
+  font-size: 16px;
+  color: var(--text-medium);
+  line-height: 1.6;
+  max-width: 500px;
+}
+
+.progress-stats {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.stat-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: white;
+  padding: 20px;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px var(--shadow-light);
+  border: 1px solid var(--border-light);
+  color: var(--primary-green);
+}
+
+.stat-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-number {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-dark);
+  line-height: 1;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: var(--text-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
+.progress-circle {
+  width: 80px;
+  height: 80px;
+}
+
+.circular-chart {
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.circle-bg {
+  fill: none;
+  stroke: var(--border-light);
+  stroke-width: 2.8;
+}
+
+.circle {
+  fill: none;
+  stroke: var(--primary-green);
+  stroke-width: 2.8;
+  stroke-linecap: round;
+  animation: progress 1s ease-out forwards;
+}
+
+.percentage {
+  fill: var(--text-dark);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.4em;
+  font-weight: 700;
+  text-anchor: middle;
+  transform: rotate(90deg);
+}
+
+@keyframes progress {
+  0% {
+    stroke-dasharray: 0 100;
+  }
+}
+
+.calendar-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+.nav-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  background: white;
+  border: 2px solid var(--border-light);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: var(--text-medium);
+}
+
+.nav-button:hover {
+  border-color: var(--primary-green);
+  color: var(--primary-green);
+  transform: scale(1.05);
+}
+
+.month-year {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-dark);
+  min-width: 200px;
+  text-align: center;
+}
+
+.calendar-grid {
+  display: grid;
+  /* use minmax to avoid fractional column overflow on mobile */
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 2px;
+  background: var(--border-light);
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 40px;
+  box-shadow: 0 8px 32px var(--shadow-light);
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.day-header {
+  background: var(--primary-green);
+  color: white;
+  padding: 16px 8px;
+  text-align: center;
+  font-weight: 600;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.calendar-day {
+  background: white;
+  min-height: 120px;
+  padding: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Tablet: slightly smaller cells and tighter spacing */
+@media (max-width: 1024px) {
+  .calendar-header { flex-direction: column; align-items: stretch; gap: 12px; }
+  .user-info p { max-width: 100%; }
+  .calendar-grid { gap: 1px; border-radius: 12px; }
+  .calendar-day { min-height: 96px; padding: 8px; }
+  .month-year { font-size: 22px; min-width: 160px; }
+  .nav-button { width: 44px; height: 44px; }
+}
+
+/* Mobile: compact calendar, icon-only nav, stacked layout */
+@media (max-width: 480px) {
+  .calendar-page { padding: 8px; }
+  .calendar-header { margin-bottom: 12px; gap: 6px; }
+  .user-info h1 { font-size: 18px; }
+  .progress-stats { display: none; }
+  /* Use fully flexible columns on tiny screens to avoid horizontal scrolling */
+  .calendar-grid { grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 1px; overflow-x: hidden; }
+  .day-header { padding: 6px 3px; font-size: 10px; }
+  .calendar-day { min-height: 58px; padding: 4px; }
+  .day-number { font-size: 11px; }
+  .workout-indicator { padding: 6px; font-size: 11px; }
+  .calendar-nav { gap: 10px; margin-bottom: 12px; }
+  /* Remove month-year min-width to avoid clipping on small screens */
+  .month-year { min-width: 0; font-size: 16px; }
+  /* Ensure container doesn't add horizontal padding that causes overflow */
+  .calendar-container { padding: 0 4px; box-sizing: border-box; }
+}
+
+/* Ultra-compact for small phones (iPhone SE ~375px) */
+@media (max-width: 375px) {
+  .calendar-container { padding: 0 2px; }
+  .calendar-header { gap: 4px; margin-bottom: 8px; }
+  .calendar-nav { gap: 6px; }
+  .month-year { font-size: 14px; }
+  /* hide weekday labels to save horizontal space on very small phones */
+  .day-header { display: none; }
+  /* shrink cells further so the grid can fully fit the viewport */
+  .calendar-day { min-height: 42px; padding: 2px; }
+  .day-number { font-size: 9px; }
+  .workout-indicator { padding: 3px; font-size: 10px; }
+  /* hide secondary duration text to save space */
+  .workout-duration { display: none; }
+  /* remove extra gaps between columns */
+  .calendar-grid { gap: 0; }
+  /* Hide the big greeting/username on the smallest screens */
+  .calendar-header .user-info h1 { display: none; }
+}
+
+.calendar-day:hover {
+  background: rgba(88, 204, 2, 0.05);
+}
+
+.calendar-day.today {
+  background: rgba(88, 204, 2, 0.1);
+  border: 2px solid var(--primary-green);
+}
+
+.calendar-day.has-workout:hover {
+  transform: scale(1.02);
+  box-shadow: 0 8px 24px var(--shadow-medium);
+}
+
+/* Selected cells for batch add */
+.calendar-day.selected {
+  background: linear-gradient(135deg, rgba(30,203,123,0.06), rgba(30,144,203,0.03));
+  position: relative;
+  z-index: 2;
+}
+
+/* Visual style for days selected for deletion */
+.calendar-day.delete-selected {
+  background: linear-gradient(135deg, rgba(255,77,79,0.06), rgba(255,77,79,0.03));
+  position: relative;
+  z-index: 2;
+}
+
+.calendar-day.delete-selected::after {
+  content: '';
+  position: absolute;
+  inset: 6px;
+  border-radius: 12px;
+  padding: 2px;
+  border: 2px dashed rgba(255,77,79,0.75);
+  pointer-events: none;
+}
+
+.calendar-day.selected::after {
+  content: '';
+  position: absolute;
+  inset: 6px;
+  border-radius: 12px;
+  padding: 2px;
+  background: linear-gradient(90deg, #1ecb7b, #1e90cb);
+  /* mask for modern browsers (keeps the gradient border as an inner stroke) */
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#000 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#000 0 0);
+  /* composition: webkit uses xor, standard uses 'exclude' where supported */
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+
+  /* Fallback for browsers without mask support: use a dashed outline as a graceful degrade */
+  border: 2px dashed rgba(30,203,123,0.75);
+}
+
+/* Add-mode hover: when user toggles Select-to-Add, hovered cells show primary gradient cue */
+.calendar-day.add-active {
+  cursor: pointer;
+}
+.calendar-day.add-active:hover {
+  /* subtle gradient background to indicate add-mode hover */
+  background: linear-gradient(135deg, rgba(30,203,123,0.06), rgba(30,144,203,0.03));
+  transform: scale(1.02);
+  box-shadow: 0 8px 24px rgba(30,203,123,0.06);
+}
+.calendar-day.add-active:hover::after {
+  content: '';
+  position: absolute;
+  inset: 6px;
+  border-radius: 12px;
+  padding: 2px;
+  background: linear-gradient(90deg, #1ecb7b, #1e90cb);
+  /* keep same mask technique as .selected to create an inner gradient stroke */
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#000 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.batch-add-panel {
+  margin-top: 12px;
+  background: white;
+  padding: 12px;
+  border-radius: 12px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+  position: static; /* flow with document */
+  width: 100%;
+}
+.edit-menu .batch-add-panel {
+  position: static;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 12px 0 0 0;
+  z-index: auto;
+}
+.batch-add-panel h4 { margin: 6px 0; }
+.batch-types { display:flex; gap:8px; flex-wrap:wrap; margin:8px 0; }
+.batch-type { display:flex; gap:6px; align-items:center; padding:6px 8px; border-radius:8px; background:#f5f5f5; }
+.batch-type.selected { background: linear-gradient(90deg,#fff 0%, #e6ffef 100%); border:1px solid #c9f3d6; }
+.batch-add-panel textarea { width:100%; min-height:64px; margin:8px 0; padding:8px; border-radius:8px; border:1px solid var(--border-light); }
+.batch-actions { display:flex; gap:8px; justify-content:flex-end; }
+.confirm-btn { background: linear-gradient(90deg,#1ecb7b,#1e90cb); color: #fff; border-radius: 10px; padding:8px 12px; display:inline-flex; align-items:center; gap:8px; }
+.batch-add-panel .save-btn {
+  background: linear-gradient(90deg,#1ecb7b,#1e90cb);
+  color: #fff;
+  border: none;
+}
+
+/* Container to ensure popups render inside the edit menu area */
+.edit-menu-popup-root {
+  position: relative;
+}
+.edit-menu-popup-root .workout-popup {
+  position: absolute;
+  right: 12px;
+  top: 120px;
+  width: calc(100% - 48px);
+  z-index: 65;
+  background: #fff;
+  padding: 12px;
+  border-radius: 10px;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.08);
+}
+
+.day-number {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-dark);
+  margin-bottom: 8px;
+}
+
+.workout-indicator {
+  flex: 1;
+  border-radius: 12px;
+  padding: 12px;
+  text-align: center;
+  color: white;
+  font-weight: 600;
+  font-size: 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center; /* ensure children (and overlay) are horizontally centered */
+  gap: 8px;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.workout-indicator.strength {
+  background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+}
+
+.workout-indicator.cardio {
+  background: linear-gradient(135deg, #4ecdc4, #44a08d);
+}
+
+.workout-indicator.flexibility {
+  background: linear-gradient(135deg, #a8e6cf, #88d8a3);
+}
+
+.workout-indicator.mixed {
+  background: linear-gradient(135deg, #ffd93d, #ff9f1c);
+}
+
+.workout-indicator.rest {
+  background: linear-gradient(135deg, #b8b8b8, #999999);
+}
+
+.workout-indicator.completed {
+  opacity: 0.7;
+  border: 3px solid var(--primary-green);
+}
+
+.workout-indicator.completed::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 8px,
+    rgba(255, 255, 255, 0.1) 8px,
+    rgba(255, 255, 255, 0.1) 16px
+  );
+}
+
+.workout-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 4px;
+  min-height: 50px;
+  position: relative;
+}
+
+.workout-duration {
+  font-size: 11px;
+  font-weight: 500;
+  opacity: 0.8;
+  margin-top: 2px;
+}
+
+.check-icon, .play-icon {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+  padding: 2px;
+}
+
+.workout-indicator.completed .check-icon {
+  color: var(--primary-green);
+  background: rgba(255, 255, 255, 1);
+}
+
+.workout-indicator:not(.completed) .play-icon {
+  color: var(--text-dark);
+  background: rgba(255, 255, 255, 0.9);
+}
+
+/* Calendar Styles */
+.calendar-page {
+  min-height: calc(100vh - 60px);
+  background: linear-gradient(135deg, #f7f7f7 0%, #e8f5e8 100%);
+  padding: 20px;
+}
+
+.calendar-container {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 40px;
+  gap: 40px;
+}
+
+.user-info h1 {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin-bottom: 8px;
+}
+
+.user-info p {
+  font-size: 16px;
+  color: var(--text-medium);
+  line-height: 1.6;
+  max-width: 500px;
+}
+
+.progress-stats {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.stat-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: white;
+  padding: 20px;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px var(--shadow-light);
+  border: 1px solid var(--border-light);
+  color: var(--primary-green);
+}
+
+.stat-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-number {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-dark);
+  line-height: 1;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: var(--text-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
+.progress-circle {
+  width: 80px;
+  height: 80px;
+}
+
+.circular-chart {
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.circle-bg {
+  fill: none;
+  stroke: var(--border-light);
+  stroke-width: 2.8;
+}
+
+.circle {
+  fill: none;
+  stroke: var(--primary-green);
+  stroke-width: 2.8;
+  stroke-linecap: round;
+  animation: progress 1s ease-out forwards;
+}
+
+.percentage {
+  fill: var(--text-dark);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.4em;
+  font-weight: 700;
+  text-anchor: middle;
+  transform: rotate(90deg);
+}
+
+@keyframes progress {
+  0% {
+    stroke-dasharray: 0 100;
+  }
+}
+
+.calendar-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+.nav-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  background: white;
+  border: 2px solid var(--border-light);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: var(--text-medium);
+}
+
+.nav-button:hover {
+  border-color: var(--primary-green);
+  color: var(--primary-green);
+  transform: scale(1.05);
+}
+
+.month-year {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-dark);
+  min-width: 200px;
+  text-align: center;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  background: var(--border-light);
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 40px;
+  box-shadow: 0 8px 32px var(--shadow-light);
+}
+
+.day-header {
+  background: var(--primary-green);
+  color: white;
+  padding: 16px 8px;
+  text-align: center;
+  font-weight: 600;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.calendar-day {
+  background: white;
+  min-height: 120px;
+  padding: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.calendar-day:hover {
+  background: rgba(88, 204, 2, 0.05);
+}
+
+.calendar-day.today {
+  background: rgba(88, 204, 2, 0.1);
+  border: 2px solid var(--primary-green);
+}
+
+.calendar-day.has-workout:hover {
+  transform: scale(1.02);
+  box-shadow: 0 8px 24px var(--shadow-medium);
+}
+
+.day-number {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-dark);
+  margin-bottom: 8px;
+}
+
+.workout-indicator {
+  flex: 1;
+  border-radius: 12px;
+  padding: 12px;
+  text-align: center;
+  color: white;
+  font-weight: 600;
+  font-size: 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.workout-indicator.strength {
+  background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+}
+
+.workout-indicator.cardio {
+  background: linear-gradient(135deg, #4ecdc4, #44a08d);
+}
+
+.workout-indicator.flexibility {
+  background: linear-gradient(135deg, #a8e6cf, #88d8a3);
+}
+
+.workout-indicator.mixed {
+  background: linear-gradient(135deg, #ffd93d, #ff9f1c);
+}
+
+.workout-indicator.rest {
+  background: linear-gradient(135deg, #b8b8b8, #999999);
+}
+
+.workout-indicator.completed {
+  opacity: 0.7;
+  border: 3px solid var(--primary-green);
+}
+
+.workout-indicator.completed::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 8px,
+    rgba(255, 255, 255, 0.1) 8px,
+    rgba(255, 255, 255, 0.1) 16px
+  );
+}
+
+.workout-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 4px;
+  min-height: 50px;
+  position: relative;
+}
+
+.workout-duration {
+  font-size: 11px;
+  font-weight: 500;
+  opacity: 0.8;
+  margin-top: 2px;
+}
+
+.check-icon, .play-icon {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+  padding: 2px;
+}
+
+.workout-indicator.completed .check-icon {
+  color: var(--primary-green);
+  background: rgba(255, 255, 255, 1);
+}
+
+.workout-indicator:not(.completed) .play-icon {
+  color: var(--text-dark);
+  background: rgba(255, 255, 255, 0.9);
+}
+
+/* Edit Menu Styles */
+.edit-fab {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--gradient-primary);
+  border: none;
+  color: white;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(88, 204, 2, 0.3);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.edit-fab:hover {
+  transform: scale(1.1) translateY(-2px);
+  box-shadow: 0 12px 32px rgba(88, 204, 2, 0.4);
+}
+
+.edit-fab.active {
+  background: var(--gradient-accent);
+  transform: rotate(180deg);
+}
+
+.edit-menu {
+  position: fixed;
+  top: 0;
+  right: -400px;
+  width: 380px;
+  height: 100vh;
+  background: white;
+  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.15);
+  transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 999;
+  overflow-y: auto;
+}
+
+.edit-menu.open {
+  right: 0;
+}
+
+.edit-menu-header {
+  background: var(--gradient-primary);
+  color: white;
+  padding: 24px;
+  text-align: center;
+}
+
+.edit-menu-header h3 {
+  margin: 0 0 8px 0;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.edit-menu-header p {
+  margin: 0;
+  opacity: 0.9;
+  font-size: 14px;
+}
+
+.edit-menu-content {
+  padding: 24px;
+}
+
+.edit-section {
+  margin-bottom: 32px;
+}
+
+.edit-section h4 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-dark);
+}
+
+.edit-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.edit-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--background-light);
+  border: 2px solid var(--border-light);
+  border-radius: 12px;
+  color: var(--text-dark);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 500;
+}
+
+.edit-action-btn:hover {
+  border-color: var(--primary-green);
+  background: rgba(88, 204, 2, 0.05);
+  transform: translateY(-1px);
+}
+
+.workout-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.workout-edit-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-weight: 500;
+  color: var(--text-dark);
+}
+
+.workout-edit-form select {
+  padding: 12px;
+  border: 2px solid var(--border-light);
+  border-radius: 8px;
+  font-size: 14px;
+  background: white;
+  transition: border-color 0.2s ease;
+}
+
+.workout-edit-form select:focus {
+  outline: none;
+  border-color: var(--primary-green);
+}
+
+.save-btn {
+  background: var(--primary-color, #4CAF50); /* Fallback color */
+  color: white;
+  border: 2px solid var(--primary-dark, #388E3C); /* Add outline */
+  padding: 12px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  visibility: visible; /* Ensure visibility */
+}
+
+.save-btn:hover {
+  background: var(--primary-dark, #388E3C);
+  color: white;
+}
+
+.save-btn:disabled {
+  background: var(--disabled-color, #ffffff); /* Fallback for disabled */
+  color: var(--text-light, #fff);
+  cursor: not-allowed;
+  opacity: 0.7; /* Ensure some visibility */
+}
+
+.save-btn:not(:disabled) {
+  background: var(--green, #4CAF50); /* Green background when enabled */
+  color: white; /* Ensure text is visible */
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.save-btn:not(:disabled):hover {
+  background: var(--dark-green, #388E3C); /* Darker green on hover */
+}
+
+.date-picker-actions .save-btn {
+  background: var(--green, #4CAF50); /* Green background */
+  color: rgb(255, 255, 255); /* White text */
+  border: 2px solid var(--border-light);
+  padding: 12px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  text-align: center;
+  transition: background-color 0.3s ease;
+}
+
+.date-picker-actions .save-btn:hover {
+  background: var(--dark-green, #388E3C); /* Darker green on hover */
+}
+
+.date-picker-actions .save-btn:disabled {
+  background: var(--disabled-color, #ccc); /* Gray background when disabled */
+  color: var(--text-light, #fff);
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.cancel-btn {
+  background: transparent;
+  color: var(--text-medium);
+  border: 2px solid var(--border-light);
+  padding: 12px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cancel-btn:hover {
+  border-color: var(--text-medium);
+  color: var(--text-dark);
+}
+
+.delete-action-row {
+  margin-top: 8px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.edit-tips {
+  margin: 0;
+  padding-left: 16px;
+  color: var(--text-medium);
+}
+
+.edit-tips li {
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.edit-menu-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;  background: rgba(0, 0, 0, 0.5);
+  z-index: 998;
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+
+/* Date picker styles */
+.date-picker-section {
+  margin-top: 16px;
+  padding: 16px;
+  background: var(--bg-secondary);
+  border-radius: 12px;
+  border: 1px solid var(--border-light);
+}
+
+.date-picker-section label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--text-primary);
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.date-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  background: white;
+  font-size: 0.9rem;
+  transition: border-color 0.2s ease;
+}
+
+.date-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.1);
+}
+
+.date-picker-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.date-picker-actions button {
+  flex: 1;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.date-picker-actions .save-btn {
+  background: var(--primary-color);
+  color: rgb(1, 1, 1);
+}
+
+.date-picker-actions .save-btn:hover:not(:disabled) {
+  background: var(--primary-dark);
+  transform: translateY(-1px);
+}
+
+.date-picker-actions .save-btn:disabled {
+  background: var(--border-light);
+  color: var(--text-light);
+  cursor: not-allowed;
+}
+
+.date-picker-actions .cancel-btn {
+  background: transparent;
+  color: var(--text-primary);
+  border: 1px solid var(--border-light);
+}
+
+.date-picker-actions .cancel-btn:hover {
+  background: var(--bg-light);
+}
+
+.error-message {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: rgba(244, 67, 54, 0.1);
+  border: 1px solid rgba(244, 67, 54, 0.3);
+  border-radius: 8px;
+  color: #d32f2f;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Drag and drop styles */
+.calendar-day.drag-over {
+  background: rgba(46, 125, 50, 0.1);
+  border: 2px dashed var(--primary-color);
+  transform: scale(1.02);
+}
+
+.workout-indicator[draggable="true"] {
+  cursor: grab;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.workout-indicator[draggable="true"]:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.workout-indicator[draggable="true"]:active {
+  cursor: grabbing;
+  transform: scale(0.95);
+  opacity: 0.8;
+}
+
+.calendar-day.drag-over .workout-indicator {
+  opacity: 0.6;
+}
+
+/* Drag feedback */
+.calendar-day.has-workout.drag-over::after {
+  content: "Drop to swap workouts";
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--primary-color);
+  color: white;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  white-space: nowrap;
+  z-index: 10;
+}
+
+.calendar-day:not(.has-workout).drag-over::after {
+  content: "Drop to move workout here";
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--primary-color);
+  color: white;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  white-space: nowrap;
+  z-index: 10;
+}
+
+/* Calendar legend styles */
+.calendar-legend {
+  margin-top: 32px;
+  padding: 24px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--border-light);
+}
+
+.calendar-legend h3 {
+  margin: 0 0 16px 0;
+  color: var(--text-primary);
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.legend-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  justify-content: center;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--bg-light);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.legend-color {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.legend-color.strength {
+  background: linear-gradient(135deg, #ff6b6b, #ff5252);
+}
+
+.legend-color.cardio {
+  background: linear-gradient(135deg, #4ecdc4, #26c6da);
+}
+
+.legend-color.flexibility {
+  background: linear-gradient(135deg, #a855f7, #9333ea);
+}
+
+.legend-color.mixed {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+
+.legend-color.rest {
+  background: linear-gradient(135deg, #6b7280, #4b5563);
+}
+
+.add-workout-btn {
+  background: var(--green, #4CAF50); /* Green background */
+  color: white; /* White text */
+  border: none;
+  padding: 12px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  display: inline-block;
+  text-align: center;
+  transition: background-color 0.3s ease;
+}
+
+.add-workout-btn:hover {
+  background: var(--dark-green, #388E3C); /* Darker green on hover */
+}
+
+.add-workout-btn:disabled {
+  background: var(--disabled-color, #ccc); /* Gray background when disabled */
+  color: var(--text-light, #fff);
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.edit-menu .clear-calendar-btn {
+  background: var(--red, #F44336); /* Red background */
+  color: white; /* White text */
+  border: none;
+  padding: 12px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  text-align: center;
+  transition: background-color 0.3s ease;
+  margin-top: 10px; /* Add spacing */
+}
+
+.edit-menu .clear-calendar-btn:hover {
+  background: var(--dark-red, #D32F2F); /* Darker red on hover */
+}
+
+.calendar-day.delete-active {
+  cursor: pointer;
+}
+
+.calendar-day.delete-active:hover {
+  background: rgba(255, 0, 0, 0.1);
+  border: 2px solid #ff4d4f;
+}
+
+/* Rest-pending mode: gray overlay on hover (similar to delete mode but neutral) */
+.calendar-day.rest-pending {
+  cursor: pointer;
+}
+.calendar-day.rest-pending:hover {
+  background: rgba(128, 128, 128, 0.08);
+  border: 2px solid rgba(128,128,128,0.6);
+  transform: scale(1.02);
+}
+
+.calendar-day.loading {
+  position: relative;
+  pointer-events: none;
+}
+
+.calendar-day.just-updated {
+  box-shadow: 0 8px 30px rgba(30,203,123,0.16) !important;
+  transform: scale(1.03);
+  transition: transform 0.2s ease, box-shadow 0.3s ease;
+}
+
+.loader-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+/* When loader sits inside the rounded colored workout-indicator card */
+.loader-overlay.inside-indicator {
+  /* greyed overlay behind the spinner so the colored card is dimmed */
+  background: rgba(0,0,0,0.12);
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+  border-radius: inherit; /* match the rounded card exactly */
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 12;
+  pointer-events: none; /* allow interactions to pass through if needed */
+}
+
+/* ensure the dumbbell sits exactly centered in the card */
+.loader-overlay.inside-indicator .loading-dumbbell {
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loading-dumbbell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  background: linear-gradient(135deg, var(--primary-green), var(--secondary-blue));
+  border-radius: 50%;
+  box-shadow: 0 2px 12px 0 rgba(30, 203, 123, 0.15);
+  position: relative;
+  animation: dumbbellSpin 1.2s linear infinite;
+}
+
+.loading-dumbbell.small {
+  width: 44px;
+  height: 44px;
+}
+
+@keyframes dumbbellSpin {
+  0% { transform: rotate(0deg) scale(1); }
+  80% { transform: rotate(320deg) scale(1.04); }
+  100% { transform: rotate(360deg) scale(1); }
+}
+
+@media (max-width: 1200px) {
+  .calendar-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 24px;
+  }
+  
+  .progress-stats {
+    align-self: stretch;
+    justify-content: space-between;
+  }
+}
+
+@media (max-width: 768px) {
+  .calendar-page {
+    padding: 16px;
+  }
+  
+  .calendar-header {
+    margin-bottom: 24px;
+  }
+  
+  .user-info h1 {
+    font-size: 24px;
+  }
+  
+  .progress-stats {
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .stat-card {
+    padding: 16px;
+    width: 100%;
+  }
+  
+  .progress-circle {
+    width: 60px;
+    height: 60px;
+  }
+  
+  .month-year {
+    font-size: 24px;
+  }
+  
+  .calendar-day {
+    min-height: 80px;
+    padding: 8px;
+  }
+  
+  .day-number {
+    font-size: 14px;
+  }
+  
+  .workout-type {
+    font-size: 10px;
+  }
+  
+  .legend-items {
+    justify-content: center;
+  }
+  
+  .edit-menu {
+    width: 100vw;
+    right: -100vw;
+  }
+  
+  .edit-fab {
+    bottom: 16px;
+    right: 16px;
+    width: 48px;
+    height: 48px;
+  }
+}
+
+@media (max-width: 480px) {
+  .calendar-grid {
+    gap: 1px;
+  }
+  
+  .day-header {
+    padding: 12px 4px;
+    font-size: 12px;
+  }
+  
+  .calendar-day {
+    min-height: 60px;
+    padding: 6px;
+  }
+  
+  .workout-indicator {
+    padding: 8px 4px;
+    font-size: 10px;
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "extends": [
+    "development"
+  ],
+  "hints": {
+    "axe/aria": [
+      "off",
+      {
+        "rules": {
+          "aria-valid-attr-value": { "enabled": false }
+        }
+      }
+    ]
+  }
+}

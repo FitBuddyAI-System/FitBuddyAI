@@ -1,0 +1,27 @@
+.fb-footer{background:linear-gradient(135deg,#f0fbf6 0%,#e8f5ff 100%);border-top:1px solid rgba(0,0,0,0.04);padding:28px 12px;color:var(--text-medium)}
+/* Place footer under high-priority overlays (intro uses z-index:9999), and pin to bottom */
+.fb-footer{position:fixed;left:0;right:0;bottom:0;z-index:100;padding-left:12px;padding-right:12px}
+.fb-footer-inner{max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+
+/* Avoid reserving global space for the footer; instead apply padding on pages that include it. */
+/* Add a page-scoped safe area so content isn't obscured by the fixed footer when present */
+.welcome-page { padding-bottom: 140px; }
+
+/* While the intro overlay is active (visible), hide the footer so it doesn't flash
+  The overlay is rendered before the footer inside the same parent, so the general sibling selector works. */
+.intro-bubbles-overlay:not(.hide) ~ .fb-footer { display: none; }
+.fb-brand{display:flex;align-items:center;gap:12px}
+.fb-logo{width:48px;height:48px;border-radius:12px;background:linear-gradient(135deg,var(--color-primary),var(--color-accent));display:flex;align-items:center;justify-content:center;color:#fff}
+.fb-brand h4{margin:0}
+.fb-brand .muted{color:var(--text-medium);margin:0}
+.fb-links{display:flex;gap:28px;margin-top:6px}
+.fb-col h5{margin:0 0 8px 0}
+.fb-col a{display:block;color:var(--text-medium);text-decoration:none;margin-bottom:6px}
+.fb-col a:hover{color:var(--color-primary)}
+.fb-bottom{display:flex;justify-content:space-between;align-items:center;padding-top:8px;border-top:1px solid rgba(0,0,0,0.03);font-size:0.95rem}
+.muted{color:var(--text-medium)}
+
+@media (max-width:800px){
+  .fb-links{flex-direction:column}
+  .fb-bottom{flex-direction:column;gap:8px}
+}

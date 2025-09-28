@@ -1,0 +1,145 @@
+.intro-bubbles-overlay {
+  position: fixed;
+  z-index: 9999;
+  top: 0; left: 0; right: 0; bottom: 0;
+  width: 100vw;
+  height: 100vh;
+  background: var(--gradient-primary, linear-gradient(135deg, #f7f7f7 0%, #e8f5e8 100%));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.7s;
+}
+.intro-bubbles-overlay.hide {
+  opacity: 0;
+  pointer-events: none;
+}
+.bubbles-container {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+}
+.bubbles-centerpiece {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 420px;
+  height: 420px;
+  max-width: 90vw;
+  max-height: 90vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  transition: transform 0.5s;
+}
+
+
+.bubbles-rotate {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 420px;
+  height: 420px;
+  transform: translate(-50%, -50%);
+  animation: rotateCircle 3s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes rotateCircle {
+  0% { transform: translate(-50%, -50%) rotate(0deg); }
+  100% { transform: translate(-50%, -50%) rotate(360deg); }
+}
+.bubbles-centerpoint {
+  position: absolute;
+  left: 50%;
+  top: 75%; /* farther below the logo */
+  transform: translate(-50%, -50%);
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.center-logo {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+  background: var(--gradient-primary);
+  border-radius: 50%;
+  box-shadow: 0 8px 32px rgba(30,203,123,0.18);
+  padding: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* --- Modern Bubble Animation --- */
+
+/* --- Bubble flies in from edge to logo --- */
+.bubble {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 20px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 6px 24px rgba(30,203,123,0.10), 0 1.5px 6px rgba(30,203,123,0.08);
+  color: var(--primary-green, #1ecb7b);
+  font-weight: 600;
+  font-size: 16px;
+  opacity: 0;
+  pointer-events: none;
+  -webkit-user-select: none;
+  user-select: none;
+  border: none;
+  transition: box-shadow 0.3s, transform 0.3s;
+  z-index: 1;
+}
+.bubble-icon {
+  display: flex;
+  align-items: center;
+  margin-right: 0.5em;
+}
+
+/* Ensure transform origin is the center of the logo */
+/* Remove inline styles: use data attributes for animation */
+.bubble-fly-in {
+  animation: bubbleFlyIn 1.2s cubic-bezier(.22,1.2,.36,1) forwards;
+  top: 50%;
+  left: 50%;
+  transform-origin: center center;
+}
+@keyframes bubbleFlyIn {
+  0% {
+    opacity: 0;
+    /* Use data attributes for offscreen position */
+    transform: translate(calc(attr(data-offscreen-x px, 0)), calc(attr(data-offscreen-y px, 0))) scale(0.7);
+  }
+  60% {
+    opacity: 1;
+    /* Use data attributes for angle and distance */
+    transform: translate(-50%, -50%) rotate(calc(attr(data-angle deg, 0))) translateX(calc(attr(data-distance px, 0))) scale(1.08);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) rotate(calc(attr(data-angle deg, 0))) translateX(calc(attr(data-distance px, 0))) scale(1);
+  }
+}
+.bubble-orbit, .bubble-meet {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  /* Use data attributes for angle and distance */
+  transform: translate(-50%, -50%) rotate(calc(attr(data-angle deg, 0))) translateX(calc(attr(data-distance px, 0)));
+  opacity: 1;
+  transition: transform 0.5s cubic-bezier(.22,1.2,.36,1), opacity 0.5s;
+}
+
+.fade-white {
+  background: #fff !important;
+  transition: background 0.7s;
+}

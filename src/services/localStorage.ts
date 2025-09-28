@@ -1,0 +1,374 @@
+// LocalStorage utilities for saving and restoring questionnaire progress
+
+export interface QuestionnaireProgress {
+  currentQuestion: number;
+  answers: Record<string, any>;
+  customInputs?: Record<string, string>;
+  completed?: boolean;
+  timestamp: number;
+  userData?: any; // Add userData to the interface
+  questionsList?: any[]; // Persist full question list including AI-generated
+}
+
+const STORAGE_KEYS = {
+  QUESTIONNAIRE_PROGRESS: 'fitbuddy_questionnaire_progress',
+  USER_DATA: 'fitbuddy_user_data',
+  ASSESSMENT_DATA: 'fitbuddy_assessment_data',
+  WORKOUT_PLAN: 'fitbuddy_workout_plan'
+};
+// Auto-backup: import cloud backup helper and provide a debounced scheduler
+import { backupUserDataToServer } from './cloudBackupService';
+
+// Helper: parse a value that may be a JSON string, a double-encoded JSON string, or an object
+function safeParseStored<T = any>(raw: string | null): T | null {
+  if (!raw) return null;
+  try {
+    // First attempt: parse once
+    let parsed: any = JSON.parse(raw);
+    // If the result is a string (double-encoded), try parsing again
+    if (typeof parsed === 'string') {
+      try {
+        parsed = JSON.parse(parsed);
+        console.log('[localStorage] safeParseStored -> double-encoded JSON parsed');
+      } catch (e) {
+        // leave as string
+      }
+    }
+    return parsed as T;
+  } catch (err) {
+    // If raw is not JSON, return null
+    console.warn('[localStorage] safeParseStored -> parse failed:', err);
+    return null;
+  }
+}
+
+let backupTimeout: number | null = null;
+const BACKUP_DEBOUNCE_MS = 800; // wait briefly to batch rapid updates
+
+function scheduleBackup() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.USER_DATA);
+    const userId = raw ? (JSON.parse(raw).data?.id || null) : null;
+    if (!userId) return; // no signed-in user yet
+    if (backupTimeout) {
+      clearTimeout(backupTimeout);
+    }
+    backupTimeout = window.setTimeout(async () => {
+      backupTimeout = null;
+      try {
+        await backupUserDataToServer(userId);
+      } catch (err) {
+        console.warn('Auto backup failed:', err);
+      }
+    }, BACKUP_DEBOUNCE_MS);
+  } catch (err) {
+    console.warn('Failed to schedule backup:', err);
+  }
+}
+// Assessment Data (for questionnaire user data, separate from account)
+export const saveAssessmentData = (assessmentData: any): void => {
+  try {
+    localStorage.setItem(STORAGE_KEYS.ASSESSMENT_DATA, JSON.stringify({
+      data: assessmentData,
+      timestamp: Date.now()
+    }));
+  // schedule cloud backup (if user signed in)
+  scheduleBackup();
+  } catch (error) {
+    console.warn('Failed to save assessment data:', error);
+  }
+};
+
+export const loadAssessmentData = (): any | null => {
+  try {
+  const saved = localStorage.getItem(STORAGE_KEYS.ASSESSMENT_DATA);
+  if (!saved) return null;
+  const parsed = safeParseStored<{ data: any; timestamp: number }>(saved);
+  if (!parsed) return null;
+  const { data, timestamp } = parsed;
+  console.log('[localStorage] loadAssessmentData -> found data, timestamp:', timestamp);
+    // Check if data is older than 7 days
+    const isExpired = Date.now() - timestamp > 7 * 24 * 60 * 60 * 1000;
+    if (isExpired) {
+      clearAssessmentData();
+      return null;
+    }
+    return data;
+  } catch (error) {
+    console.warn('Failed to load assessment data:', error);
+    return null;
+  }
+};
+
+export const clearAssessmentData = (): void => {
+  try {
+    localStorage.removeItem(STORAGE_KEYS.ASSESSMENT_DATA);
+  scheduleBackup();
+  } catch (error) {
+    console.warn('Failed to clear assessment data:', error);
+  }
+};
+
+// Questionnaire Progress
+export const saveQuestionnaireProgress = (progress: QuestionnaireProgress): void => {
+  try {
+    // Also save userData if available
+    localStorage.setItem(STORAGE_KEYS.QUESTIONNAIRE_PROGRESS, JSON.stringify(progress));
+  // schedule cloud backup (if user signed in)
+  scheduleBackup();
+  } catch (error) {
+    console.warn('Failed to save questionnaire progress:', error);
+  }
+};
+
+export const loadQuestionnaireProgress = (): QuestionnaireProgress | null => {
+  try {
+  const saved = localStorage.getItem(STORAGE_KEYS.QUESTIONNAIRE_PROGRESS);
+  if (!saved) return null;
+
+  const progress = safeParseStored<QuestionnaireProgress>(saved) as QuestionnaireProgress | null;
+  if (!progress) return null;
+
+    // Check if progress is older than 24 hours
+    const isExpired = Date.now() - progress.timestamp > 24 * 60 * 60 * 1000;
+    if (isExpired) {
+      clearQuestionnaireProgress();
+      return null;
+    }
+
+    return progress;
+  } catch (error) {
+    console.warn('Failed to load questionnaire progress:', error);
+    return null;
+  }
+};
+
+export const clearQuestionnaireProgress = (): void => {
+  try {
+    localStorage.removeItem(STORAGE_KEYS.QUESTIONNAIRE_PROGRESS);
+  scheduleBackup();
+  } catch (error) {
+    console.warn('Failed to clear questionnaire progress:', error);
+  }
+};
+
+// User Data
+export const saveUserData = (userData: any, opts?: { skipBackup?: boolean }): void => {
+  try {
+    // Accept either a raw user object or a wrapper { data, token }
+    let toStore: any = {};
+    if (userData && typeof userData === 'object' && ('data' in userData || 'token' in userData)) {
+      // Already wrapped
+      toStore.data = userData.data || null;
+      if ('token' in userData) toStore.token = userData.token ?? null;
+    } else {
+      toStore.data = userData || null;
+    }
+    const payload = { ...toStore, timestamp: Date.now() };
+    localStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(payload));
+    // When user signs in / user data changes, trigger backup of any existing keys
+    if (!opts || !opts.skipBackup) scheduleBackup();
+    // Clear the "no auto restore" guard when a user explicitly signs in (cross-tab)
+    try { sessionStorage.removeItem('fitbuddy_no_auto_restore'); } catch {}
+    try { localStorage.removeItem('fitbuddy_no_auto_restore'); } catch {}
+  } catch (error) {
+    console.warn('Failed to save user data:', error);
+  }
+};
+
+export const loadUserData = (): any | null => {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEYS.USER_DATA);
+    if (!saved) return null;
+    
+    const { data, timestamp } = JSON.parse(saved);
+    
+    // Check if data is older than 7 days
+    const isExpired = Date.now() - timestamp > 7 * 24 * 60 * 60 * 1000;
+    if (isExpired) {
+      clearUserData();
+      return null;
+    }
+    
+    return data;
+  } catch (error) {
+    console.warn('Failed to load user data:', error);
+    return null;
+  }
+};
+
+export const clearUserData = (): void => {
+  try {
+    localStorage.removeItem(STORAGE_KEYS.USER_DATA);
+    // No user -> nothing to back up, but clear any pending timer
+    if (backupTimeout) {
+      clearTimeout(backupTimeout);
+      backupTimeout = null;
+    }
+  } catch (error) {
+    console.warn('Failed to clear user data:', error);
+  }
+};
+
+// Workout Plan
+export const saveWorkoutPlan = (workoutPlan: any): void => {
+  try {
+    // Normalize plan: ensure dates are strings and strip functions/circular refs
+    const normalizePlanForStorage = (plan: any) => {
+      if (!plan) return plan;
+      const clone: any = {
+        id: plan.id,
+        name: plan.name,
+        description: plan.description,
+        startDate: typeof plan.startDate === 'string' ? plan.startDate : (plan.startDate ? new Date(plan.startDate).toISOString().split('T')[0] : undefined),
+        endDate: typeof plan.endDate === 'string' ? plan.endDate : (plan.endDate ? new Date(plan.endDate).toISOString().split('T')[0] : undefined),
+  // prefer an explicit totalDays, otherwise derive from filtered dailyWorkouts length
+  totalDays: typeof plan.totalDays === 'number' ? plan.totalDays : (Array.isArray(plan.dailyWorkouts) ? plan.dailyWorkouts.filter(Boolean).length : undefined),
+        totalTime: plan.totalTime,
+        weeklyStructure: Array.isArray(plan.weeklyStructure) ? plan.weeklyStructure.slice() : [],
+        // filter out null/undefined entries (handles sparse arrays created by index assignments)
+        dailyWorkouts: Array.isArray(plan.dailyWorkouts) ? plan.dailyWorkouts.filter(Boolean).map((d: any) => ({
+          date: typeof d?.date === 'string' ? d.date : (d?.date ? new Date(d.date).toISOString().split('T')[0] : ''),
+          type: d?.type,
+          completed: !!d?.completed,
+          totalTime: d?.totalTime || '',
+          workouts: Array.isArray(d?.workouts) ? d.workouts.filter(Boolean).map((w: any) => ({
+            name: w?.name ?? '',
+            description: w?.description ?? '',
+            difficulty: w?.difficulty ?? 'beginner',
+            duration: w?.duration ?? '',
+            reps: w?.reps ?? '',
+            muscleGroups: Array.isArray(w?.muscleGroups) ? w.muscleGroups : (w?.muscleGroups ? [w.muscleGroups] : []),
+            equipment: Array.isArray(w?.equipment) ? w.equipment : (w?.equipment ? [w.equipment] : []),
+            sets: typeof w?.sets === 'number' ? w.sets : undefined,
+            rest: w?.rest || undefined
+          })) : [],
+          alternativeWorkouts: Array.isArray(d?.alternativeWorkouts) ? d.alternativeWorkouts.filter(Boolean).map((w: any) => ({
+            name: w?.name ?? '',
+            description: w?.description ?? '',
+            difficulty: w?.difficulty ?? 'beginner',
+            duration: w?.duration ?? '',
+            reps: w?.reps ?? '',
+            muscleGroups: Array.isArray(w?.muscleGroups) ? w.muscleGroups : (w?.muscleGroups ? [w.muscleGroups] : []),
+            equipment: Array.isArray(w?.equipment) ? w.equipment : (w?.equipment ? [w.equipment] : []),
+            sets: typeof w?.sets === 'number' ? w.sets : undefined,
+            rest: w?.rest || undefined
+          })) : []
+        })) : []
+      };
+      return clone;
+    };
+
+    const normalized = normalizePlanForStorage(workoutPlan);
+    const payload = { data: normalized, timestamp: Date.now() };
+    const serialized = JSON.stringify(payload);
+    // Write to localStorage
+    localStorage.setItem(STORAGE_KEYS.WORKOUT_PLAN, serialized);
+
+    // Verify round-trip parse to detect any truncation or invalid JSON
+    try {
+      const round = localStorage.getItem(STORAGE_KEYS.WORKOUT_PLAN);
+      if (!round) throw new Error('Written value missing');
+      JSON.parse(round);
+    } catch (e) {
+      // If verification fails, remove the bad entry and warn
+      console.warn('Workout plan verification failed after save; removing corrupted key.', e);
+      try { localStorage.removeItem(STORAGE_KEYS.WORKOUT_PLAN); } catch {}
+      return;
+    }
+
+    // schedule cloud backup (if user signed in)
+    scheduleBackup();
+  } catch (error) {
+    console.warn('Failed to save workout plan:', error);
+  }
+};
+
+export const loadWorkoutPlan = (): any | null => {
+  try {
+  const saved = localStorage.getItem(STORAGE_KEYS.WORKOUT_PLAN);
+  if (!saved) return null;
+  console.log('[localStorage] loadWorkoutPlan -> raw length:', saved.length);
+
+  const parsed = safeParseStored<{ data: any; timestamp: number }>(saved);
+  if (!parsed) return null;
+  const { data, timestamp } = parsed;
+    
+    // Check if data is older than 30 days
+    const isExpired = Date.now() - timestamp > 30 * 24 * 60 * 60 * 1000;
+    if (isExpired) {
+      clearWorkoutPlan();
+      return null;
+    }
+    
+    return data;
+  } catch (error) {
+    console.warn('Failed to load workout plan:', error);
+    return null;
+  }
+};
+
+export const clearWorkoutPlan = (): void => {
+  try {
+    localStorage.removeItem(STORAGE_KEYS.WORKOUT_PLAN);
+  scheduleBackup();
+  } catch (error) {
+    console.warn('Failed to clear workout plan:', error);
+  }
+};
+
+// Clear all data
+export const clearAllData = (): void => {
+  clearQuestionnaireProgress();
+  clearUserData();
+  clearWorkoutPlan();
+};
+
+// Chat helpers: append a message to the per-user chat key and also ensure the unified payload
+export const appendChatMessage = (message: { role: string; text: string; ts?: number }, opts?: { userId?: string }) => {
+  try {
+    const uid = opts?.userId || (() => {
+      try { const raw = localStorage.getItem(STORAGE_KEYS.USER_DATA); return raw ? (JSON.parse(raw).data?.id || null) : null; } catch { return null; }
+    })();
+    const key = `fitbuddy_chat_${uid || 'anon'}`;
+    const raw = localStorage.getItem(key);
+    let arr: any[] = [];
+    if (raw) {
+      try { arr = JSON.parse(raw); if (!Array.isArray(arr)) arr = []; } catch { arr = []; }
+    }
+    const toPush = { role: message.role, text: message.text, ts: message.ts || Date.now() };
+    arr.push(toPush);
+    try { localStorage.setItem(key, JSON.stringify(arr)); } catch {}
+
+    // Also persist in the unified user payload under payload.chat_history so cloudBackup saves it
+    try {
+      const udRaw = localStorage.getItem(STORAGE_KEYS.USER_DATA);
+      if (udRaw) {
+        const parsed = JSON.parse(udRaw);
+        // Attach chat_history as array (store under fitbuddy payload key so backupUserDataToServer picks it up)
+        parsed.chat_history = parsed.chat_history || [];
+        parsed.chat_history.push(toPush);
+        localStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(parsed));
+      }
+    } catch (e) { /* ignore */ }
+
+    // schedule cloud backup so server receives the new chat history
+    scheduleBackup();
+  } catch (e) {
+    console.warn('appendChatMessage failed', e);
+  }
+};
+
+// Save acceptance flags into unified payload and schedule backup
+export const setAcceptanceFlags = (accepted: { accepted_terms?: boolean; accepted_privacy?: boolean }) => {
+  try {
+    const udRaw = localStorage.getItem(STORAGE_KEYS.USER_DATA);
+    let parsed: any = udRaw ? JSON.parse(udRaw) : { data: null, timestamp: Date.now() };
+    parsed.accepted_terms = accepted.accepted_terms ?? parsed.accepted_terms ?? null;
+    parsed.accepted_privacy = accepted.accepted_privacy ?? parsed.accepted_privacy ?? null;
+    localStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(parsed));
+    scheduleBackup();
+  } catch (e) {
+    console.warn('setAcceptanceFlags failed', e);
+  }
+};

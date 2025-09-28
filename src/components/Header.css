@@ -1,0 +1,398 @@
+/* Header Counters (Streak & Energy) */
+.header-counters {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 6px;
+}
+.header-counter {
+  display: flex;
+  align-items: center;
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 2px 8px rgba(30, 203, 123, 0.08);
+  padding: 2px 8px 2px 6px;
+  font-weight: 700;
+  font-size: 0.98rem;
+  min-width: 36px;
+  color: var(--text-dark, #222);
+  transition: box-shadow 0.2s;
+}
+.header-counter.streak {
+  border: 2px solid #ffb347;
+}
+.header-counter.energy {
+  border: 2px solid #1e90cb;
+}
+.counter-value {
+  font-size: 1.08rem;
+  font-weight: 700;
+  margin-left: 2px;
+}
+/* Header Styles */
+.app-header {  background: var(--gradient-primary);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  transition: all 0.3s ease;
+}
+
+.header-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 8px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+/* Brand Section */
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+  min-width: 200px;
+}
+
+.header-brand:hover {
+  transform: scale(1.02);
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 80px;
+  height: 80px;
+  background: var(--gradient-primary);
+  color: white;
+  box-shadow: 0 8px 32px #58cc024d;
+  border-radius: 20px;
+  animation: float 6s linear 0s infinite normal;
+  margin-bottom: 4px;
+  /*Only for use in header*/
+  padding: 6px;
+}
+
+.brand-text {
+  color: white;
+}
+
+.brand-title {
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0;
+  background: linear-gradient(135deg, #ffffff 0%, #f0f9ff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.brand-subtitle {
+  font-size: 12px;
+  margin: 0;
+  opacity: 0.9;
+  font-weight: 500;
+}
+
+/* Page Title Section */
+.page-title {
+  flex: 1;
+  text-align: center;
+  color: white;
+}
+
+.page-title h2 {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+  opacity: 0.95;
+}
+
+.user-greeting {
+  font-size: 14px;
+  margin: 4px 0 0 0;
+  opacity: 0.8;
+  font-weight: 500;
+}
+
+/* Navigation Section */
+.header-nav {
+  display: flex;
+  gap: 8px;
+  min-width: 200px;
+  justify-content: flex-end;
+}
+
+.nav-button {
+  display: flex;
+  align-items: center;
+  gap: 0px;
+  padding: 8px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+  color: rgba(255, 255, 255, 0.9);
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-size: 13px;
+  font-weight: 500;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  min-width: 85px;
+  white-space: nowrap;
+  position: relative;
+  overflow: hidden;
+}
+
+.nav-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.nav-button:hover::before {
+  left: 100%;
+}
+
+.nav-button:hover:not(:disabled) {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%);
+  transform: translateY(-1px) scale(1.02);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: white;
+}
+
+.nav-button.active {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 100%);
+  border-color: rgba(255, 255, 255, 0.4);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  color: white;
+  transform: scale(1.05);
+}
+
+.nav-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.nav-button span {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* Sparkles icon: show only on small screens for the chat tab */
+.sparkles-mobile-only { display: none; }
+/* Flame icon for audit tab: same mobile-only behavior */
+.flame-mobile-only { display: none; }
+
+/* Home icon hidden by default; revealed on very small screens where labels are hidden */
+.home-icon { display: none; }
+
+/* Profile Section */
+.profile-section {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+}
+
+.profile-image {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  transition: transform 0.3s ease, border-color 0.3s ease;
+}
+
+@keyframes spin {
+  0% {transform: rotate(0deg);}
+  50% {transform: rotate(180deg);}
+  100% {transform: rotate(270deg);}
+}
+
+.profile-image:hover {
+  transform: scale(1.1);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.dropdown {
+  position: relative;
+}
+
+.dropdown-button {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 13px;
+  cursor: pointer;
+  transition: color 0.3s ease;
+}
+
+.dropdown-button:hover {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.dropdown-content {
+  display: none;
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: rgba(0, 0, 0, 0.8);
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  padding: 8px;
+  z-index: 1000;
+}
+
+.dropdown:hover .dropdown-content {
+  display: block;
+}
+
+.dropdown-content button {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 13px;
+  padding: 8px 12px;
+  text-align: left;
+  width: 100%;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.dropdown-content button:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {  .header-container {
+    padding: 6px 16px;
+    gap: 16px;
+  }
+  
+  .header-brand {
+    min-width: auto;
+  }
+  
+  .brand-title {
+    font-size: 20px;
+  }
+  
+  .brand-subtitle {
+    display: none;
+  }
+  
+  .page-title h2 {
+    font-size: 16px;
+  }
+  
+  .user-greeting {
+    font-size: 12px;
+  }
+  
+  .header-nav {
+    min-width: auto;
+    gap: 4px;
+  }
+    .nav-button {
+    padding: 4px 8px;
+    min-width: auto;
+    font-size: 11px;
+  }
+  
+  .nav-button span {
+    font-size: 10px;
+  }
+
+  /* Home icon follows same visibility rules as other tab icons */
+}
+
+/* Tablet (middle-size) breakpoint: hide title but keep logo for recognition */
+@media (max-width: 1024px) and (min-width: 481px) {
+  .brand-title { display: none; }
+  .brand-subtitle { display: none; }
+  .logo { width: 64px; height: 64px; }
+  .header-container { padding: 8px 18px; }
+  .nav-button { padding: 6px 10px; }
+}
+
+@media (max-width: 480px) {
+  .page-title {
+    display: none;
+  }
+
+  /* Switch header to stacked layout on very small screens */
+  .header-container {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  padding: 6px 10px;
+  }
+
+  /* Brand row: logo left, profile avatar right */
+  .header-brand {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    gap: 8px;
+  }
+
+  /* Make logo smaller to save space */
+  .logo { width: 48px; height: 48px; }
+  /* Hide logo and brand text on very small screens */
+  .logo { display: none; }
+  .brand-text { display: none; }
+  .brand-title { display: none; }
+  .brand-subtitle { display: none; }
+
+  /* Position profile image to the right within the brand row */
+  .profile-section { position: relative; }
+  .profile-image { width: 40px; height: 40px; }
+
+  /* Nav becomes a full-width icon row centered */
+  .header-nav {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+  }
+
+  /* Compact nav for very small screens: show only icons, larger touch targets */
+  .nav-button span { display: none; }
+  .nav-button { padding: 8px; min-width: 44px; border-radius: 12px; }
+
+  /* Show sparkles icon in the compact mobile nav */
+  .sparkles-mobile-only { display: inline-block; }
+  /* More specific selector to override .nav-button span { display: none } */
+  .nav-button .sparkles-mobile-only { display: inline-flex; align-items: center; justify-content: center; }
+  /* Show flame in the compact mobile nav and override the span hide rule */
+  .nav-button .flame-mobile-only { display: inline-flex; align-items: center; justify-content: center; }
+
+  /* Reveal the home icon when labels are hidden */
+  .home-icon { display: inline-block; }
+}
+
+/* Ultra-compact header tweaks for very small phones (<= 375px) */
+@media (max-width: 375px) {
+  /* Hide the username label next to the avatar to save space */
+  .dropdown-button { display: none; }
+  /* Also hide the small greeting if present */
+  .user-greeting { display: none; }
+  /* Slightly shrink profile image */
+  .profile-image { width: 36px; height: 36px; }
+}

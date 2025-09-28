@@ -1,0 +1,14 @@
+.signout-btn {
+  background: var(--color-error, #e74c3c);
+  color: #fff;
+  border: none;
+  border-radius: 0.7rem;
+  padding: 0.7rem 1.2rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.signout-btn:hover {
+  background: #c0392b;
+}

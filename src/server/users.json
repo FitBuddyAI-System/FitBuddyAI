@@ -1,0 +1,1487 @@
+[
+  {
+    "id": "fdd8b1a1-4f36-43b0-99ad-981701ef59c9",
+    "email": "williamjaye1@outlook.com",
+    "username": "we09532",
+    "password": "1",
+    "avatar": "https://api.dicebear.com/7.x/bottts/svg?seed=AnimatedAvatar",
+    "energy": 100,
+    "streak": 1,
+    "inventory": [
+      {
+        "id": "avatar1",
+        "name": "Bot Buddy",
+        "image": "https://api.dicebear.com/7.x/bottts/svg?seed=FitBuddy1",
+        "price": 100,
+        "type": "avatar",
+        "description": "A friendly robot avatar."
+      },
+      {
+        "id": "avatar2",
+        "name": "Dragon Head",
+        "image": "https://api.dicebear.com/7.x/bottts/svg?seed=DragonHead",
+        "price": 200,
+        "type": "avatar",
+        "description": "Unleash your inner dragon!"
+      }
+    ],
+    "token": "a75f6ebf-1642-46a3-bcce-89c0d7d68395",
+    "workoutPlanHistory": [
+      {
+        "timestamp": "2025-09-07T19:24:54.436Z",
+        "plan": {
+          "id": "generic-full-body-plan",
+          "name": "Generic Full Body Workout",
+          "description": "A full-body workout plan suitable for beginners, performed three times per week.",
+          "startDate": "2025-09-06",
+          "endDate": "2025-09-27",
+          "totalDays": 21,
+          "totalTime": "3 weeks",
+          "weeklyStructure": [
+            "Monday: Full Body",
+            "Wednesday: Full Body",
+            "Friday: Full Body"
+          ],
+          "dailyWorkouts": [
+            {
+              "date": "2025-09-08",
+              "type": "Full Body",
+              "completed": false,
+              "totalTime": "30 minutes",
+              "workouts": [
+                {
+                  "name": "Squats",
+                  "difficulty": "beginner",
+                  "duration": "10 minutes",
+                  "reps": "3x10",
+                  "muscleGroups": [
+                    "quads",
+                    "glutes"
+                  ],
+                  "equipment": []
+                },
+                {
+                  "name": "Push-ups",
+                  "difficulty": "beginner",
+                  "duration": "10 minutes",
+                  "reps": "3xAMRAP",
+                  "muscleGroups": [
+                    "chest",
+                    "triceps",
+                    "shoulders"
+                  ],
+                  "equipment": []
+                },
+                {
+                  "name": "Rows (Bodyweight or Dumbbell)",
+                  "difficulty": "beginner",
+                  "duration": "10 minutes",
+                  "reps": "3x10",
+                  "muscleGroups": [
+                    "back",
+                    "biceps"
+                  ],
+                  "equipment": [
+                    "dumbbell"
+                  ]
+                }
+              ],
+              "alternativeWorkouts": []
+            },
+            {
+              "date": "2025-09-10",
+              "type": "Full Body",
+              "completed": false,
+              "totalTime": "30 minutes",
+              "workouts": [
+                {
+                  "name": "Squats",
+                  "difficulty": "beginner",
+                  "duration": "10 minutes",
+                  "reps": "3x10",
+                  "muscleGroups": [
+                    "quads",
+                    "glutes"
+                  ],
+                  "equipment": []
+                },
+                {
+                  "name": "Push-ups",
+                  "difficulty": "beginner",
+                  "duration": "10 minutes",
+                  "reps": "3xAMRAP",
+                  "muscleGroups": [
+                    "chest",
+                    "triceps",
+                    "shoulders"
+                  ],
+                  "equipment": []
+                },
+                {
+                  "name": "Rows (Bodyweight or Dumbbell)",
+                  "difficulty": "beginner",
+                  "duration": "10 minutes",
+                  "reps": "3x10",
+                  "muscleGroups": [
+                    "back",
+                    "biceps"
+                  ],
+                  "equipment": [
+                    "dumbbell"
+                  ]
+                }
+              ],
+              "alternativeWorkouts": []
+            },
+            {
+              "date": "2025-09-12",
+              "type": "Full Body",
+              "completed": false,
+              "totalTime": "30 minutes",
+              "workouts": [
+                {
+                  "name": "Squats",
+                  "difficulty": "beginner",
+                  "duration": "10 minutes",
+                  "reps": "3x10",
+                  "muscleGroups": [
+                    "quads",
+                    "glutes"
+                  ],
+                  "equipment": []
+                },
+                {
+                  "name": "Push-ups",
+                  "difficulty": "beginner",
+                  "duration": "10 minutes",
+                  "reps": "3xAMRAP",
+                  "muscleGroups": [
+                    "chest",
+                    "triceps",
+                    "shoulders"
+                  ],
+                  "equipment": []
+                },
+                {
+                  "name": "Rows (Bodyweight or Dumbbell)",
+                  "difficulty": "beginner",
+                  "duration": "10 minutes",
+                  "reps": "3x10",
+                  "muscleGroups": [
+                    "back",
+                    "biceps"
+                  ],
+                  "equipment": [
+                    "dumbbell"
+                  ]
+                }
+              ],
+              "alternativeWorkouts": []
+            },
+            {
+              "date": "2025-09-15",
+              "type": "Full Body",
+              "completed": false,
+              "totalTime": "30 minutes",
+              "workouts": [
+                {
+                  "name": "Squats",
+                  "difficulty": "beginner",
+                  "duration": "10 minutes",
+                  "reps": "3x10",
+                  "muscleGroups": [
+                    "quads",
+                    "glutes"
+                  ],
+                  "equipment": []
+                },
+                {
+                  "name": "Push-ups",
+                  "difficulty": "beginner",
+                  "duration": "10 minutes",
+                  "reps": "3xAMRAP",
+                  "muscleGroups": [
+                    "chest",
+                    "triceps",
+                    "shoulders"
+                  ],
+                  "equipment": []
+                },
+                {
+                  "name": "Rows (Bodyweight or Dumbbell)",
+                  "difficulty": "beginner",
+                  "duration": "10 minutes",
+                  "reps": "3x10",
+                  "muscleGroups": [
+                    "back",
+                    "biceps"
+                  ],
+                  "equipment": [
+                    "dumbbell"
+                  ]
+                }
+              ],
+              "alternativeWorkouts": []
+            },
+            {
+              "date": "2025-09-17",
+              "type": "Full Body",
+              "completed": false,
+              "totalTime": "30 minutes",
+              "workouts": [
+                {
+                  "name": "Squats",
+                  "difficulty": "beginner",
+                  "duration": "10 minutes",
+                  "reps": "3x10",
+                  "muscleGroups": [
+                    "quads",
+                    "glutes"
+                  ],
+                  "equipment": []
+                },
+                {
+                  "name": "Push-ups",
+                  "difficulty": "beginner",
+                  "duration": "10 minutes",
+                  "reps": "3xAMRAP",
+                  "muscleGroups": [
+                    "chest",
+                    "triceps",
+                    "shoulders"
+                  ],
+                  "equipment": []
+                },
+                {
+                  "name": "Rows (Bodyweight or Dumbbell)",
+                  "difficulty": "beginner",
+                  "duration": "10 minutes",
+                  "reps": "3x10",
+                  "muscleGroups": [
+                    "back",
+                    "biceps"
+                  ],
+                  "equipment": [
+                    "dumbbell"
+                  ]
+                }
+              ],
+              "alternativeWorkouts": []
+            },
+            {
+              "date": "2025-09-19",
+              "type": "Full Body",
+              "completed": false,
+              "totalTime": "30 minutes",
+              "workouts": [
+                {
+                  "name": "Squats",
+                  "difficulty": "beginner",
+                  "duration": "10 minutes",
+                  "reps": "3x10",
+                  "muscleGroups": [
+                    "quads",
+                    "glutes"
+                  ],
+                  "equipment": []
+                },
+                {
+                  "name": "Push-ups",
+                  "difficulty": "beginner",
+                  "duration": "10 minutes",
+                  "reps": "3xAMRAP",
+                  "muscleGroups": [
+                    "chest",
+                    "triceps",
+                    "shoulders"
+                  ],
+                  "equipment": []
+                },
+                {
+                  "name": "Rows (Bodyweight or Dumbbell)",
+                  "difficulty": "beginner",
+                  "duration": "10 minutes",
+                  "reps": "3x10",
+                  "muscleGroups": [
+                    "back",
+                    "biceps"
+                  ],
+                  "equipment": [
+                    "dumbbell"
+                  ]
+                }
+              ],
+              "alternativeWorkouts": []
+            },
+            {
+              "date": "2025-09-22",
+              "type": "Full Body",
+              "completed": false,
+              "totalTime": "30 minutes",
+              "workouts": [
+                {
+                  "name": "Squats",
+                  "difficulty": "beginner",
+                  "duration": "10 minutes",
+                  "reps": "3x10",
+                  "muscleGroups": [
+                    "quads",
+                    "glutes"
+                  ],
+                  "equipment": []
+                },
+                {
+                  "name": "Push-ups",
+                  "difficulty": "beginner",
+                  "duration": "10 minutes",
+                  "reps": "3xAMRAP",
+                  "muscleGroups": [
+                    "chest",
+                    "triceps",
+                    "shoulders"
+                  ],
+                  "equipment": []
+                },
+                {
+                  "name": "Rows (Bodyweight or Dumbbell)",
+                  "difficulty": "beginner",
+                  "duration": "10 minutes",
+                  "reps": "3x10",
+                  "muscleGroups": [
+                    "back",
+                    "biceps"
+                  ],
+                  "equipment": [
+                    "dumbbell"
+                  ]
+                }
+              ],
+              "alternativeWorkouts": []
+            },
+            {
+              "date": "2025-09-24",
+              "type": "Full Body",
+              "completed": false,
+              "totalTime": "30 minutes",
+              "workouts": [
+                {
+                  "name": "Squats",
+                  "difficulty": "beginner",
+                  "duration": "10 minutes",
+                  "reps": "3x10",
+                  "muscleGroups": [
+                    "quads",
+                    "glutes"
+                  ],
+                  "equipment": []
+                },
+                {
+                  "name": "Push-ups",
+                  "difficulty": "beginner",
+                  "duration": "10 minutes",
+                  "reps": "3xAMRAP",
+                  "muscleGroups": [
+                    "chest",
+                    "triceps",
+                    "shoulders"
+                  ],
+                  "equipment": []
+                },
+                {
+                  "name": "Rows (Bodyweight or Dumbbell)",
+                  "difficulty": "beginner",
+                  "duration": "10 minutes",
+                  "reps": "3x10",
+                  "muscleGroups": [
+                    "back",
+                    "biceps"
+                  ],
+                  "equipment": [
+                    "dumbbell"
+                  ]
+                }
+              ],
+              "alternativeWorkouts": []
+            },
+            {
+              "date": "2025-09-26",
+              "type": "Full Body",
+              "completed": false,
+              "totalTime": "30 minutes",
+              "workouts": [
+                {
+                  "name": "Squats",
+                  "difficulty": "beginner",
+                  "duration": "10 minutes",
+                  "reps": "3x10",
+                  "muscleGroups": [
+                    "quads",
+                    "glutes"
+                  ],
+                  "equipment": []
+                },
+                {
+                  "name": "Push-ups",
+                  "difficulty": "beginner",
+                  "duration": "10 minutes",
+                  "reps": "3xAMRAP",
+                  "muscleGroups": [
+                    "chest",
+                    "triceps",
+                    "shoulders"
+                  ],
+                  "equipment": []
+                },
+                {
+                  "name": "Rows (Bodyweight or Dumbbell)",
+                  "difficulty": "beginner",
+                  "duration": "10 minutes",
+                  "reps": "3x10",
+                  "muscleGroups": [
+                    "back",
+                    "biceps"
+                  ],
+                  "equipment": [
+                    "dumbbell"
+                  ]
+                }
+              ],
+              "alternativeWorkouts": []
+            }
+          ]
+        }
+      },
+      {
+        "timestamp": "2025-09-07T22:10:21.900Z",
+        "plan": {
+          "id": "generic-full-body-plan",
+          "name": "Generic Full Body Workout",
+          "description": "A full-body workout plan suitable for beginners, performed three times per week.",
+          "startDate": "2025-09-06",
+          "endDate": "2025-09-27",
+          "totalDays": 21,
+          "totalTime": "3 weeks",
+          "weeklyStructure": [
+            "Monday: Full Body",
+            "Wednesday: Full Body",
+            "Friday: Full Body"
+          ],
+          "dailyWorkouts": [
+            {
+              "date": "2025-09-08",
+              "type": "Full Body",
+              "completed": false,
+              "totalTime": "30 minutes",
+              "workouts": [
+                {
+                  "name": "Squats",
+                  "difficulty": "beginner",
+                  "duration": "10 minutes",
+                  "reps": "3x10",
+                  "muscleGroups": [
+                    "quads",
+                    "glutes"
+                  ],
+                  "equipment": []
+                },
+                {
+                  "name": "Push-ups",
+                  "difficulty": "beginner",
+                  "duration": "10 minutes",
+                  "reps": "3xAMRAP",
+                  "muscleGroups": [
+                    "chest",
+                    "triceps",
+                    "shoulders"
+                  ],
+                  "equipment": []
+                },
+                {
+                  "name": "Rows (Bodyweight or Dumbbell)",
+                  "difficulty": "beginner",
+                  "duration": "10 minutes",
+                  "reps": "3x10",
+                  "muscleGroups": [
+                    "back",
+                    "biceps"
+                  ],
+                  "equipment": []
+                }
+              ],
+              "alternativeWorkouts": []
+            },
+            {
+              "date": "2025-09-10",
+              "type": "Full Body",
+              "completed": false,
+              "totalTime": "30 minutes",
+              "workouts": [
+                {
+                  "name": "Lunges",
+                  "difficulty": "beginner",
+                  "duration": "10 minutes",
+                  "reps": "3x10 each leg",
+                  "muscleGroups": [
+                    "quads",
+                    "glutes",
+                    "hamstrings"
+                  ],
+                  "equipment": []
+                },
+                {
+                  "name": "Plank",
+                  "difficulty": "beginner",
+                  "duration": "10 minutes",
+                  "reps": "3x30 seconds",
+                  "muscleGroups": [
+                    "core"
+                  ],
+                  "equipment": []
+                },
+                {
+                  "name": "Overhead Press (Dumbbell)",
+                  "difficulty": "beginner",
+                  "duration": "10 minutes",
+                  "reps": "3x10",
+                  "muscleGroups": [
+                    "shoulders"
+                  ],
+                  "equipment": [
+                    "dumbbell"
+                  ]
+                }
+              ],
+              "alternativeWorkouts": []
+            },
+            {
+              "date": "2025-09-12",
+              "type": "Full Body",
+              "completed": false,
+              "totalTime": "30 minutes",
+              "workouts": [
+                {
+                  "name": "Glute Bridges",
+                  "difficulty": "beginner",
+                  "duration": "10 minutes",
+                  "reps": "3x15",
+                  "muscleGroups": [
+                    "glutes",
+                    "hamstrings"
+                  ],
+                  "equipment": []
+                },
+                {
+                  "name": "Bicep Curls (Dumbbell)",
+                  "difficulty": "beginner",
+                  "duration": "10 minutes",
+                  "reps": "3x10",
+                  "muscleGroups": [
+                    "biceps"
+                  ],
+                  "equipment": [
+                    "dumbbell"
+                  ]
+                },
+                {
+                  "name": "Tricep Dips (Chair)",
+                  "difficulty": "beginner",
+                  "duration": "10 minutes",
+                  "reps": "3xAMRAP",
+                  "muscleGroups": [
+                    "triceps"
+                  ],
+                  "equipment": [
+                    "chair"
+                  ]
+                }
+              ],
+              "alternativeWorkouts": []
+            },
+            {
+              "date": "2025-09-15",
+              "type": "Full Body",
+              "completed": false,
+              "totalTime": "30 minutes",
+              "workouts": [
+                {
+                  "name": "Squats",
+                  "difficulty": "beginner",
+                  "duration": "10 minutes",
+                  "reps": "3x10",
+                  "muscleGroups": [
+                    "quads",
+                    "glutes"
+                  ],
+                  "equipment": []
+                },
+                {
+                  "name": "Push-ups",
+                  "difficulty": "beginner",
+                  "duration": "10 minutes",
+                  "reps": "3xAMRAP",
+                  "muscleGroups": [
+                    "chest",
+                    "triceps",
+                    "shoulders"
+                  ],
+                  "equipment": []
+                },
+                {
+                  "name": "Rows (Bodyweight or Dumbbell)",
+                  "difficulty": "beginner",
+                  "duration": "10 minutes",
+                  "reps": "3x10",
+                  "muscleGroups": [
+                    "back",
+                    "biceps"
+                  ],
+                  "equipment": []
+                }
+              ],
+              "alternativeWorkouts": []
+            },
+            {
+              "date": "2025-09-17",
+              "type": "Full Body",
+              "completed": false,
+              "totalTime": "30 minutes",
+              "workouts": [
+                {
+                  "name": "Lunges",
+                  "difficulty": "beginner",
+                  "duration": "10 minutes",
+                  "reps": "3x10 each leg",
+                  "muscleGroups": [
+                    "quads",
+                    "glutes",
+                    "hamstrings"
+                  ],
+                  "equipment": []
+                },
+                {
+                  "name": "Plank",
+                  "difficulty": "beginner",
+                  "duration": "10 minutes",
+                  "reps": "3x30 seconds",
+                  "muscleGroups": [
+                    "core"
+                  ],
+                  "equipment": []
+                },
+                {
+                  "name": "Overhead Press (Dumbbell)",
+                  "difficulty": "beginner",
+                  "duration": "10 minutes",
+                  "reps": "3x10",
+                  "muscleGroups": [
+                    "shoulders"
+                  ],
+                  "equipment": [
+                    "dumbbell"
+                  ]
+                }
+              ],
+              "alternativeWorkouts": []
+            },
+            {
+              "date": "2025-09-19",
+              "type": "Full Body",
+              "completed": false,
+              "totalTime": "30 minutes",
+              "workouts": [
+                {
+                  "name": "Glute Bridges",
+                  "difficulty": "beginner",
+                  "duration": "10 minutes",
+                  "reps": "3x15",
+                  "muscleGroups": [
+                    "glutes",
+                    "hamstrings"
+                  ],
+                  "equipment": []
+                },
+                {
+                  "name": "Bicep Curls (Dumbbell)",
+                  "difficulty": "beginner",
+                  "duration": "10 minutes",
+                  "reps": "3x10",
+                  "muscleGroups": [
+                    "biceps"
+                  ],
+                  "equipment": [
+                    "dumbbell"
+                  ]
+                },
+                {
+                  "name": "Tricep Dips (Chair)",
+                  "difficulty": "beginner",
+                  "duration": "10 minutes",
+                  "reps": "3xAMRAP",
+                  "muscleGroups": [
+                    "triceps"
+                  ],
+                  "equipment": [
+                    "chair"
+                  ]
+                }
+              ],
+              "alternativeWorkouts": []
+            },
+            {
+              "date": "2025-09-22",
+              "type": "Full Body",
+              "completed": false,
+              "totalTime": "30 minutes",
+              "workouts": [
+                {
+                  "name": "Squats",
+                  "difficulty": "beginner",
+                  "duration": "10 minutes",
+                  "reps": "3x10",
+                  "muscleGroups": [
+                    "quads",
+                    "glutes"
+                  ],
+                  "equipment": []
+                },
+                {
+                  "name": "Push-ups",
+                  "difficulty": "beginner",
+                  "duration": "10 minutes",
+                  "reps": "3xAMRAP",
+                  "muscleGroups": [
+                    "chest",
+                    "triceps",
+                    "shoulders"
+                  ],
+                  "equipment": []
+                },
+                {
+                  "name": "Rows (Bodyweight or Dumbbell)",
+                  "difficulty": "beginner",
+                  "duration": "10 minutes",
+                  "reps": "3x10",
+                  "muscleGroups": [
+                    "back",
+                    "biceps"
+                  ],
+                  "equipment": []
+                }
+              ],
+              "alternativeWorkouts": []
+            },
+            {
+              "date": "2025-09-24",
+              "type": "Full Body",
+              "completed": false,
+              "totalTime": "30 minutes",
+              "workouts": [
+                {
+                  "name": "Lunges",
+                  "difficulty": "beginner",
+                  "duration": "10 minutes",
+                  "reps": "3x10 each leg",
+                  "muscleGroups": [
+                    "quads",
+                    "glutes",
+                    "hamstrings"
+                  ],
+                  "equipment": []
+                },
+                {
+                  "name": "Plank",
+                  "difficulty": "beginner",
+                  "duration": "10 minutes",
+                  "reps": "3x30 seconds",
+                  "muscleGroups": [
+                    "core"
+                  ],
+                  "equipment": []
+                },
+                {
+                  "name": "Overhead Press (Dumbbell)",
+                  "difficulty": "beginner",
+                  "duration": "10 minutes",
+                  "reps": "3x10",
+                  "muscleGroups": [
+                    "shoulders"
+                  ],
+                  "equipment": [
+                    "dumbbell"
+                  ]
+                }
+              ],
+              "alternativeWorkouts": []
+            },
+            {
+              "date": "2025-09-26",
+              "type": "Full Body",
+              "completed": false,
+              "totalTime": "30 minutes",
+              "workouts": [
+                {
+                  "name": "Glute Bridges",
+                  "difficulty": "beginner",
+                  "duration": "10 minutes",
+                  "reps": "3x15",
+                  "muscleGroups": [
+                    "glutes",
+                    "hamstrings"
+                  ],
+                  "equipment": []
+                },
+                {
+                  "name": "Bicep Curls (Dumbbell)",
+                  "difficulty": "beginner",
+                  "duration": "10 minutes",
+                  "reps": "3x10",
+                  "muscleGroups": [
+                    "biceps"
+                  ],
+                  "equipment": [
+                    "dumbbell"
+                  ]
+                },
+                {
+                  "name": "Tricep Dips (Chair)",
+                  "difficulty": "beginner",
+                  "duration": "10 minutes",
+                  "reps": "3xAMRAP",
+                  "muscleGroups": [
+                    "triceps"
+                  ],
+                  "equipment": [
+                    "chair"
+                  ]
+                }
+              ],
+              "alternativeWorkouts": []
+            }
+          ]
+        }
+      }
+    ],
+    "workoutPlan": {
+      "id": "generic-full-body-plan",
+      "name": "Generic Full Body Workout",
+      "description": "A full-body workout plan suitable for beginners, performed three times per week.",
+      "startDate": "2025-09-06",
+      "endDate": "2025-09-23",
+      "totalDays": 15,
+      "totalTime": "3 weeks",
+      "weeklyStructure": [
+        "Monday: Full Body",
+        "Wednesday: Full Body",
+        "Friday: Full Body"
+      ],
+      "dailyWorkouts": [
+        {
+          "date": "2025-09-08",
+          "type": "Full Body",
+          "completed": false,
+          "totalTime": "30 minutes",
+          "workouts": [
+            {
+              "name": "Squats",
+              "description": "",
+              "difficulty": "beginner",
+              "duration": "10 minutes",
+              "reps": "3x10",
+              "muscleGroups": [
+                "quads",
+                "glutes"
+              ],
+              "equipment": []
+            },
+            {
+              "name": "Push-ups",
+              "description": "",
+              "difficulty": "beginner",
+              "duration": "10 minutes",
+              "reps": "3xAMRAP",
+              "muscleGroups": [
+                "chest",
+                "triceps",
+                "shoulders"
+              ],
+              "equipment": []
+            },
+            {
+              "name": "Rows (Bodyweight or Dumbbell)",
+              "description": "",
+              "difficulty": "beginner",
+              "duration": "10 minutes",
+              "reps": "3x10",
+              "muscleGroups": [
+                "back",
+                "biceps"
+              ],
+              "equipment": []
+            }
+          ],
+          "alternativeWorkouts": []
+        },
+        {
+          "date": "2025-09-10",
+          "type": "Full Body",
+          "completed": false,
+          "totalTime": "30 minutes",
+          "workouts": [
+            {
+              "name": "Lunges",
+              "description": "",
+              "difficulty": "beginner",
+              "duration": "10 minutes",
+              "reps": "3x10 each leg",
+              "muscleGroups": [
+                "quads",
+                "glutes",
+                "hamstrings"
+              ],
+              "equipment": []
+            },
+            {
+              "name": "Plank",
+              "description": "",
+              "difficulty": "beginner",
+              "duration": "10 minutes",
+              "reps": "3x30 seconds",
+              "muscleGroups": [
+                "core"
+              ],
+              "equipment": []
+            },
+            {
+              "name": "Overhead Press (Dumbbell)",
+              "description": "",
+              "difficulty": "beginner",
+              "duration": "10 minutes",
+              "reps": "3x10",
+              "muscleGroups": [
+                "shoulders"
+              ],
+              "equipment": [
+                "dumbbell"
+              ]
+            }
+          ],
+          "alternativeWorkouts": []
+        },
+        {
+          "date": "2025-09-12",
+          "type": "Full Body",
+          "completed": false,
+          "totalTime": "30 minutes",
+          "workouts": [
+            {
+              "name": "Glute Bridges",
+              "description": "",
+              "difficulty": "beginner",
+              "duration": "10 minutes",
+              "reps": "3x15",
+              "muscleGroups": [
+                "glutes",
+                "hamstrings"
+              ],
+              "equipment": []
+            },
+            {
+              "name": "Bicep Curls (Dumbbell)",
+              "description": "",
+              "difficulty": "beginner",
+              "duration": "10 minutes",
+              "reps": "3x10",
+              "muscleGroups": [
+                "biceps"
+              ],
+              "equipment": [
+                "dumbbell"
+              ]
+            },
+            {
+              "name": "Tricep Dips (Chair)",
+              "description": "",
+              "difficulty": "beginner",
+              "duration": "10 minutes",
+              "reps": "3xAMRAP",
+              "muscleGroups": [
+                "triceps"
+              ],
+              "equipment": [
+                "chair"
+              ]
+            }
+          ],
+          "alternativeWorkouts": []
+        },
+        {
+          "date": "2025-09-15",
+          "type": "Full Body",
+          "completed": false,
+          "totalTime": "30 minutes",
+          "workouts": [
+            {
+              "name": "Squats",
+              "description": "",
+              "difficulty": "beginner",
+              "duration": "10 minutes",
+              "reps": "3x10",
+              "muscleGroups": [
+                "quads",
+                "glutes"
+              ],
+              "equipment": []
+            },
+            {
+              "name": "Push-ups",
+              "description": "",
+              "difficulty": "beginner",
+              "duration": "10 minutes",
+              "reps": "3xAMRAP",
+              "muscleGroups": [
+                "chest",
+                "triceps",
+                "shoulders"
+              ],
+              "equipment": []
+            },
+            {
+              "name": "Rows (Bodyweight or Dumbbell)",
+              "description": "",
+              "difficulty": "beginner",
+              "duration": "10 minutes",
+              "reps": "3x10",
+              "muscleGroups": [
+                "back",
+                "biceps"
+              ],
+              "equipment": []
+            }
+          ],
+          "alternativeWorkouts": []
+        },
+        {
+          "date": "2025-09-17",
+          "type": "Full Body",
+          "completed": false,
+          "totalTime": "30 minutes",
+          "workouts": [
+            {
+              "name": "Lunges",
+              "description": "",
+              "difficulty": "beginner",
+              "duration": "10 minutes",
+              "reps": "3x10 each leg",
+              "muscleGroups": [
+                "quads",
+                "glutes",
+                "hamstrings"
+              ],
+              "equipment": []
+            },
+            {
+              "name": "Plank",
+              "description": "",
+              "difficulty": "beginner",
+              "duration": "10 minutes",
+              "reps": "3x30 seconds",
+              "muscleGroups": [
+                "core"
+              ],
+              "equipment": []
+            },
+            {
+              "name": "Overhead Press (Dumbbell)",
+              "description": "",
+              "difficulty": "beginner",
+              "duration": "10 minutes",
+              "reps": "3x10",
+              "muscleGroups": [
+                "shoulders"
+              ],
+              "equipment": [
+                "dumbbell"
+              ]
+            }
+          ],
+          "alternativeWorkouts": []
+        },
+        {
+          "date": "2025-09-19",
+          "type": "Full Body",
+          "completed": false,
+          "totalTime": "30 minutes",
+          "workouts": [
+            {
+              "name": "Glute Bridges",
+              "description": "",
+              "difficulty": "beginner",
+              "duration": "10 minutes",
+              "reps": "3x15",
+              "muscleGroups": [
+                "glutes",
+                "hamstrings"
+              ],
+              "equipment": []
+            },
+            {
+              "name": "Bicep Curls (Dumbbell)",
+              "description": "",
+              "difficulty": "beginner",
+              "duration": "10 minutes",
+              "reps": "3x10",
+              "muscleGroups": [
+                "biceps"
+              ],
+              "equipment": [
+                "dumbbell"
+              ]
+            },
+            {
+              "name": "Tricep Dips (Chair)",
+              "description": "",
+              "difficulty": "beginner",
+              "duration": "10 minutes",
+              "reps": "3xAMRAP",
+              "muscleGroups": [
+                "triceps"
+              ],
+              "equipment": [
+                "chair"
+              ]
+            }
+          ],
+          "alternativeWorkouts": []
+        },
+        {
+          "date": "2025-09-22",
+          "type": "Full Body",
+          "completed": false,
+          "totalTime": "30 minutes",
+          "workouts": [
+            {
+              "name": "Squats",
+              "description": "",
+              "difficulty": "beginner",
+              "duration": "10 minutes",
+              "reps": "3x10",
+              "muscleGroups": [
+                "quads",
+                "glutes"
+              ],
+              "equipment": []
+            },
+            {
+              "name": "Push-ups",
+              "description": "",
+              "difficulty": "beginner",
+              "duration": "10 minutes",
+              "reps": "3xAMRAP",
+              "muscleGroups": [
+                "chest",
+                "triceps",
+                "shoulders"
+              ],
+              "equipment": []
+            },
+            {
+              "name": "Rows (Bodyweight or Dumbbell)",
+              "description": "",
+              "difficulty": "beginner",
+              "duration": "10 minutes",
+              "reps": "3x10",
+              "muscleGroups": [
+                "back",
+                "biceps"
+              ],
+              "equipment": []
+            }
+          ],
+          "alternativeWorkouts": []
+        },
+        {
+          "date": "2025-09-23",
+          "type": "Rest",
+          "completed": false,
+          "totalTime": "0 minutes",
+          "workouts": [],
+          "alternativeWorkouts": [],
+          "isRickroll": true
+        },
+        {
+          "date": "2025-09-24",
+          "type": "Full Body",
+          "completed": false,
+          "totalTime": "30 minutes",
+          "workouts": [
+            {
+              "name": "Lunges",
+              "description": "",
+              "difficulty": "beginner",
+              "duration": "10 minutes",
+              "reps": "3x10 each leg",
+              "muscleGroups": [
+                "quads",
+                "glutes",
+                "hamstrings"
+              ],
+              "equipment": []
+            },
+            {
+              "name": "Plank",
+              "description": "",
+              "difficulty": "beginner",
+              "duration": "10 minutes",
+              "reps": "3x30 seconds",
+              "muscleGroups": [
+                "core"
+              ],
+              "equipment": []
+            },
+            {
+              "name": "Overhead Press (Dumbbell)",
+              "description": "",
+              "difficulty": "beginner",
+              "duration": "10 minutes",
+              "reps": "3x10",
+              "muscleGroups": [
+                "shoulders"
+              ],
+              "equipment": [
+                "dumbbell"
+              ]
+            }
+          ],
+          "alternativeWorkouts": []
+        },
+        {
+          "date": "2025-09-26",
+          "type": "Full Body",
+          "completed": false,
+          "totalTime": "30 minutes",
+          "workouts": [
+            {
+              "name": "Glute Bridges",
+              "description": "",
+              "difficulty": "beginner",
+              "duration": "10 minutes",
+              "reps": "3x15",
+              "muscleGroups": [
+                "glutes",
+                "hamstrings"
+              ],
+              "equipment": []
+            },
+            {
+              "name": "Bicep Curls (Dumbbell)",
+              "description": "",
+              "difficulty": "beginner",
+              "duration": "10 minutes",
+              "reps": "3x10",
+              "muscleGroups": [
+                "biceps"
+              ],
+              "equipment": [
+                "dumbbell"
+              ]
+            },
+            {
+              "name": "Tricep Dips (Chair)",
+              "description": "",
+              "difficulty": "beginner",
+              "duration": "10 minutes",
+              "reps": "3xAMRAP",
+              "muscleGroups": [
+                "triceps"
+              ],
+              "equipment": [
+                "chair"
+              ]
+            }
+          ],
+          "alternativeWorkouts": []
+        },
+        {
+          "date": "2025-10-01",
+          "type": "Full Body",
+          "completed": false,
+          "totalTime": "45 minutes",
+          "workouts": [
+            {
+              "name": "Bench Press",
+              "description": "Classic chest exercise.",
+              "difficulty": "advanced",
+              "duration": "15 minutes",
+              "reps": "4x8",
+              "muscleGroups": [
+                "chest",
+                "triceps",
+                "shoulders"
+              ],
+              "equipment": [
+                "Barbell",
+                "Bench"
+              ]
+            },
+            {
+              "name": "Bicep Curls (Barbell)",
+              "description": "Classic biceps exercise.",
+              "difficulty": "advanced",
+              "duration": "15 minutes",
+              "reps": "4x8",
+              "muscleGroups": [
+                "biceps"
+              ],
+              "equipment": [
+                "Barbell"
+              ]
+            },
+            {
+              "name": "Tricep Extensions (Cable)",
+              "description": "Cable triceps exercise.",
+              "difficulty": "advanced",
+              "duration": "15 minutes",
+              "reps": "4x10",
+              "muscleGroups": [
+                "triceps"
+              ],
+              "equipment": [
+                "Cable Machine"
+              ]
+            }
+          ],
+          "alternativeWorkouts": []
+        },
+        {
+          "date": "2025-10-01",
+          "type": "Rest",
+          "completed": false,
+          "totalTime": "0 minutes",
+          "workouts": [],
+          "alternativeWorkouts": []
+        }
+      ]
+    }
+  },
+  {
+    "id": "a4578ad6-2a61-4637-a899-325adcead14e",
+    "email": "test@example.com",
+    "username": "test2",
+    "password": "2",
+    "avatar": "",
+    "energy": 1200,
+    "streak": 0,
+    "inventory": []
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000000",
+    "email": "admin@local",
+    "username": "Admin",
+    "password": "admin",
+    "avatar": "",
+    "energy": 9999,
+    "streak": 0,
+    "inventory": [],
+    "roles": [
+      "admin"
+    ],
+    "token": "11738907-a65f-484c-9303-b949febaada2",
+    "workoutPlan": {
+      "id": "admin-test-plan",
+      "name": "Admin Test Plan",
+      "description": "Contains a test rest day with rickroll flag",
+      "startDate": "2025-09-09",
+      "endDate": "2025-09-10",
+      "totalDays": 2,
+      "dailyWorkouts": [
+        {
+          "date": "2025-09-09",
+          "type": "Rest",
+          "completed": false,
+          "totalTime": "0 minutes",
+          "workouts": [],
+          "alternativeWorkouts": [],
+          "isRickroll": true
+        }
+      ]
+    }
+  },
+  {
+    "id": "939a14db-b122-4f1f-ab41-adf3acabfc36",
+    "email": "e2@example.com",
+    "username": "tester2",
+    "password": "pass2",
+    "avatar": "",
+    "energy": 250,
+    "streak": 0,
+    "inventory": [],
+    "token": "970eb8d2-2459-4f9b-b789-1704795b6669"
+  },
+  {
+    "id": "9cbbae6c-f73a-4965-9834-4e55d903ffb4",
+    "email": "e1757313114.67384@example.com",
+    "username": "tester1757313114.67384",
+    "password": "pass2",
+    "avatar": "",
+    "energy": 100,
+    "streak": 0,
+    "inventory": [],
+    "token": "463d0e81-cc0d-4e54-a36b-9e09d1a00893"
+  },
+  {
+    "id": "e66ffdaf-6fd0-441b-a2ce-8006c20f1eaf",
+    "email": "e_test@example.com",
+    "username": "tester_manual",
+    "password": "pw",
+    "avatar": "",
+    "energy": 100,
+    "streak": 0,
+    "inventory": [],
+    "token": "b39728cc-27be-42d9-903f-8ccf88fb0e44"
+  },
+  {
+    "id": "61f75fde-0e69-483f-aee0-7def0adbd603",
+    "email": "iter_test_1757318066.68627@example.com",
+    "username": "iter_tester_1757318066.6872",
+    "password": "pass123",
+    "avatar": "",
+    "energy": 777,
+    "streak": 0,
+    "inventory": [],
+    "token": "48a21f52-defb-4504-9767-b8232b3c1932"
+  },
+  {
+    "id": "1437a2c8-3e8a-4857-b77b-b1ea07b90bc3",
+    "email": "iter_test_1757318098.72359@example.com",
+    "username": "iter_tester_1757318098.72359",
+    "password": "pass123",
+    "avatar": "",
+    "energy": 321,
+    "streak": 0,
+    "inventory": [],
+    "token": "ce544281-1068-4aee-8f0a-b154604619c5"
+  },
+  {
+    "id": "033c9498-396b-4eee-973f-f943a0c06d15",
+    "email": "tester@example.com",
+    "username": "tester",
+    "password": "pass",
+    "avatar": "",
+    "energy": 100,
+    "streak": 0,
+    "inventory": [],
+    "token": "55a6ecfa-047a-427e-a651-561c4d0e1fcc",
+    "workoutPlan": {
+      "dailyWorkouts": [
+        {
+          "alternativeWorkouts": [],
+          "completed": false,
+          "workouts": [],
+          "type": "rest",
+          "date": "2025-09-23",
+          "totalTime": "0 minutes"
+        }
+      ]
+    }
+  }
+]

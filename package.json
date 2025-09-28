@@ -1,0 +1,52 @@
+{
+  "name": "fitness-app",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently \"vite\" \"node src/server/authServer.js\"",
+    "build": "tsc && vite build",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "db:print": "node -e \"console.log(require('fs').readFileSync('sql/setup_db.sql','utf8'))\"",
+    "db:migrate": "node -e \"console.log(require('fs').readFileSync('sql/migrations/001_create_audit_logs_and_policies.sql','utf8'))\"",
+    "db:cleanup": "node scripts/run_cleanup.js",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.2.1",
+    "@supabase/supabase-js": "^2.57.4",
+    "bad-words": "^4.0.0",
+    "body-parser": "^2.2.0",
+    "canvas": "^3.1.2",
+    "canvas-confetti": "^1.9.3",
+    "cors": "^2.8.5",
+    "date-fns": "^2.30.0",
+    "dotenv": "^17.2.2",
+    "express": "^5.1.0",
+    "framer-motion": "^10.16.4",
+    "jsonwebtoken": "^9.0.2",
+    "leo-profanity": "^1.8.0",
+    "lucide-react": "^0.263.1",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.15.0",
+    "uuid": "^11.1.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.15",
+    "@types/react-dom": "^18.2.7",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "@vitejs/plugin-react": "^4.0.3",
+    "concurrently": "^8.2.2",
+    "eslint": "^8.45.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.4.3",
+    "typescript": "^5.0.2",
+    "vite": "^7.1.1"
+  },
+  "types": "src/types",
+  "typeRoots": [
+    "node_modules/@types"
+  ]
+}
