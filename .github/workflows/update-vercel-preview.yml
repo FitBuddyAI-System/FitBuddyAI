@@ -1,0 +1,93 @@
+name: Update README with latest Vercel preview
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 8 * * *' # daily at 08:00 UTC
+  push:
+    branches:
+      - development
+
+jobs:
+  fetch-and-update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Fetch Vercel deployments
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          VERCEL_TEAM_ID: ${{ secrets.VERCEL_TEAM_ID }}
+        run: |
+          echo "Fetching deployments from Vercel..."
+          API_URL="https://api.vercel.com/v6/deployments?projectId=${VERCEL_PROJECT_ID}&limit=100"
+          if [ -n "${VERCEL_TEAM_ID}" ]; then
+            API_URL="${API_URL}&teamId=${VERCEL_TEAM_ID}"
+          fi
+          curl -s -H "Authorization: Bearer ${VERCEL_TOKEN}" "${API_URL}" -o deployments.json
+
+      - name: Select latest preview for development and update README + badge JSON
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          node -e "
+          const fs = require('fs');
+          const raw = fs.readFileSync('deployments.json','utf8');
+          const obj = JSON.parse(raw || '{}');
+          const items = Array.isArray(obj.deployments) ? obj.deployments : (Array.isArray(obj) ? obj : []);
+          const candidates = items.filter(d => {
+            try{
+              const isPreview = d && (d.target === 'preview' || d.type === 'preview');
+              const meta = d.meta || {};
+              const branch = meta.githubCommitRef || meta.githubBranch || meta.branch || '';
+              const matchesBranch = branch === 'development' || (d && d.meta && (d.meta['githubCommitRef'] === 'development' || d.meta['githubBranch'] === 'development'));
+              return isPreview && matchesBranch;
+            }catch(e){ return false; }
+          });
+          if(!candidates.length){ console.log('No matching preview deployments found for branch development.'); process.exit(0); }
+          candidates.sort((a,b)=>{ const ta = a.created || a.createdAt || a.created_at || 0; const tb = b.created || b.createdAt || b.created_at || 0; return tb - ta; });
+          const dep = candidates[0];
+          const url = dep && dep.url ? (String(dep.url).startsWith('http') ? dep.url : 'https://' + dep.url) : null;
+          if(!url){ console.log('No URL found on selected deployment.'); process.exit(0); }
+          console.log('Selected deployment URL:', url);
+
+          // Create badge JSON consumed by shields.io dynamic JSON endpoint
+          const badgeJson = {
+            message: 'preview',
+            color: dep && dep.state === 'READY' ? 'brightgreen' : (dep && dep.state === 'ERROR' ? 'red' : 'orange'),
+            url: url
+          };
+          fs.mkdirSync('.github', { recursive: true });
+          fs.writeFileSync('.github/vercel-preview-badge.json', JSON.stringify(badgeJson, null, 2), 'utf8');
+          // Also write to public/ so the static site serves the JSON
+          fs.mkdirSync('public', { recursive: true });
+          fs.writeFileSync('public/vercel-preview-badge.json', JSON.stringify(badgeJson, null, 2), 'utf8');
+          console.log('Wrote .github/vercel-preview-badge.json and public/vercel-preview-badge.json');
+
+          // Replace README link target for the badge: find the first occurrence of the shields.io dynamic badge and update its link
+          const readmePath = 'README.md';
+          let readme = fs.readFileSync(readmePath,'utf8');
+          const badgeLinkRegex = /\(https:\/\/raw\.githubusercontent\.com\/[\w\-]+\/[\w\-]+\/[\w\-]+\/\.github\/vercel-preview-badge\.json\)\]\([^\)]*\)/;
+          // Build the new link target markdown (we'll keep the shield image but link to the preview URL)
+          const newLink = `(https://raw.githubusercontent.com/we09532/fitbuddy/development/.github/vercel-preview-badge.json)](${url})`;
+          if(readme.includes('.github/vercel-preview-badge.json')){
+            readme = readme.replace(/\)\]\([^\)]*\)/, newLink);
+            fs.writeFileSync(readmePath, readme, 'utf8');
+            console.log('Updated README link to the latest preview URL');
+          } else {
+            console.log('README does not contain the dynamic badge JSON link; no README link updated.');
+          }
+          "
+
+      - name: Commit README update
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add README.md .github/vercel-preview-badge.json public/vercel-preview-badge.json || true
+          git commit -m "chore(ci): update Vercel preview link and badge JSON" || echo 'no changes to commit'
+          # push back to development
+          git push origin HEAD:development || echo 'push failed'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

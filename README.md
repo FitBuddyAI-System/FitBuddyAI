@@ -78,6 +78,14 @@ FitBuddy is a comprehensive AI-powered fitness web application designed for busi
 - **Automatic action application** from AI responses
 - **Context-aware prompting** with user data integration
 
+## Latest Development Deployment
+
+You can link the latest preview deployment from Vercel here for quick access during development. The badge below is dynamic and reads its text/color from a JSON file in the repository; the automation updates that JSON and the link target.
+
+[![Vercel Preview](https://img.shields.io/dynamic/json?label=Vercel&query=%24.message&color=%24.color&url=https://raw.githubusercontent.com/we09532/fitbuddy/development/.github/vercel-preview-badge.json)](https://vercel.com/) <!-- The workflow will replace the link target with the latest preview URL -->
+
+To automatically update this badge and link with the most recent preview from the `development` branch, a GitHub Action queries the Vercel API, writes `.github/vercel-preview-badge.json` (containing `message` and `color`), and rewrites this link target. The repository already contains a starter workflow you can enable.
+
 ### Development Tools
 - **TypeScript** for compile-time type checking
 - **ESLint** for code quality enforcement
