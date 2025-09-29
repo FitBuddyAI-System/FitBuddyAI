@@ -1,0 +1,116 @@
+# Dependabot configuration for FitBuddy Enterprise Fitness Platform
+# Automatically manages dependency updates and security patches
+
+version: 2
+updates:
+  # Primary npm dependency updates
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "America/New_York"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "we09532"
+    assignees:
+      - "we09532"
+    target-branch: "development"
+    commit-message:
+      prefix: "deps"
+      prefix-development: "deps(dev)"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "automated"
+    
+    # Group related updates to reduce PR noise
+    groups:
+      react-ecosystem:
+        patterns:
+          - "react*"
+          - "@types/react*"
+      build-tools:
+        patterns:
+          - "vite*"
+          - "@vitejs/*"
+          - "typescript"
+          - "@types/node"
+      ai-services:
+        patterns:
+          - "@google/*"
+          - "google*"
+      database:
+        patterns:
+          - "@supabase/*"
+          - "supabase*"
+      auth-security:
+        patterns:
+          - "jsonwebtoken"
+          - "@types/jsonwebtoken"
+          - "jwt*"
+          - "crypto*"
+      ui-components:
+        patterns:
+          - "lucide-react"
+          - "date-fns"
+    
+    # Ignore specific packages that require manual testing
+    ignore:
+      - dependency-name: "node"
+        # Ignore Node.js updates (requires infrastructure planning)
+      - dependency-name: "@supabase/supabase-js"
+        # Major version updates need database migration planning
+        update-types: ["version-update:semver-major"]
+
+  # Security-focused updates (higher frequency)
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "daily"
+      time: "06:00"
+      timezone: "America/New_York"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "we09532"
+    assignees:
+      - "we09532"
+    target-branch: "development"
+    commit-message:
+      prefix: "security"
+      include: "scope"
+    labels:
+      - "security"
+      - "critical"
+      - "automated"
+    
+    # Only security updates for this configuration
+    allow:
+      - dependency-type: "direct"
+        update-type: "security"
+      - dependency-type: "indirect"
+        update-type: "security"
+
+  # Development dependencies (less frequent)
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+      day: 1
+      time: "10:00"
+      timezone: "America/New_York"
+    open-pull-requests-limit: 3
+    reviewers:
+      - "we09532"
+    target-branch: "development"
+    commit-message:
+      prefix: "deps(dev)"
+      include: "scope"
+    labels:
+      - "dev-dependencies"
+      - "automated"
+    
+    # Only development dependencies
+    allow:
+      - dependency-type: "development"
