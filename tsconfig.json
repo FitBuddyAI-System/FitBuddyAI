@@ -12,16 +12,17 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
-    "jsx": "react-jsx",    /* Linting */
+    "jsx": "react-jsx",
+    "baseUrl": ".",    /* Linting */
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    "paths": {
+      "canvas-confetti": ["./node_modules/canvas-confetti/dist/confetti.d.ts"]
+    }
   },
   "include": ["src", "src/types"],
-  "references": [{ "path": "./tsconfig.node.json" }],
-  "paths": {
-    "canvas-confetti": ["node_modules/canvas-confetti/dist/confetti.d.ts"]
-  }
+  "references": [{ "path": "./tsconfig.node.json" }]
 }
