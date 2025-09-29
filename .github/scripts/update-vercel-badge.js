@@ -38,18 +38,8 @@ function main() {
   fs.mkdirSync('public', { recursive: true });
   fs.writeFileSync('public/vercel-preview-badge.json', JSON.stringify(badgeJson, null, 2), 'utf8');
   console.log('Wrote .github/vercel-preview-badge.json and public/vercel-preview-badge.json');
-
-  // Update README link target
-  const readmePath = 'README.md';
-  let readme = fs.readFileSync(readmePath, 'utf8');
-  const newLink = '(https://raw.githubusercontent.com/we09532/fitbuddy/development/.github/vercel-preview-badge.json)](' + url + ')';
-  if (readme.includes('.github/vercel-preview-badge.json')) {
-    readme = readme.replace(/\)\]\([^\)]*\)/, newLink);
-    fs.writeFileSync(readmePath, readme, 'utf8');
-    console.log('Updated README link to the latest preview URL');
-  } else {
-    console.log('README does not contain the dynamic badge JSON link; no README link updated.');
-  }
+  // Note: this script no longer edits README.md. To change the preview target manually,
+  // edit `public/vercel-preview-badge.json` (url field) or update the markdown link in README.md.
 }
 
 main();
