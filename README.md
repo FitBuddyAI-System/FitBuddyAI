@@ -80,16 +80,13 @@ FitBuddy is a comprehensive AI-powered fitness web application designed for busi
 
 ## Latest Development Deployment
 
-You can link the latest preview deployment from Vercel here for quick access during development. The badge below is dynamic and reads its text/color from a JSON file in the repository; the automation updates that JSON and the link target.
+You can link the latest preview deployment from Vercel here for quick access during development.
 
-[![Vercel Preview](https://img.shields.io/dynamic/json?label=Vercel&query=%24.message&color=%24.color&url=https://raw.githubusercontent.com/we09532/fitbuddy/development/.github/vercel-preview-badge.json)](https://vercel.com/) <!-- To change the preview target URL manually, edit `public/vercel-preview-badge.json` or update the markdown link target below -->
+[![Vercel Preview](https://badgen.net/badge/Vercel/View%20Latest%20Development%20Deployment/cyan?icon=vercel)](fitbuddy-git-development-william-ericksons-projects.vercel.app) <!-- To change the preview target URL manually, edit `public/vercel-preview-badge.json` or update the markdown link target below -->
 
 If automation is failing or you prefer manual control, change the preview link yourself:
 
-- Edit `public/vercel-preview-badge.json` and set the `url` field to your preview URL (e.g. `https://abc-xyz.vercel.app`). The badge text and color can be adjusted via `message` and `color`.
-- Or edit the markdown link target directly by replacing the URL in the markdown immediately after the badge image.
-
-The repository contains an optional workflow that can write the JSON automatically; it no longer attempts to edit `README.md` to avoid push/merge conflicts.
+- Edit the markdown link target directly by replacing the URL in the markdown immediately after the badge image in readme.md.
 
 ### Development Tools
 - **TypeScript** for compile-time type checking
