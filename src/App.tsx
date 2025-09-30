@@ -2,6 +2,7 @@ import WelcomePage from './components/WelcomePage';
 import Questionnaire from './components/Questionnaire';
 import { useNavigate } from 'react-router-dom';
 import WorkoutCalendar from './components/WorkoutCalendar';
+import AgreementGuard from './components/AgreementGuard';
 import { useState, useEffect } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import Header from './components/Header';
@@ -172,19 +173,21 @@ function App() {
         <Route 
           path="/calendar" 
           element={
-            <WorkoutCalendar 
-              key={planVersion}
-              workoutPlan={workoutPlan}
-              userData={userData}
-              onUpdatePlan={(plan) => { setWorkoutPlan(plan); setPlanVersion(v => v + 1); }}
-            />
+            <AgreementGuard userData={userData}>
+              <WorkoutCalendar 
+                key={planVersion}
+                workoutPlan={workoutPlan}
+                userData={userData}
+                onUpdatePlan={(plan) => { setWorkoutPlan(plan); setPlanVersion(v => v + 1); }}
+              />
+            </AgreementGuard>
           } 
         />
         <Route 
           path="/shop"
           element={<ShopPage user={userData || { energy: 0, inventory: [] }} onPurchase={handleShopPurchase} />} 
         />
-  <Route path="/chat" element={<GeminiChatPage userData={userData} />} />
+  <Route path="/chat" element={<AgreementGuard userData={userData}><GeminiChatPage userData={userData} /></AgreementGuard>} />
   <Route path="/admin" element={<AdminPage />} />
   <Route path="/help" element={<HelpCenter />} />
   <Route path="/terms" element={<TermsPage />} />
