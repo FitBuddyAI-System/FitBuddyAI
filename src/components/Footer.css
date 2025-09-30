@@ -1,11 +1,11 @@
 .fb-footer{background:linear-gradient(135deg,#f0fbf6 0%,#e8f5ff 100%);border-top:1px solid rgba(0,0,0,0.04);padding:28px 12px;color:var(--text-medium)}
-/* Place footer under high-priority overlays (intro uses z-index:9999), and pin to bottom */
-.fb-footer{position:fixed;left:0;right:0;bottom:0;z-index:100;padding-left:12px;padding-right:12px}
+/* Footer participates in normal document flow so pages can control layout (sticky behavior handled by page containers) */
+.fb-footer{position:relative;padding-left:12px;padding-right:12px}
 .fb-footer-inner{max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
 
 /* Avoid reserving global space for the footer; instead apply padding on pages that include it. */
 /* Add a page-scoped safe area so content isn't obscured by the fixed footer when present */
-.welcome-page { padding-bottom: 140px; }
+/* (moved welcome-page layout rules into WelcomePage.css) */
 
 /* While the intro overlay is active (visible), hide the footer so it doesn't flash
   The overlay is rendered before the footer inside the same parent, so the general sibling selector works. */

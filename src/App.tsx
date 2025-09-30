@@ -28,6 +28,7 @@ import RickrollPage from './components/RickrollPage';
 import AgreementBanner from './components/AgreementBanner';
 import TermsPage from './components/TermsPage';
 import PrivacyPage from './components/PrivacyPage';
+import HelpCenter from './components/HelpCenter';
 
 
 
@@ -185,6 +186,7 @@ function App() {
         />
   <Route path="/chat" element={<GeminiChatPage userData={userData} />} />
   <Route path="/admin" element={<AdminPage />} />
+  <Route path="/help" element={<HelpCenter />} />
   <Route path="/terms" element={<TermsPage />} />
   <Route path="/privacy" element={<PrivacyPage />} />
         <Route path="/signin" element={<SignInPage />} />

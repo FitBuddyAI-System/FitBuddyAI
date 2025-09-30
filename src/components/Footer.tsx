@@ -29,7 +29,7 @@ export default function Footer() {
           <div className="fb-col">
             <h5>Support</h5>
             <a href="mailto:support@fitbuddy.example">support@fitbuddy.example</a>
-            <a href="#">Help Center</a>
+            <Link to="/help">Help Center</Link>
           </div>
         </div>
 

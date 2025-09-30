@@ -1,0 +1,54 @@
+.help-page .terms-full-inner { max-width: 980px; margin: 0 auto; padding: 24px; }
+
+/* Typography & base layout */
+.help-page { font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; }
+.help-page h2 { font-size: 28px; margin-bottom: 18px; color: var(--text-dark); }
+.help-page h3 { font-size: 20px; margin: 6px 0 8px; color: var(--text-dark); }
+
+/* Cards layout */
+.help-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px; margin-bottom: 22px; }
+.help-card { display: flex; gap: 14px; align-items: flex-start; padding: 18px; background: #fff; border-radius: 12px; box-shadow: 0 6px 20px rgba(16,24,32,0.06); transition: transform 160ms ease, box-shadow 160ms ease; }
+.help-card:hover { transform: translateY(-4px); box-shadow: 0 14px 40px rgba(16,24,32,0.08); }
+.help-card-icon { width: 48px; height: 48px; border-radius: 10px; background: linear-gradient(135deg,var(--color-primary, #1ecb7b), var(--color-accent, #1e90cb)); display:flex;align-items:center;justify-content:center;color:white; flex: 0 0 48px; }
+.help-card p { margin:0; color:var(--text-medium); font-size:15px; line-height:1.6; }
+
+/* Support block */
+.help-support { display:flex; flex-direction:column; gap:12px; align-items:flex-start; margin-top:8px; padding: 18px 0; }
+.help-contact { display:inline-block; padding:12px 20px; border-radius:12px; background:var(--color-primary, #1ecb7b); color:#fff; text-decoration:none; font-weight:700; box-shadow: 0 8px 24px rgba(30,203,123,0.12); }
+.help-contact:hover { filter:brightness(0.95); }
+
+/* Accordion styles */
+.accordion { margin-top: 8px; display:flex; flex-direction:column; gap:12px; }
+.accordion-item { background: #fff; border-radius: 12px; box-shadow: 0 6px 18px rgba(16,24,32,0.04); overflow:hidden; }
+.accordion-item.open { box-shadow: 0 14px 40px rgba(16,24,32,0.08); }
+.accordion-card { display:flex; gap:14px; align-items:flex-start; padding:12px; }
+.faq-icon { width:48px; height:48px; border-radius:10px; background: linear-gradient(135deg,var(--color-primary, #1ecb7b), var(--color-accent, #1e90cb)); display:flex;align-items:center;justify-content:center;color:white; flex: 0 0 48px; }
+.accordion-button { width:100%; text-align:left; background:transparent; border:0; padding:6px 0; display:flex; align-items:center; gap:12px; font-size:16px; font-weight:700; cursor:pointer; }
+.accordion-button:focus { outline: 3px solid rgba(30,203,123,0.18); border-radius:8px; }
+.accordion-button .chev { margin-left:auto; transition: transform 180ms ease; color:var(--text-light); }
+.accordion-item.open .accordion-button .chev { transform: rotate(-180deg); }
+.accordion-panel { padding: 8px 0 0 0; color:var(--text-medium); font-size:15px; line-height:1.6; }
+.accordion-main { flex:1; }
+
+/* Responsive */
+@media (max-width: 768px) {
+  .help-page .terms-full-inner { padding: 14px; }
+  .help-card { padding: 14px; }
+  .accordion-button { padding: 12px 14px; }
+  .help-card-icon { width:40px; height:40px; }
+}
+
+/* Modal styles */
+.hc-modal-backdrop { position:fixed; inset:0; background: rgba(6,10,15,0.45); display:flex; align-items:center; justify-content:center; z-index:1200; padding:20px; }
+.hc-modal { background: white; width:100%; max-width:720px; border-radius:12px; box-shadow: 0 30px 80px rgba(10,20,30,0.2); overflow:hidden; }
+.hc-modal-header { display:flex; align-items:center; justify-content:space-between; padding:18px 20px; border-bottom:1px solid rgba(0,0,0,0.04); }
+.hc-close { background:transparent; border:0; font-size:20px; cursor:pointer; }
+.hc-form { padding:18px 20px; display:flex; flex-direction:column; gap:12px; }
+.hc-form label { display:flex; flex-direction:column; gap:6px; font-size:14px; color:var(--text-dark); }
+.hc-form input, .hc-form textarea { padding:10px 12px; border-radius:8px; border:1px solid rgba(0,0,0,0.08); font-size:14px; }
+.hc-actions { display:flex; gap:10px; justify-content:flex-end; padding-top:6px; }
+.hc-modal .btn { padding:10px 16px; border-radius:10px; }
+
+@media (max-width: 520px) {
+  .hc-modal { max-width: 100%; }
+}
