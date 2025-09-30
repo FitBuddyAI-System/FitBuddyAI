@@ -7,9 +7,13 @@
 /* Add a page-scoped safe area so content isn't obscured by the fixed footer when present */
 /* (moved welcome-page layout rules into WelcomePage.css) */
 
-/* While the intro overlay is active (visible), hide the footer so it doesn't flash
-  The overlay is rendered before the footer inside the same parent, so the general sibling selector works. */
-.intro-bubbles-overlay:not(.hide) ~ .fb-footer { display: none; }
+/* Previously we hid the footer while the intro overlay was visible using a
+   general sibling selector. That approach is fragile because it depends on
+   DOM ordering and can behave differently in production builds/hosting.
+   The overlay already covers the viewport with a high z-index, so hiding
+   the footer here is unnecessary and can cause the footer to be missing on
+   some deployments. Remove the sibling rule to avoid environment-specific
+   behavior; the overlay will visually cover the footer while active. */
 .fb-brand{display:flex;align-items:center;gap:12px}
 .fb-logo{width:48px;height:48px;border-radius:12px;background:linear-gradient(135deg,var(--color-primary),var(--color-accent));display:flex;align-items:center;justify-content:center;color:#fff}
 .fb-brand h4{margin:0}
