@@ -11,4 +11,8 @@ if (!supabaseUrl || !supabaseAnonKey) {
 	throw new Error('Supabase URL and Key are required.');
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Do NOT persist Supabase sessions into localStorage. We want auth tokens
+// only in sessionStorage (ephemeral) and never written to localStorage.
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+	auth: { persistSession: false }
+});

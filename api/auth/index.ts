@@ -52,19 +52,57 @@ export default async function handler(req: any, res: any) {
     if (action === 'signup') {
       const { email, username, password } = req.body as { email: string; username: string; password: string };
       if (!email || !username || !password) return res.status(400).json({ message: 'All fields are required.' });
-
-      const { data: existing } = await supabase.from('app_users').select('id,email').eq('email', email).limit(1).maybeSingle();
-      if (existing) return res.status(409).json({ message: 'Email already exists.' });
+      // Normalize email for equality checks (case-insensitive)
+      const normalizedEmail = String(email).trim().toLowerCase();
+      // Quick existence check to return a friendly message without attempting insert
+      try {
+        const { data: existing } = await supabase.from('app_users').select('id,email').ilike('email', normalizedEmail).limit(1).maybeSingle();
+        if (existing) return res.status(409).json({ message: 'Email already exists.' });
+      } catch (e) {
+        // ignore and proceed to insert; DB unique index will enforce constraint
+      }
 
       const userId = uuidv4();
-      const userRow = { id: userId, email, username, password, avatar: '', energy: 100, streak: 0, inventory: [] };
+      const userRow = { id: userId, email: normalizedEmail, username, password, avatar: '', energy: 100, streak: 0, inventory: [] };
       const { error } = await supabase.from('app_users').insert(userRow);
       if (error) {
+        // Supabase returns Postgres error details; detect unique violation (23505) or text mentioning 'unique'/'duplicate'
+        const pgCode = (error as any)?.code || (error as any)?.details || null;
+        const msg = (error as any)?.message || String(error);
         console.error('Supabase insert error:', error);
+        if (String(msg).toLowerCase().includes('unique') || String(pgCode) === '23505') {
+          return res.status(409).json({ message: 'Email already exists.' });
+        }
         return res.status(500).json({ message: 'Failed to create user.' });
       }
       const safeUser = { id: userId, email, username, avatar: '', energy: 100, streak: 0, inventory: [], role: 'basic_member' };
       return res.status(201).json({ user: safeUser });
+    }
+
+    // Create profile for an existing auth user (used after Supabase auth.signUp client flow)
+    if (action === 'create_profile') {
+      const { id, email, username } = req.body as { id: string; email: string; username: string };
+      if (!id || !email || !username) return res.status(400).json({ message: 'id, email and username required.' });
+      try {
+        // Insert into app_users with provided id (id comes from Supabase auth user)
+        const userRow = { id, email: String(email).trim().toLowerCase(), username, avatar: '', energy: 100, streak: 0, inventory: [] };
+        const { error: uErr } = await supabase.from('app_users').upsert(userRow, { onConflict: 'id' as any });
+        if (uErr) console.warn('[api/auth/create_profile] app_users upsert error', uErr);
+
+        // Insert initial user_data row (json payloads), ignore error but log
+        try {
+          const userDataRow: any = { id, payload: {}, chat_history: [], accepted_privacy: false, accepted_terms: false, updated_at: new Date().toISOString() };
+          const { error: dErr } = await supabase.from('user_data').upsert(userDataRow, { onConflict: 'id' as any });
+          if (dErr) console.warn('[api/auth/create_profile] user_data upsert error', dErr);
+        } catch (inner) {
+          console.warn('[api/auth/create_profile] failed to upsert user_data', inner);
+        }
+
+        return res.status(200).json({ ok: true });
+      } catch (e) {
+        console.error('[api/auth/create_profile] error', e);
+        return res.status(500).json({ message: 'Failed to create profile.' });
+      }
     }
 
     return res.status(404).json({ message: 'Not found' });

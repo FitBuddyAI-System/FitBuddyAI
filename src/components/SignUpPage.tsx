@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './SignUpPage.css';
+import { signUp } from '../services/authService';
+import { supabase } from '../services/supabaseClient';
+import { saveUserData } from '../services/localStorage';
 
 const SignUpPage: React.FC = () => {
   const navigate = useNavigate();
@@ -21,32 +24,47 @@ const SignUpPage: React.FC = () => {
     setLoading(true);
     try {
       const normalizedEmail = String(email).trim().toLowerCase();
-      const res = await fetch('/api/auth/signup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: normalizedEmail, username, password })
-      });
-      const text = await res.text();
-      let data = null;
-      if (text) {
-        try {
-          data = JSON.parse(text);
-        } catch {
-          throw new Error('Server returned invalid JSON: ' + text);
+      // Prefer Supabase auth if client is configured
+      const useSupabase = Boolean(import.meta.env.VITE_LOCAL_USE_SUPABASE || import.meta.env.VITE_SUPABASE_URL);
+      if (useSupabase && supabase) {
+        const result = await supabase.auth.signUp({ email: normalizedEmail, password, options: { data: { username, energy: 100 } } });
+        if (result.error) {
+          // Supabase returns errors for duplicate emails; map to user-friendly message
+          const msg = result.error.message || String(result.error);
+          if (/duplicate|already exists|user exists|email exists/i.test(msg)) {
+            throw new Error('An account with that email already exists. Please sign in or use a different email.');
+          }
+          throw new Error(msg || 'Sign up failed');
         }
-      }
-      if (!res.ok) {
-        let message = 'Sign up failed.';
-        if (data && data.message) {
-          message = data.message;
-        } else if (!text) {
-          message = 'Sign up failed. No response from server. Is the server running?';
+        // If Supabase returned a session, persist token so attachAuthHeaders can use it
+        const token = result.data?.session?.access_token ?? null;
+        const user = result.data?.user ?? null;
+        if (user) {
+          const toSave = { data: { id: user.id, email: user.email, username: (user.user_metadata && user.user_metadata.username) || username, energy: (user.user_metadata && user.user_metadata.energy) || 100 }, token };
+          try { sessionStorage.removeItem('fitbuddy_no_auto_restore'); } catch {}
+          try { localStorage.removeItem('fitbuddy_no_auto_restore'); } catch {}
+          try { saveUserData(toSave, { skipBackup: true, forceSave: true } as any); } catch { /* ignore */ }
+        }
+        // If session/token exists navigate directly; otherwise show the "check your email" screen
+        if (token) {
+          navigate('/profile');
         } else {
-          message = `Sign up failed. Raw response: ${text}`;
+          // Show verify page with email query so the user sees which email to check
+          navigate(`/verify-email?email=${encodeURIComponent(normalizedEmail)}`);
         }
-        throw new Error(message);
+      } else {
+        try {
+          await signUp(normalizedEmail, username, password);
+          navigate('/signin');
+        } catch (e: any) {
+          const m = String(e?.message || e || '');
+          if (/email already exists|duplicate|23505/i.test(m)) {
+            setError('An account with that email already exists. Please sign in or use a different email.');
+          } else {
+            setError(m || 'Sign up failed');
+          }
+        }
       }
-      navigate('/signin');
     } catch (err: any) {
       setError(err.message);
     } finally {

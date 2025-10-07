@@ -57,7 +57,31 @@ export default async function handler(req: any, res: any) {
       if (!userId) return res.status(400).json({ error: 'userId required' });
       const safePayload = typeof payload === 'string' ? JSON.parse(payload) : payload || {};
       const sanitizedPayload = sanitizePayload(safePayload) || {};
-      if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+      if (!supabase) {
+        // Filesystem fallback for development: persist to server/user_data/<userId>.json
+        try {
+          const filePath = path.join(process.cwd(), 'server', 'user_data', `${userId}.json`);
+          let existing: any = {};
+          if (fs.existsSync(filePath)) {
+            try { existing = JSON.parse(fs.readFileSync(filePath, 'utf8')); } catch (e) { existing = {}; }
+          }
+          const toWrite: any = { ...existing };
+          if (sanitizedPayload.fitbuddy_workout_plan !== undefined) toWrite.fitbuddy_workout_plan = typeof sanitizedPayload.fitbuddy_workout_plan === 'string' ? sanitizedPayload.fitbuddy_workout_plan : JSON.stringify(sanitizedPayload.fitbuddy_workout_plan);
+          if (sanitizedPayload.fitbuddy_questionnaire_progress !== undefined) toWrite.fitbuddy_questionnaire_progress = typeof sanitizedPayload.fitbuddy_questionnaire_progress === 'string' ? sanitizedPayload.fitbuddy_questionnaire_progress : JSON.stringify(sanitizedPayload.fitbuddy_questionnaire_progress);
+          if (sanitizedPayload.fitbuddy_assessment_data !== undefined) toWrite.fitbuddy_assessment_data = typeof sanitizedPayload.fitbuddy_assessment_data === 'string' ? sanitizedPayload.fitbuddy_assessment_data : JSON.stringify(sanitizedPayload.fitbuddy_assessment_data);
+          if (sanitizedPayload.accepted_terms !== undefined) toWrite.accepted_terms = sanitizedPayload.accepted_terms;
+          if (sanitizedPayload.accepted_privacy !== undefined) toWrite.accepted_privacy = sanitizedPayload.accepted_privacy;
+          if (sanitizedPayload.chat_history !== undefined) {
+            try { toWrite.chat_history = typeof sanitizedPayload.chat_history === 'string' ? sanitizedPayload.chat_history : JSON.stringify(sanitizedPayload.chat_history); } catch { toWrite.chat_history = sanitizedPayload.chat_history; }
+          }
+          fs.writeFileSync(filePath, JSON.stringify(toWrite, null, 2), 'utf8');
+          try { res.setHeader('x-userdata-source', 'filesystem'); } catch (e) {}
+          return res.status(200).json({ ok: true, stored: sanitizedPayload, chat_history: sanitizedPayload.chat_history ?? null });
+        } catch (e: any) {
+          console.error('[api/userdata] filesystem fallback write failed:', e);
+          return res.status(500).json({ error: e?.message || 'Filesystem write failed' });
+        }
+      }
       try {
           // Ensure chat_history is stored as an array if provided as JSON string
           if (sanitizedPayload && typeof sanitizedPayload.chat_history === 'string') {
@@ -138,9 +162,11 @@ export default async function handler(req: any, res: any) {
         if (!ok) {
           try {
             const jwtSecret = process.env.JWT_SECRET || 'dev_secret_change_me';
-            const payload: any = jwt.verify(tokenToVerify, jwtSecret);
-            if (payload && payload.role === 'admin') ok = true;
-            if (ok) diag.verifiedViaJWT = true;
+            if (tokenToVerify) {
+              const payload: any = jwt.verify(tokenToVerify, jwtSecret);
+              if (payload && payload.role === 'admin') ok = true;
+              if (ok) diag.verifiedViaJWT = true;
+            }
           } catch (e) {}
         }
         if (!ok) {
@@ -212,10 +238,12 @@ export default async function handler(req: any, res: any) {
               if (!allowSelf) {
                 try {
                   const jwtSecret = process.env.JWT_SECRET || 'dev_secret_change_me';
-                  const payloadAny: any = jwt.verify(tokenToVerify, jwtSecret);
-                  const tokenUid = payloadAny?.sub || payloadAny?.id || null;
-                  if (tokenUid && body.userId && String(tokenUid) === String(body.userId)) {
-                    allowSelf = true;
+                  if (tokenToVerify) {
+                    const payloadAny: any = jwt.verify(tokenToVerify, jwtSecret);
+                    const tokenUid = payloadAny?.sub || payloadAny?.id || null;
+                    if (tokenUid && body.userId && String(tokenUid) === String(body.userId)) {
+                      allowSelf = true;
+                    }
                   }
                 } catch (e) {}
               }
@@ -294,6 +322,14 @@ export default async function handler(req: any, res: any) {
             if (payloadToStore.fitbuddy_workout_plan !== undefined) toWrite.fitbuddy_workout_plan = typeof payloadToStore.fitbuddy_workout_plan === 'string' ? payloadToStore.fitbuddy_workout_plan : JSON.stringify(payloadToStore.fitbuddy_workout_plan);
             if (payloadToStore.fitbuddy_questionnaire_progress !== undefined) toWrite.fitbuddy_questionnaire_progress = typeof payloadToStore.fitbuddy_questionnaire_progress === 'string' ? payloadToStore.fitbuddy_questionnaire_progress : JSON.stringify(payloadToStore.fitbuddy_questionnaire_progress);
             if (payloadToStore.fitbuddy_assessment_data !== undefined) toWrite.fitbuddy_assessment_data = typeof payloadToStore.fitbuddy_assessment_data === 'string' ? payloadToStore.fitbuddy_assessment_data : JSON.stringify(payloadToStore.fitbuddy_assessment_data);
+            // Persist chat_history explicitly when present (store as JSON string)
+            if (payloadToStore.chat_history !== undefined) {
+              try {
+                toWrite.chat_history = typeof payloadToStore.chat_history === 'string' ? payloadToStore.chat_history : JSON.stringify(payloadToStore.chat_history);
+              } catch (e) {
+                toWrite.chat_history = payloadToStore.chat_history;
+              }
+            }
             // Write back to filesystem
             fs.writeFileSync(filePath, JSON.stringify(toWrite, null, 2), 'utf8');
             console.log('[api/userdata] admin wrote payload to filesystem fallback for', userId);
@@ -345,13 +381,17 @@ export default async function handler(req: any, res: any) {
           try {
             const filePath = path.join(process.cwd(), 'server', 'user_data', `${userId}.json`);
             if (fs.existsSync(filePath)) {
-              const raw = fs.readFileSync(filePath, 'utf8');
-              const parsed = JSON.parse(raw);
-              resultPayload = {
-                fitbuddy_questionnaire_progress: parsed.fitbuddy_questionnaire_progress ? JSON.parse(parsed.fitbuddy_questionnaire_progress) : null,
-                fitbuddy_workout_plan: parsed.fitbuddy_workout_plan ? JSON.parse(parsed.fitbuddy_workout_plan) : null,
-                fitbuddy_assessment_data: parsed.fitbuddy_assessment_data ? JSON.parse(parsed.fitbuddy_assessment_data) : null
-              };
+                const raw = fs.readFileSync(filePath, 'utf8');
+                const parsed = JSON.parse(raw);
+                resultPayload = {
+                  fitbuddy_questionnaire_progress: parsed.fitbuddy_questionnaire_progress ? JSON.parse(parsed.fitbuddy_questionnaire_progress) : null,
+                  fitbuddy_workout_plan: parsed.fitbuddy_workout_plan ? JSON.parse(parsed.fitbuddy_workout_plan) : null,
+                  fitbuddy_assessment_data: parsed.fitbuddy_assessment_data ? JSON.parse(parsed.fitbuddy_assessment_data) : null,
+                  // include chat_history when present (stored as JSON string)
+                  chat_history: parsed.chat_history ? ( (() => { try { return JSON.parse(parsed.chat_history); } catch { return parsed.chat_history; } })() ) : null,
+                  accepted_terms: parsed.accepted_terms !== undefined ? parsed.accepted_terms : null,
+                  accepted_privacy: parsed.accepted_privacy !== undefined ? parsed.accepted_privacy : null
+                };
               console.log('[api/userdata] admin filesystem fallback loaded payload for', userId);
             }
           } catch (e) {

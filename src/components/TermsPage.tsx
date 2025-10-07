@@ -29,11 +29,15 @@ export default function TermsPage() {
     // intentionally do not redirect; banner will hide when both accepted
     // Immediately persist acceptance to server if signed in
     try {
-      const raw = localStorage.getItem('fitbuddy_user_data');
-      const userId = raw ? (JSON.parse(raw).data?.id || null) : null;
-      if (userId) {
-        import('../services/apiAuth').then(m => m.attachAuthHeaders({ method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId, accepted_terms: true }) })).then(init => fetch('/api/userdata/save', init)).catch(()=>{});
-      }
+      import('../services/localStorage').then(m => {
+        try {
+          const parsed = m.loadUserData();
+          const userId = parsed?.id;
+          if (userId) {
+            import('../services/apiAuth').then(m2 => m2.attachAuthHeaders({ method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId, accepted_terms: true }) })).then(init => fetch('/api/userdata/save', init)).catch(()=>{});
+          }
+        } catch (e) {}
+      }).catch(()=>{});
     } catch (e) {}
   };
 

@@ -19,20 +19,16 @@ const Header: React.FC<HeaderProps> = ({ profileVersion, userData }) => {
   const [tryOnAvatar, setTryOnAvatar] = React.useState<string | null>(null);
 
   React.useEffect(() => {
-    const updateUser = () => {
+      const updateUser = () => {
       // Prefer explicit prop from App when available
       if (userData) {
         setCurrentUser(userData);
         return;
       }
-      const raw = localStorage.getItem('fitbuddy_user_data');
-      if (!raw) {
-        setCurrentUser(null);
-        return;
-      }
       try {
-        const parsed = JSON.parse(raw);
-        setCurrentUser(parsed?.data || null);
+        const { loadUserData } = require('../services/localStorage');
+        const parsed = loadUserData();
+        setCurrentUser(parsed || null);
       } catch {
         setCurrentUser(null);
       }
@@ -52,7 +48,12 @@ const Header: React.FC<HeaderProps> = ({ profileVersion, userData }) => {
       } catch {}
     };
     window.addEventListener('shop-try-on', onTry as EventListener);
-    const interval = setInterval(updateUser, 1000);
+    // initial run then throttle; avoid polling while page hidden
+    updateUser();
+    const interval = setInterval(() => {
+      if (typeof document !== 'undefined' && document.hidden) return;
+      updateUser();
+    }, 15000);
     return () => {
       window.removeEventListener('storage', updateUser);
   window.removeEventListener('shop-try-on', onTry as EventListener);
@@ -62,12 +63,9 @@ const Header: React.FC<HeaderProps> = ({ profileVersion, userData }) => {
 
   // Determine admin status from currentUser or fallback to localStorage / JWT payload
   const isAdmin = React.useMemo(() => {
-    try {
+      try {
       const candidate = currentUser || (() => {
-        const raw = localStorage.getItem('fitbuddy_user_data');
-        if (!raw) return null;
-        const parsed = JSON.parse(raw);
-        return parsed?.data || null;
+        try { const { loadUserData } = require('../services/localStorage'); return loadUserData() || null; } catch { return null; }
       })();
       if (!candidate) return false;
       // Direct role on user object
@@ -99,7 +97,7 @@ const Header: React.FC<HeaderProps> = ({ profileVersion, userData }) => {
       if (!currentUser) return false;
       if (currentUser.id) return true;
       if (currentUser.sub) return true;
-      if (currentUser.token || currentUser.access_token || currentUser.jwt) return true;
+      // Tokens are now stored in sessionStorage via getAuthToken
       return false;
     } catch { return false; }
   }, [currentUser]);
@@ -251,15 +249,11 @@ const Header: React.FC<HeaderProps> = ({ profileVersion, userData }) => {
                           try { localStorage.setItem('fitbuddy_no_auto_restore', '1'); } catch {}
                           try { sessionStorage.setItem('fitbuddy_no_auto_restore', '1'); } catch {}
                           try {
-                            const raw = localStorage.getItem('fitbuddy_user_data');
-                            const parsed = raw ? JSON.parse(raw) : null;
-                            const userId = parsed?.id || parsed?.sub || null;
+                            const { loadUserData } = await import('../services/localStorage');
+                            const parsed = loadUserData();
+                            const userId = parsed?.id || parsed?.sub || parsed?.data?.id || null;
                             if (userId) {
-                              // give the backup up to ~2 seconds to complete
-                              const p = (async () => {
-                                try { await backupAndDeleteSensitive(String(userId)); } catch {}
-                                return;
-                              })();
+                              const p = (async () => { try { await backupAndDeleteSensitive(String(userId)); } catch {} })();
                               const timeout = new Promise((res) => setTimeout(res, 2000));
                               await Promise.race([p, timeout]);
                             }

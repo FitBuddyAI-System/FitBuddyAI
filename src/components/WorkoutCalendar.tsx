@@ -900,7 +900,7 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
     setWorkoutPreferences(prev => ({ ...prev, [key]: value }));
   };
 
-  const handleClearCalendar = () => {
+  const handleClearCalendar = async () => {
     if (!workoutPlan) return;
     // Collect all current dates (useful if we want to reuse deletion flow/UI)
     const allDates = workoutPlan.dailyWorkouts.map(w => w.date);
@@ -930,14 +930,12 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
 
     // If user is signed in, also overwrite their server backup immediately
     try {
-      const rawUser = localStorage.getItem('fitbuddy_user_data');
-      if (rawUser) {
-        const parsed = JSON.parse(rawUser);
-        const userId = parsed?.data?.id;
-        if (userId) {
-          // backup should run async but we don't block UI
-          backupUserDataToServer(userId).catch(() => {});
-        }
+      const { loadUserData } = await import('../services/localStorage');
+      const parsed = loadUserData();
+      const userId = parsed?.id;
+      if (userId) {
+        // backup should run async but we don't block UI
+        backupUserDataToServer(userId).catch(() => {});
       }
     } catch (err) { /* ignore */ }
 

@@ -16,6 +16,9 @@ const STORAGE_KEYS = {
   ASSESSMENT_DATA: 'fitbuddy_assessment_data',
   WORKOUT_PLAN: 'fitbuddy_workout_plan'
 };
+const AUTH_KEYS = {
+  TOKEN: 'fitbuddy_token'
+};
 // Auto-backup: import cloud backup helper and provide a debounced scheduler
 import { backupUserDataToServer } from './cloudBackupService';
 
@@ -47,7 +50,8 @@ const BACKUP_DEBOUNCE_MS = 800; // wait briefly to batch rapid updates
 
 function scheduleBackup() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEYS.USER_DATA);
+    // Read unified user payload from sessionStorage (we avoid storing sensitive user payload in localStorage)
+    const raw = sessionStorage.getItem(STORAGE_KEYS.USER_DATA);
     const userId = raw ? (JSON.parse(raw).data?.id || null) : null;
     if (!userId) return; // no signed-in user yet
     if (backupTimeout) {
@@ -155,17 +159,37 @@ export const clearQuestionnaireProgress = (): void => {
 // User Data
 export const saveUserData = (userData: any, opts?: { skipBackup?: boolean }): void => {
   try {
+    // If an explicit guard was set (e.g., during sign-out), avoid re-saving user data to localStorage.
+    try {
+      const guard = sessionStorage.getItem('fitbuddy_no_auto_restore') || localStorage.getItem('fitbuddy_no_auto_restore');
+      if (guard && !(opts && (opts as any).forceSave)) {
+        // Skip saving while guard is present to avoid races where background tasks re-persist user data during sign-out.
+        return;
+      }
+    } catch (e) {
+      // ignore errors reading storage
+    }
     // Accept either a raw user object or a wrapper { data, token }
     let toStore: any = {};
     if (userData && typeof userData === 'object' && ('data' in userData || 'token' in userData)) {
-      // Already wrapped
+      // Already wrapped: only persist the non-sensitive user profile into localStorage
       toStore.data = userData.data || null;
-      if ('token' in userData) toStore.token = userData.token ?? null;
+      // If a token was provided, move it into sessionStorage via helper (do not persist token into localStorage)
+      if ('token' in userData && userData.token) {
+        try { sessionStorage.setItem(AUTH_KEYS.TOKEN, String(userData.token)); } catch {};
+      }
     } else {
       toStore.data = userData || null;
     }
     const payload = { ...toStore, timestamp: Date.now() };
-    localStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(payload));
+    // Persist unified user payload in sessionStorage only (do not store sensitive user payload in localStorage)
+    try { sessionStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(payload)); } catch {}
+    // Broadcast to other tabs so they can sync via BroadcastChannel
+    try {
+      const bc = new BroadcastChannel('fitbuddy');
+      bc.postMessage({ type: 'user-update', timestamp: Date.now() });
+      bc.close();
+    } catch (e) {}
     // When user signs in / user data changes, trigger backup of any existing keys
     if (!opts || !opts.skipBackup) scheduleBackup();
     // Clear the "no auto restore" guard when a user explicitly signs in (cross-tab)
@@ -178,7 +202,7 @@ export const saveUserData = (userData: any, opts?: { skipBackup?: boolean }): vo
 
 export const loadUserData = (): any | null => {
   try {
-    const saved = localStorage.getItem(STORAGE_KEYS.USER_DATA);
+    const saved = sessionStorage.getItem(STORAGE_KEYS.USER_DATA);
     if (!saved) return null;
     
     const { data, timestamp } = JSON.parse(saved);
@@ -199,15 +223,42 @@ export const loadUserData = (): any | null => {
 
 export const clearUserData = (): void => {
   try {
-    localStorage.removeItem(STORAGE_KEYS.USER_DATA);
+    try { sessionStorage.removeItem(STORAGE_KEYS.USER_DATA); } catch {}
+    try { sessionStorage.removeItem(AUTH_KEYS.TOKEN); } catch {}
     // No user -> nothing to back up, but clear any pending timer
     if (backupTimeout) {
       clearTimeout(backupTimeout);
       backupTimeout = null;
     }
+    // Broadcast clear event
+    try { const bc = new BroadcastChannel('fitbuddy'); bc.postMessage({ type: 'user-clear', timestamp: Date.now() }); bc.close(); } catch {}
   } catch (error) {
     console.warn('Failed to clear user data:', error);
   }
+};
+
+// Auth token helpers (store token in sessionStorage — not persisted across browser restarts)
+export const saveAuthToken = (token: string | null) => {
+  try {
+    if (!token) return;
+    sessionStorage.setItem(AUTH_KEYS.TOKEN, String(token));
+  } catch (e) {
+    // ignore
+  }
+};
+
+export const getAuthToken = (): string | null => {
+  try {
+    const t = sessionStorage.getItem(AUTH_KEYS.TOKEN);
+    if (t) return t;
+    return null;
+  } catch (e) {
+    return null;
+  }
+};
+
+export const clearAuthToken = () => {
+  try { sessionStorage.removeItem(AUTH_KEYS.TOKEN); } catch {}
 };
 
 // Workout Plan
@@ -328,27 +379,28 @@ export const clearAllData = (): void => {
 export const appendChatMessage = (message: { role: string; text: string; ts?: number }, opts?: { userId?: string }) => {
   try {
     const uid = opts?.userId || (() => {
-      try { const raw = localStorage.getItem(STORAGE_KEYS.USER_DATA); return raw ? (JSON.parse(raw).data?.id || null) : null; } catch { return null; }
+      try { const raw = sessionStorage.getItem(STORAGE_KEYS.USER_DATA); return raw ? (JSON.parse(raw).data?.id || null) : null; } catch { return null; }
     })();
     const key = `fitbuddy_chat_${uid || 'anon'}`;
-    const raw = localStorage.getItem(key);
+    const raw = sessionStorage.getItem(key) || localStorage.getItem(key);
     let arr: any[] = [];
     if (raw) {
       try { arr = JSON.parse(raw); if (!Array.isArray(arr)) arr = []; } catch { arr = []; }
     }
     const toPush = { role: message.role, text: message.text, ts: message.ts || Date.now() };
     arr.push(toPush);
-    try { localStorage.setItem(key, JSON.stringify(arr)); } catch {}
+      try { sessionStorage.setItem(key, JSON.stringify(arr)); } catch { /* noop if sessionStorage fails */ }
 
     // Also persist in the unified user payload under payload.chat_history so cloudBackup saves it
     try {
-      const udRaw = localStorage.getItem(STORAGE_KEYS.USER_DATA);
-      if (udRaw) {
-        const parsed = JSON.parse(udRaw);
-        // Attach chat_history as array (store under fitbuddy payload key so backupUserDataToServer picks it up)
-        parsed.chat_history = parsed.chat_history || [];
-        parsed.chat_history.push(toPush);
-        localStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(parsed));
+      const rawUd = sessionStorage.getItem(STORAGE_KEYS.USER_DATA);
+      if (rawUd) {
+        try {
+          const parsed = JSON.parse(rawUd);
+          parsed.chat_history = parsed.chat_history || [];
+          parsed.chat_history.push(toPush);
+          try { sessionStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(parsed)); } catch {}
+        } catch {}
       }
     } catch (e) { /* ignore */ }
 
@@ -362,11 +414,11 @@ export const appendChatMessage = (message: { role: string; text: string; ts?: nu
 // Save acceptance flags into unified payload and schedule backup
 export const setAcceptanceFlags = (accepted: { accepted_terms?: boolean; accepted_privacy?: boolean }) => {
   try {
-    const udRaw = localStorage.getItem(STORAGE_KEYS.USER_DATA);
-    let parsed: any = udRaw ? JSON.parse(udRaw) : { data: null, timestamp: Date.now() };
+    const rawUd = sessionStorage.getItem(STORAGE_KEYS.USER_DATA);
+    let parsed: any = rawUd ? JSON.parse(rawUd) : { data: null, timestamp: Date.now() };
     parsed.accepted_terms = accepted.accepted_terms ?? parsed.accepted_terms ?? null;
     parsed.accepted_privacy = accepted.accepted_privacy ?? parsed.accepted_privacy ?? null;
-    localStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(parsed));
+    try { sessionStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(parsed)); } catch {}
     scheduleBackup();
   } catch (e) {
     console.warn('setAcceptanceFlags failed', e);

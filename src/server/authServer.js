@@ -678,6 +678,27 @@ app.post('/api/auth/signup', (req, res) => {
     user.token = uuidv4();
     users.push(user);
     writeUsers(users);
+    // Also create a user_data file for local dev so chat history and payloads can be stored
+    try {
+      const userDataDir = path.join(__dirname, 'user_data');
+      if (!fs.existsSync(userDataDir)) fs.mkdirSync(userDataDir, { recursive: true });
+      const dataPath = path.join(userDataDir, `${user.id}.json`);
+      const initial = { id: user.id, payload: {}, chat_history: [], accepted_privacy: false, accepted_terms: false, updated_at: new Date().toISOString() };
+      fs.writeFileSync(dataPath, JSON.stringify(initial, null, 2));
+    } catch (udErr) {
+      console.warn('[authServer] failed to write local user_data file', udErr);
+    }
+    // Try to upsert into Supabase if configured (best-effort)
+    (async () => {
+      try {
+        if (supabase) {
+          await supabase.from('app_users').upsert({ id: user.id, email: user.email, username: user.username, avatar: '', energy: 100, streak: 0, inventory: [] }, { onConflict: 'id' });
+          await supabase.from('user_data').upsert({ id: user.id, payload: {}, chat_history: [], accepted_privacy: false, accepted_terms: false, updated_at: new Date().toISOString() }, { onConflict: 'id' });
+        }
+      } catch (sErr) {
+        console.warn('[authServer] supabase upsert during signup failed', sErr);
+      }
+    })();
     res.status(201).json({ user: { id: user.id, email: user.email, username: user.username, avatar: user.avatar, energy: user.energy, streak: user.streak, inventory: user.inventory, token: jwtToken } });
   } catch (err) {
     res.status(500).json({ message: 'Server error.' });

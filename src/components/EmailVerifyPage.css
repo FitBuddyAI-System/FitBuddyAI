@@ -1,0 +1,19 @@
+.email-verify-page {
+  display: flex;
+  min-height: 60vh;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+.verify-card {
+  max-width: 560px;
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+  text-align: center;
+}
+.verify-card h1 { margin-bottom: 0.5rem; }
+.verify-card p { color: #555; margin-bottom: 1rem; }
+.verify-actions { display: flex; justify-content: center; }
+.verify-actions .btn { padding: 0.6rem 1.2rem; }

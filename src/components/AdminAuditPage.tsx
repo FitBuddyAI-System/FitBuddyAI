@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../services/supabaseClient';
+import { loadUserData, getAuthToken } from '../services/localStorage';
 import NotFoundPage from './NotFoundPage';
 import './AdminAuditPage.css';
 
@@ -8,11 +9,10 @@ const AdminPage: React.FC = () => {
   const [isAllowed, setIsAllowed] = useState<boolean | null>(null);
   useEffect(() => {
     try {
-      const raw = localStorage.getItem('fitbuddy_user_data');
-      const parsed = raw ? JSON.parse(raw) : null;
+      const parsed = loadUserData();
 
       // Allow local admin user ONLY on localhost/127.0.0.1
-      const email = parsed?.email || parsed?.data?.email;
+      const email = parsed?.email || parsed?.data?.email || parsed?.data?.email;
       const isLocalhost = ["localhost", "127.0.0.1"].includes(window.location.hostname);
       if (isLocalhost && email === "admin@local") {
         setIsAllowed(true);
@@ -25,19 +25,45 @@ const AdminPage: React.FC = () => {
         return;
       }
 
-      const token = parsed?.data?.token ?? parsed?.token ?? null;
-      if (token) {
+      // Fallback: parse JWT from Supabase client or session token
+      (async () => {
         try {
-          const parts = token.split('.');
-          if (parts.length >= 2) {
-            const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
-            const roles = payload?.roles || payload?.role || [];
-            if (Array.isArray(roles) && roles.includes('admin')) { setIsAllowed(true); return; }
-            if (String(roles).toLowerCase() === 'admin') { setIsAllowed(true); return; }
+          // Try supabase client session first
+          if (supabase && typeof supabase.auth?.getSession === 'function') {
+            const result = await supabase.auth.getSession();
+            const token = result?.data?.session?.access_token ?? null;
+            if (token) {
+              try {
+                const parts = token.split('.');
+                if (parts.length >= 2) {
+                  const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+                  const roles = payload?.roles || payload?.role || [];
+                  if (Array.isArray(roles) && roles.includes('admin')) { setIsAllowed(true); return; }
+                  if (String(roles).toLowerCase() === 'admin') { setIsAllowed(true); return; }
+                }
+              } catch {}
+            }
           }
-        } catch {}
-      }
-      setIsAllowed(false);
+        } catch (e) {}
+
+        // Last-resort: check sessionStorage token helper
+        try {
+          const token = getAuthToken();
+          if (token) {
+            try {
+              const parts = token.split('.');
+              if (parts.length >= 2) {
+                const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+                const roles = payload?.roles || payload?.role || [];
+                if (Array.isArray(roles) && roles.includes('admin')) { setIsAllowed(true); return; }
+                if (String(roles).toLowerCase() === 'admin') { setIsAllowed(true); return; }
+              }
+            } catch {}
+          }
+        } catch (e) {}
+
+        setIsAllowed(false);
+      })();
     } catch {
       setIsAllowed(false);
     }
@@ -68,12 +94,10 @@ const AdminPage: React.FC = () => {
     } catch (e) {
       // ignore
     }
-    // fallback: local storage token used by older flows
+    // fallback: session token helper
     if (!headers['Authorization']) {
       try {
-        const raw = localStorage.getItem('fitbuddy_user_data');
-        const parsed = raw ? JSON.parse(raw) : null;
-        const token = parsed?.data?.token ?? parsed?.token ?? null;
+        const token = getAuthToken();
         if (token) headers['Authorization'] = `Bearer ${token}`;
       } catch {}
     }

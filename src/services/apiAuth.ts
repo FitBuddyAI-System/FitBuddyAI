@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient';
+import { getAuthToken } from './localStorage';
 
 export async function attachAuthHeaders(init?: RequestInit) {
   const headers: any = init && init.headers ? { ...(init.headers as any) } : {};
@@ -15,10 +16,11 @@ export async function attachAuthHeaders(init?: RequestInit) {
   }
   if (!headers['Authorization']) {
     try {
-      const raw = localStorage.getItem('fitbuddy_user_data');
-      const parsed = raw ? JSON.parse(raw) : null;
-      const token = parsed?.data?.token ?? parsed?.token ?? null;
-      if (token) headers['Authorization'] = `Bearer ${token}`;
+      // Prefer session storage token which is not persisted across browser restarts
+      const token = getAuthToken();
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
     } catch (e) {
       // ignore
     }

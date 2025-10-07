@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { saveAssessmentData, saveWorkoutPlan, saveUserData } from '../services/localStorage';
+import { signIn } from '../services/authService';
 import { restoreUserDataFromServer } from '../services/cloudBackupService';
 import { useNavigate } from 'react-router-dom';
 import './SignInPage.css';
+import './EmailVerifyPage.css';
 
 const SignInPage: React.FC = () => {
   const navigate = useNavigate();
@@ -10,59 +12,40 @@ const SignInPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [resendModalOpen, setResendModalOpen] = useState(false);
+  const [resendEmail, setResendEmail] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
+    const normalizedEmail = String(email).trim().toLowerCase();
     try {
-      const normalizedEmail = String(email).trim().toLowerCase();
-      const res = await fetch('/api/auth?action=signin', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: normalizedEmail, password })
-      });
-      // Read response as text, then parse if not empty
-      const text = await res.text();
-      let data = null;
-      if (text) {
-        try {
-          data = JSON.parse(text);
-        } catch {
-          throw new Error('Server returned invalid JSON: ' + text);
-        }
-      }
-      if (!res.ok) {
-        const message = data && data.message ? data.message : `Sign in failed. Raw response: ${text}`;
-        throw new Error(message);
-      }
-        if (data && data.user) {
+      const dataUser = await signIn(normalizedEmail, password);
+      // The signIn helper will store token and user in localStorage when using Supabase or the server
+      const data = dataUser ? { user: dataUser, token: null } : null;
+      if (data && data.user) {
       // Use central saveUserData but skip auto-backup for now so we don't overwrite server data
       // before a restore completes. After restore completes, existing scheduleBackup calls
       // (from saving assessment/plan) will run as needed.
         // Save user data and token into the unified user_data object so attachAuthHeaders finds it
-        const toSave = { data: data.user, token: data.token || null };
-        saveUserData(toSave, { skipBackup: true });
-        // Wait briefly for localStorage to be written and available to attachAuthHeaders
+  const toSave = { data: data.user, token: data.token || null };
+  try { saveUserData(toSave, { skipBackup: true, forceSave: true } as any); } catch {}
+        // Wait briefly for sessionStorage token to be available for attachAuthHeaders
         const waitForToken = async (timeoutMs = 2000) => {
           const start = Date.now();
           while (Date.now() - start < timeoutMs) {
             try {
-              const raw = localStorage.getItem('fitbuddy_user_data');
-              if (raw) {
-                const parsed = JSON.parse(raw);
-                const token = parsed?.token ?? parsed?.data?.token ?? null;
-                if (token) return token;
-              }
+              const { getAuthToken, loadUserData } = await import('../services/localStorage');
+              const token = getAuthToken() || (loadUserData()?.token) || (loadUserData()?.data?.token) || null;
+              if (token) return token;
             } catch (e) {}
             await new Promise(r => setTimeout(r, 150));
           }
           return null;
         };
         await waitForToken(3000);
-        if (data.user.username) {
-          localStorage.setItem('fitbuddyUsername', data.user.username);
-        }
+        try { sessionStorage.setItem('fitbuddyUsername', data.user.username); } catch {}
         // Attempt to restore any server-stored questionnaire/workout/assessment data
         try {
           await restoreUserDataFromServer(data.user.id);
@@ -148,9 +131,17 @@ const SignInPage: React.FC = () => {
         }
         navigate('/profile');
       } else {
-        throw new Error('Invalid server response. Raw response: ' + text);
+        throw new Error('Invalid server response.');
       }
     } catch (err: any) {
+      // Handle unconfirmed email specially
+      if (err && (err.code === 'ERR_EMAIL_UNCONFIRMED' || /Email not confirmed/i.test(err.message || ''))) {
+        setError('Your email address is not confirmed. Please check your inbox for the confirmation link.');
+        // Open an inline modal to ask user if they'd like to resend
+        setResendEmail(normalizedEmail);
+        setResendModalOpen(true);
+        return;
+      }
       setError(err.message);
     } finally {
       setLoading(false);
@@ -171,8 +162,56 @@ const SignInPage: React.FC = () => {
         <button className="btn" type="submit" disabled={loading}>{loading ? 'Signing in...' : 'Sign In'}</button>
         <div className="signup-link">Don't have an account? <span onClick={() => navigate('/signup')}>Sign Up</span></div>
       </form>
+      {resendModalOpen && (
+        <ResendConfirmModal
+          email={resendEmail}
+          onClose={() => setResendModalOpen(false)}
+          onSent={() => { setResendModalOpen(false); navigate('/verify-email?email=' + encodeURIComponent(resendEmail)); }}
+        />
+      )}
     </div>
   );
 };
+
+function ResendConfirmModal({ email, onClose, onSent }: { email: string; onClose: () => void; onSent: () => void }) {
+  const [loading, setLoading] = useState(false);
+  const [msg, setMsg] = useState('');
+  const handleResend = async () => {
+    setLoading(true);
+    setMsg('');
+    try {
+      const url = `${import.meta.env.VITE_SUPABASE_URL.replace(/\/$/, '')}/auth/v1/recover`;
+      const anon = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      const res = await fetch(url, { method: 'POST', headers: { apikey: anon || '', 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) });
+      if (res.ok) {
+        setMsg('Verification email resent — check your inbox (and spam).');
+        onSent();
+      } else {
+        setMsg('Failed to resend verification email. Please contact support.');
+      }
+    } catch (e) {
+      setMsg('Failed to resend verification email. Please contact support.');
+    }
+    setLoading(false);
+  };
+  return (
+    <div className="hc-modal-backdrop" role="dialog" aria-modal="true">
+      <div className="hc-modal">
+        <header className="hc-modal-header">
+          <h3>Resend confirmation</h3>
+          <button className="btn" onClick={onClose}>Close</button>
+        </header>
+        <div className="hc-modal-body">
+          <p>We can resend the verification email to <strong>{email}</strong>. Would you like to resend it now?</p>
+          {msg && <div className="info">{msg}</div>}
+          <div className="hc-modal-actions">
+            <button className="btn" onClick={onClose} disabled={loading}>Cancel</button>
+            <button className="btn btn-primary" onClick={handleResend} disabled={loading}>{loading ? 'Sending...' : 'Resend'}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default SignInPage;

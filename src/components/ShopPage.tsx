@@ -62,8 +62,13 @@ const ShopPage: React.FC<ShopPageProps> = ({ user, onPurchase }) => {
         window.dispatchEvent(new Event('storage'));
       }
     };
-    // Poll less aggressively than 1s — every 7s is plenty for shop inventory/energy updates
-    intervalRef.current = setInterval(fetchAndUpdate, 7000);
+    // Poll less aggressively than 1s — every 7s is plenty for shop inventory/energy updates.
+    // Also avoid polling while page is hidden to reduce background network traffic.
+    fetchAndUpdate();
+    intervalRef.current = setInterval(() => {
+      if (typeof document !== 'undefined' && document.hidden) return;
+      fetchAndUpdate();
+    }, 7000);
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };

@@ -51,6 +51,24 @@ router.post('/api/userdata/save', (req, res) => {
   });
 });
 
+// Compatibility route for dev: accept POST /api/userdata/load to fetch stored payloads
+router.post('/api/userdata/load', (req, res) => {
+  const { userId } = req.body || {};
+  if (!userId) return res.status(400).json({ error: 'Missing userId' });
+  const filePath = getUserFilePath(userId);
+
+  if (!fs.existsSync(filePath)) {
+    return res.json({ fitbuddy_questionnaire_progress: null, fitbuddy_workout_plan: null, fitbuddy_assessment_data: null });
+  }
+  try {
+    const content = fs.readFileSync(filePath, 'utf8');
+    const data = JSON.parse(content);
+    return res.json({ stored: data });
+  } catch (e) {
+    return res.status(500).json({ error: 'Failed to read stored user data' });
+  }
+});
+
 // Load user data
 // Deprecated: use POST /api/userdata/save with { userId } to fetch stored payload
 router.get('/api/userdata/:userId', (req, res) => {

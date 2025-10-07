@@ -11,12 +11,16 @@ export default function TermsModal({ onClose, onAccept }: Props) {
       setAcceptanceFlags({ accepted_terms: true, accepted_privacy: true });
       // Immediately POST accepted flags so server persists them
       try {
-        const raw = localStorage.getItem('fitbuddy_user_data');
-        const userId = raw ? (JSON.parse(raw).data?.id || null) : null;
-        if (userId) {
-          const init = await import('../services/apiAuth').then(m => m.attachAuthHeaders({ method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId, accepted_terms: true, accepted_privacy: true }) }));
-          await fetch('/api/userdata/save', init);
-        }
+        import('../services/localStorage').then(async (m) => {
+          try {
+            const parsed = m.loadUserData();
+            const userId = parsed?.id;
+            if (userId) {
+              const init = await import('../services/apiAuth').then(m2 => m2.attachAuthHeaders({ method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId, accepted_terms: true, accepted_privacy: true }) }));
+              await fetch('/api/userdata/save', init);
+            }
+          } catch (e) { /* ignore */ }
+        }).catch(()=>{});
       } catch (e) { /* ignore */ }
       if (onAccept) onAccept();
     } catch (e) {

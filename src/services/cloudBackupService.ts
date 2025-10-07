@@ -6,8 +6,8 @@ export async function backupUserDataToServer(userId: string) {
   const fitbuddy_questionnaire_progress = localStorage.getItem('fitbuddy_questionnaire_progress');
   const fitbuddy_workout_plan = localStorage.getItem('fitbuddy_workout_plan');
   const fitbuddy_assessment_data = localStorage.getItem('fitbuddy_assessment_data');
-  const fitbuddy_chat = localStorage.getItem(`fitbuddy_chat_${userId}`);
-  const fitbuddy_user_data = localStorage.getItem('fitbuddy_user_data');
+  const fitbuddy_chat = sessionStorage.getItem(`fitbuddy_chat_${userId}`) || localStorage.getItem(`fitbuddy_chat_${userId}`);
+  const fitbuddy_user_data = sessionStorage.getItem('fitbuddy_user_data') || localStorage.getItem('fitbuddy_user_data');
   if (!userId) return;
   try {
     // Only include keys that actually exist to avoid overwriting server data with nulls
@@ -21,18 +21,19 @@ export async function backupUserDataToServer(userId: string) {
 
     // Attach local fitbuddy_user_data so server can cross-check client identity when needed
     try {
-      const rawUser = localStorage.getItem('fitbuddy_user_data');
+  const rawUser = sessionStorage.getItem('fitbuddy_user_data') || localStorage.getItem('fitbuddy_user_data');
       if (rawUser) {
         try {
           const parsed = JSON.parse(rawUser);
-          // include raw parsed user object for server diagnostics
-          payload.fitbuddy_user_data = parsed;
-          // Also surface acceptance flags at top-level so the server can persist them into explicit columns
+          // include raw parsed user object for server diagnostics (avoid including tokens)
           if (parsed && typeof parsed === 'object') {
-            if (parsed.accepted_terms !== undefined) payload.accepted_terms = parsed.accepted_terms;
-            if (parsed.accepted_privacy !== undefined) payload.accepted_privacy = parsed.accepted_privacy;
-            // If the per-user payload contains chat_history, ensure we include it too (unless already set from fitbuddy_chat)
-            if (parsed.chat_history !== undefined && payload.chat_history === undefined) payload.chat_history = parsed.chat_history;
+            const safe = { ...parsed };
+            if (safe.token) delete safe.token;
+            if (safe.jwt) delete safe.jwt;
+            payload.fitbuddy_user_data = safe;
+            if (safe.accepted_terms !== undefined) payload.accepted_terms = safe.accepted_terms;
+            if (safe.accepted_privacy !== undefined) payload.accepted_privacy = safe.accepted_privacy;
+            if (safe.chat_history !== undefined && payload.chat_history === undefined) payload.chat_history = safe.chat_history;
           }
         } catch {}
       }
@@ -59,7 +60,7 @@ export function beaconBackupUserData(userId: string) {
     if (fitbuddy_assessment_data != null) payload.fitbuddy_assessment_data = fitbuddy_assessment_data;
     // Include acceptance flags if present in unified user_data
     try {
-      const rawUser = localStorage.getItem('fitbuddy_user_data');
+  const rawUser = sessionStorage.getItem('fitbuddy_user_data') || localStorage.getItem('fitbuddy_user_data');
       if (rawUser) {
         try {
           const parsed = JSON.parse(rawUser);
@@ -112,7 +113,14 @@ export async function restoreUserDataFromServer(userId: string) {
         if (v === null || v === undefined) return;
         // Ensure we write a string to localStorage. Server may return parsed objects.
         const toStore = typeof v === 'string' ? v : JSON.stringify(v);
-        localStorage.setItem(key, toStore);
+        // Persist restored keys into sessionStorage only for sensitive or user-scoped data.
+        // We intentionally avoid writing restored user payload or chat to localStorage to prevent tokens/exposure.
+        if (key === 'fitbuddy_user_data') {
+          try { sessionStorage.setItem(key, toStore); } catch {}
+        } else {
+          // Non-user long-term keys (questionnaire/workout/assessment) may remain in localStorage
+          try { localStorage.setItem(key, toStore); } catch {}
+        }
       } catch (e) {
         // ignore per-call errors
       }
@@ -124,10 +132,10 @@ export async function restoreUserDataFromServer(userId: string) {
   // Also handle chat history: write into per-user chat key if present
   try {
     const chat = payload.chat_history ?? payload.fitbuddy_chat ?? payload.fitbuddy_chat_history;
-    if (chat !== undefined && chat !== null) {
+        if (chat !== undefined && chat !== null) {
       try {
         const toStore = typeof chat === 'string' ? chat : JSON.stringify(chat);
-        localStorage.setItem(`fitbuddy_chat_${userId}`, toStore);
+        try { sessionStorage.setItem(`fitbuddy_chat_${userId}`, toStore); } catch { try { localStorage.setItem(`fitbuddy_chat_${userId}`, toStore); } catch {} }
       } catch (e) {
         // ignore
       }

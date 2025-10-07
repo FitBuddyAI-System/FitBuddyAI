@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 // import { Lock } from 'lucide-react';
 import './ProfilePage.css';
 import { getCurrentUser, fetchUserById } from '../services/authService';
+import { supabase } from '../services/supabaseClient';
 import { useNavigate } from 'react-router-dom';
 import SignOutButton from './SignOutButton';
 
@@ -24,17 +25,25 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onProfileUpdate }) 
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  // Poll server for live user stats every second and update localStorage
+  // Poll server for live user stats periodically and update localStorage. Throttle
+  // polling interval and avoid polling when page is hidden.
   useEffect(() => {
     let stopped = false;
     const updateUser = async () => {
-      const local = getCurrentUser();
-      if (!local?.id) return;
-      const fresh = await fetchUserById(local.id);
-      if (!stopped && fresh) setUser(fresh);
+      try {
+        if (stopped) return;
+        const local = getCurrentUser();
+        if (!local?.id) return;
+        if (typeof document !== 'undefined' && document.hidden) return;
+        const fresh = await fetchUserById(local.id);
+        if (!stopped && fresh) setUser(fresh);
+      } catch (e) {
+        // ignore errors silently
+      }
     };
+    // run once immediately, then every 15s
     updateUser();
-    const interval = setInterval(updateUser, 1000);
+    const interval = setInterval(updateUser, 15000);
     return () => { stopped = true; clearInterval(interval); };
   }, []);
 
@@ -106,21 +115,30 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onProfileUpdate }) 
         setUser(updated.user);
         onProfileUpdate(updated.user);
         setEditMode(false);
-      } else {
-        // Server endpoint missing (common for static prod deployments).
-        // Fall back to a local-only save so the user doesn't lose changes.
-        const fallbackUser = { ...user, username: editUsername, avatar: editAvatar };
-        localStorage.setItem('fitbuddy_user_data', JSON.stringify({ data: fallbackUser, timestamp: Date.now() }));
-        setUser(fallbackUser);
-        onProfileUpdate(fallbackUser);
-        setEditMode(false);
-        setError('Saved locally (server unavailable).');
+        // Try to update Supabase auth metadata for the current session so display name updates immediately
+        try {
+          const displayName = updated.user?.username;
+          if (displayName && supabase && typeof supabase.auth?.updateUser === 'function') {
+            await supabase.auth.updateUser({ data: { display_name: displayName, username: displayName } });
+          }
+        } catch (e) {
+          console.warn('[ProfilePage] failed to update supabase user metadata', e && (e as any).message || String(e));
+        }
+  } else {
+  // Server endpoint missing (common for static prod deployments).
+  // Fall back to a local-only save via saveUserData to avoid persisting tokens into localStorage.
+  const fallbackUser = { ...user, username: editUsername, avatar: editAvatar };
+  try { const { saveUserData } = await import('../services/localStorage'); saveUserData({ data: fallbackUser }); } catch {}
+  setUser(fallbackUser);
+  onProfileUpdate(fallbackUser);
+  setEditMode(false);
+  setError('Saved locally (session) — server unavailable.');
       }
     } catch (e: any) {
-      // Network or other error — fall back to local save so edits persist
+      // Network or other error — fall back to local save so edits persist in session storage
       const fallbackUser = { ...user, username: editUsername, avatar: editAvatar };
       try {
-        localStorage.setItem('fitbuddy_user_data', JSON.stringify({ data: fallbackUser, timestamp: Date.now() }));
+        const { saveUserData } = await import('../services/localStorage'); saveUserData({ data: fallbackUser });
       } catch {}
       setUser(fallbackUser);
       onProfileUpdate(fallbackUser);

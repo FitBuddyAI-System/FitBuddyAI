@@ -24,9 +24,8 @@ const RickrollPage: React.FC = () => {
         try {
           let headers: any = { 'Content-Type': 'application/json' };
           try {
-            const raw = localStorage.getItem('fitbuddy_user_data');
-            const parsed = raw ? JSON.parse(raw) : null;
-            const token = parsed?.data?.token ?? parsed?.token ?? null;
+            const { getAuthToken } = await import('../services/localStorage');
+            const token = getAuthToken();
             if (token) headers['Authorization'] = `Bearer ${token}`;
           } catch {}
           await fetch('/api/rickroll', { method: 'POST', headers, body: JSON.stringify({ userId: null }) });

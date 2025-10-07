@@ -30,7 +30,7 @@ const GeminiChatPage: React.FC<GeminiChatPageProps> = ({ userData }) => {
     const loadForUser = () => {
       try {
         const uid = userData?.id || 'anon';
-        const raw = localStorage.getItem(`fitbuddy_chat_${uid}`);
+          const raw = sessionStorage.getItem(`fitbuddy_chat_${uid}`);
         if (!raw) return;
         const parsed = JSON.parse(raw);
         if (Array.isArray(parsed) && parsed.length) setMessages(parsed);
@@ -48,8 +48,8 @@ const GeminiChatPage: React.FC<GeminiChatPageProps> = ({ userData }) => {
         if (!uid) return;
         const mod = await import('../services/cloudBackupService');
         await mod.restoreUserDataFromServer(String(uid));
-        // After restore, reload local storage key
-        const raw = localStorage.getItem(`fitbuddy_chat_${uid}`);
+  // After restore, reload storage key (prefer sessionStorage)
+  const raw = sessionStorage.getItem(`fitbuddy_chat_${uid}`);
         isRestoringRef.current = false;
         if (!raw) return;
         const parsed = JSON.parse(raw);
@@ -71,12 +71,16 @@ const GeminiChatPage: React.FC<GeminiChatPageProps> = ({ userData }) => {
         if (!uid) return;
         const mod = await import('../services/cloudBackupService');
         await mod.restoreUserDataFromServer(String(uid));
-        const raw = localStorage.getItem(`fitbuddy_chat_${uid}`);
+        // After restore, reload storage key (prefer sessionStorage)
+  const raw = sessionStorage.getItem(`fitbuddy_chat_${uid}`);
         isRestoringRef.current = false;
         if (!raw) return;
         const parsed = JSON.parse(raw);
         if (Array.isArray(parsed) && parsed.length) setMessages(parsed);
-      } catch (e) {}
+      } catch (e) {
+        isRestoringRef.current = false;
+        // ignore restore errors
+      }
     };
     window.addEventListener('fitbuddy-login', onLogin);
     // Also restore when the chat tab is explicitly opened via header click
@@ -126,28 +130,29 @@ const GeminiChatPage: React.FC<GeminiChatPageProps> = ({ userData }) => {
   // Debounced save of chat messages
   useEffect(() => {
     let t: any = null;
-    try {
-      t = setTimeout(() => {
-        try {
-          // If a restore is in progress for this tab, skip saving to avoid overwriting restored data
-          if (isRestoringRef.current) return;
-          const uid = userData?.id || 'anon';
-          // Avoid persisting the default assistant greeting immediately (it may overwrite restored chat)
-          const defaultGreeting = 'Hi! I am Buddy — your AI Fitness assistant. I can answer questions about your workouts, goals, and progress.';
-          if (messages.length === 1 && messages[0].role === 'assistant' && messages[0].text === defaultGreeting) return;
-          localStorage.setItem(`fitbuddy_chat_${uid}`, JSON.stringify(messages));
+          try {
+          t = setTimeout(() => {
+            try {
+              // If a restore is in progress for this tab, skip saving to avoid overwriting restored data
+              if (isRestoringRef.current) return;
+              const uid = userData?.id || 'anon';
+              // Avoid persisting the default assistant greeting immediately (it may overwrite restored chat)
+              const defaultGreeting = 'Hi! I am Buddy — your AI Fitness assistant. I can answer questions about your workouts, goals, and progress.';
+              if (messages.length === 1 && messages[0].role === 'assistant' && messages[0].text === defaultGreeting) return;
+              try { sessionStorage.setItem(`fitbuddy_chat_${uid}`, JSON.stringify(messages)); } catch { /* ignore sessionStorage failures */ }
+            } catch {}
+          }, 400);
         } catch {}
-      }, 400);
-    } catch {}
     return () => { if (t) clearTimeout(t); };
   }, [messages, userData?.id]);
 
   // Clear chat state on logout
   useEffect(() => {
-    const onLogout = () => {
+      const onLogout = () => {
       try {
         const uid = userData?.id || 'anon';
-        localStorage.removeItem(`fitbuddy_chat_${uid}`);
+        try { sessionStorage.removeItem(`fitbuddy_chat_${uid}`); } catch {}
+        try { localStorage.removeItem(`fitbuddy_chat_${uid}`); } catch {}
         setMessages([{ role: 'assistant', text: 'Hi! I am Buddy — your AI fitness assistant. I can answer questions about your workouts, goals, and progress.' }]);
       } catch {}
     };
@@ -165,14 +170,14 @@ const GeminiChatPage: React.FC<GeminiChatPageProps> = ({ userData }) => {
       if ((prevId === undefined || prevId === 'anon') && currentId && currentId !== 'anon') {
         try {
           // transfer anon chat into the user's chat key so history isn't lost
-          const anonRaw = localStorage.getItem('fitbuddy_chat_anon');
+          const anonRaw = sessionStorage.getItem('fitbuddy_chat_anon');
           if (anonRaw) {
             try {
-              localStorage.setItem(`fitbuddy_chat_${currentId}`, anonRaw);
+              sessionStorage.setItem(`fitbuddy_chat_${currentId}`, anonRaw);
             } catch {}
           }
           // remove anon key
-          localStorage.removeItem('fitbuddy_chat_anon');
+          try { sessionStorage.removeItem('fitbuddy_chat_anon'); } catch {}
         } catch {}
       }
       prevId = currentId ?? 'anon';
@@ -257,24 +262,14 @@ const GeminiChatPage: React.FC<GeminiChatPageProps> = ({ userData }) => {
       });
       const filtered = { ...actionJson, updates: normalizedUpdates };
 
-      const rawSaved = localStorage.getItem('fitbuddy_user_data');
-      const parsed = rawSaved ? JSON.parse(rawSaved) : null;
-      const userId = parsed?.data?.id ?? parsed?.id ?? userData?.id;
-      let token = parsed?.data?.token ?? parsed?.token ?? userData?.token ?? parsed?.jwt ?? parsed?.data?.jwt ?? parsed?.access_token ?? parsed?.data?.access_token;
-      // fallback attempts
-      if (!token) {
-        try {
-          const raw = localStorage.getItem('fitbuddy_user_data');
-          if (raw) {
-            const p = JSON.parse(raw);
-            token = p?.token ?? p?.jwt ?? p?.access_token;
-          }
-        } catch {}
-      }
+  const { getAuthToken, loadUserData } = await import('../services/localStorage');
+  const parsed = loadUserData() || null;
+  const userId = parsed?.id || parsed?.data?.id || userData?.id;
+  let token = getAuthToken() || parsed?.token || parsed?.data?.token || userData?.token || parsed?.jwt || parsed?.data?.jwt || parsed?.access_token || parsed?.data?.access_token;
 
       if (!userId || userId === 'anon') {
         // No signed-in user: preserve anon chat and redirect to signin
-        try { localStorage.setItem('fitbuddy_chat_anon', JSON.stringify(messages)); } catch {}
+  try { sessionStorage.setItem('fitbuddy_chat_anon', JSON.stringify(messages)); } catch {}
         const returnTo = encodeURIComponent(window.location.pathname || '/chat');
         window.location.href = `/signin?returnTo=${returnTo}`;
         return;
@@ -538,7 +533,7 @@ const GeminiChatPage: React.FC<GeminiChatPageProps> = ({ userData }) => {
     try {
   // Read localStorage keys and provide full context (truncated by service)
   const questionnaireRaw = localStorage.getItem('fitbuddy_questionnaire_progress');
-  const userRaw = localStorage.getItem('fitbuddy_user_data');
+  const userRaw = sessionStorage.getItem('fitbuddy_user_data');
   const planRaw = localStorage.getItem('fitbuddy_workout_plan');
   let questionnaire = null;
   let localUser = null;

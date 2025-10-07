@@ -12,11 +12,12 @@ import ProfilePage from './components/ProfilePage';
 
 import SignInPage from './components/SignInPage';
 import SignUpPage from './components/SignUpPage';
+import EmailVerifyPage from './components/EmailVerifyPage';
 
 
 
 import { WorkoutPlan } from './types';
-import { loadUserData, loadWorkoutPlan, saveUserData, saveWorkoutPlan } from './services/localStorage';
+import { loadUserData, loadWorkoutPlan, saveUserData, saveWorkoutPlan, clearUserData } from './services/localStorage';
 import { fetchUserById } from './services/authService';
 
 
@@ -43,16 +44,21 @@ function App() {
   // Cloud backup/restore integration
   useCloudBackup();
 
-  // Poll user from server every 1s if logged in, for live updates on all pages
+  // Poll user from server periodically if logged in. Throttle to reduce load and
+  // avoid polling when the page is hidden (background tab).
   useEffect(() => {
     if (!userData?.id) return;
     let stopped = false;
     const fetchAndUpdate = async () => {
       if (stopped) return;
+      // Don't poll while page is hidden to avoid unnecessary background traffic
+      if (typeof document !== 'undefined' && document.hidden) return;
       const fresh = await fetchUserById(userData.id);
       if (fresh) setUserData(fresh);
     };
-    const interval = setInterval(fetchAndUpdate, 1000);
+    // Run an initial check quickly, then throttle to a longer interval
+    fetchAndUpdate();
+    const interval = setInterval(fetchAndUpdate, 15000);
     return () => {
       stopped = true;
       clearInterval(interval);
@@ -86,8 +92,19 @@ function App() {
         setUserData(updated);
       }
     };
+    // Listen for legacy storage events (keeps backward compat) and BroadcastChannel messages
     window.addEventListener('storage', syncUser);
-    return () => window.removeEventListener('storage', syncUser);
+    let bc: BroadcastChannel | null = null;
+    try {
+      bc = new BroadcastChannel('fitbuddy');
+      bc.onmessage = () => syncUser();
+    } catch (e) {
+      // ignore if not available
+    }
+    return () => {
+      window.removeEventListener('storage', syncUser);
+      try { if (bc) { bc.close(); } } catch (e) {}
+    };
   }, [userData]);
 
 
@@ -95,7 +112,6 @@ function App() {
   useEffect(() => {
     const savedUserData = loadUserData();
     const savedWorkoutPlan = loadWorkoutPlan();
-  console.log('App startup - raw fitbuddy_user_data:', localStorage.getItem('fitbuddy_user_data'));
   console.log('App startup - loadUserData ->', savedUserData);
   console.log('App startup - loadWorkoutPlan ->', savedWorkoutPlan);
     if (savedUserData) {
@@ -123,7 +139,7 @@ function App() {
     } else {
       // If userData is null, clear user data from storage
       // (defensive, in case logout event missed)
-      localStorage.removeItem('fitbuddy_user_data');
+      clearUserData();
     }
   }, [userData]);
 
@@ -194,6 +210,7 @@ function App() {
   <Route path="/privacy" element={<PrivacyPage />} />
         <Route path="/signin" element={<SignInPage />} />
         <Route path="/signup" element={<SignUpPage />} />
+  <Route path="/verify-email" element={<EmailVerifyPage />} />
   <Route path="/rickroll" element={<RickrollPage />} />
   {/* 404 Not Found Route */}
   <Route path="*" element={<NotFoundPage />} />
