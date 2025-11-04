@@ -47,7 +47,7 @@ const WelcomePage: React.FC = () => {
                 <div className="logo logo-centered">
                   <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-dumbbell"><path d="m6.5 6.5 11 11"></path><path d="m21 21-1-1"></path><path d="m3 3 1 1"></path><path d="m18 22 4-4"></path><path d="m2 6 4-4"></path><path d="m3 10 7-7"></path><path d="m14 21 7-7"></path></svg>
                 </div>
-                <h1 className="app-title">Fitbuddy</h1>
+                <h1 className="app-title">FitBuddyAI</h1>
                 <p className="app-subtitle">Your AI-Powered Fitness Companion</p>
               </div>
               <div className="hero-text fade-in-up">
@@ -79,7 +79,7 @@ const WelcomePage: React.FC = () => {
           {/* Features Section */}
           <div className="features-section">
             <div className="container">
-              <h3 className="section-title">Why Choose Fitbuddy?</h3>
+              <h3 className="section-title">Why Choose FitBuddyAI?</h3>
               <div className="features-grid">
                 <div className="feature-card card fade-in-up">
                   <div className="feature-icon">
