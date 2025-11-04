@@ -57,7 +57,7 @@ export default async function handler(req: any, res: any) {
       // Quick existence check to return a friendly message without attempting insert
       try {
         const { data: existing } = await supabase.from('app_users').select('id,email').ilike('email', normalizedEmail).limit(1).maybeSingle();
-        if (existing) return res.status(409).json({ message: 'Email already exists.' });
+  if (existing) return res.status(409).json({ code: 'EMAIL_EXISTS', message: 'Email already exists.' });
       } catch (e) {
         // ignore and proceed to insert; DB unique index will enforce constraint
       }
@@ -71,7 +71,7 @@ export default async function handler(req: any, res: any) {
         const msg = (error as any)?.message || String(error);
         console.error('Supabase insert error:', error);
         if (String(msg).toLowerCase().includes('unique') || String(pgCode) === '23505') {
-          return res.status(409).json({ message: 'Email already exists.' });
+          return res.status(409).json({ code: 'EMAIL_EXISTS', message: 'Email already exists.' });
         }
         return res.status(500).json({ message: 'Failed to create user.' });
       }

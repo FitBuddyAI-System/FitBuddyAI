@@ -671,7 +671,7 @@ app.post('/api/auth/signup', (req, res) => {
     email = String(email).trim().toLowerCase();
     if (leoProfanity.check(username) || isUsernameBanned(username)) return res.status(400).json({ message: 'Username contains inappropriate or banned words.' });
     const users = readUsers();
-    if (users.find(u => String(u.email).toLowerCase() === email)) return res.status(409).json({ message: 'Email already exists.' });
+  if (users.find(u => String(u.email).toLowerCase() === email)) return res.status(409).json({ code: 'EMAIL_EXISTS', message: 'Email already exists.' });
     const user = { id: uuidv4(), email, username, password, avatar: '', energy: 100, streak: 0, inventory: [] };
     const secret = process.env.JWT_SECRET || 'dev_secret_change_me';
     const jwtToken = jwt.sign({ id: user.id, roles: user.roles || [] }, secret, { expiresIn: '30d' });

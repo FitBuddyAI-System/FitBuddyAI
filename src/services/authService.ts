@@ -159,11 +159,16 @@ export async function signUp(email: string, username: string, password: string):
     // Supabase may not return a session depending on config; if a session exists save token
     const token = result.data?.session?.access_token ?? null;
     const user = result.data?.user ?? null;
-  const toSave = { data: user ? { id: user.id, email: user.email, username, energy: 100 } : null, token };
-  try { sessionStorage.removeItem('fitbuddy_no_auto_restore'); } catch {}
-  try { localStorage.removeItem('fitbuddy_no_auto_restore'); } catch {}
-  try { saveUserData(toSave, { skipBackup: true, forceSave: true } as any); } catch { /* ignore */ }
-    // Ensure server-side app_users and user_data rows exist for this new Supabase user
+  const toSave = user ? { id: user.id, email: user.email, username, energy: 100 } : null;
+  // Only persist client-side if we actually received a session/token. For email-verify flows
+  // Supabase may require the user to confirm via email before signing in; do not mark them
+  // as signed-in (or persist their profile) until a token exists.
+  if (token && toSave) {
+    try { sessionStorage.removeItem('fitbuddy_no_auto_restore'); } catch {}
+    try { localStorage.removeItem('fitbuddy_no_auto_restore'); } catch {}
+    try { saveUserData({ data: toSave, token }, { skipBackup: true, forceSave: true } as any); } catch { /* ignore */ }
+  }
+    // Ensure server-side app_users and user_data rows exist for this new Supabase user (best-effort).
     try {
       if (user && user.id) {
         await fetch('/api/auth?action=create_profile', {
@@ -176,7 +181,7 @@ export async function signUp(email: string, username: string, password: string):
       console.warn('[authService] create_profile call failed', e);
     }
 
-    return toSave.data as User;
+    return toSave as unknown as User;
   }
   const res = await fetch('/api/auth?action=signup', {
     method: 'POST',
@@ -184,8 +189,12 @@ export async function signUp(email: string, username: string, password: string):
     body: JSON.stringify({ email: normalizedEmail, username, password })
   });
   if (!res.ok) {
-    const data = await res.json();
-    throw new Error(data.message || 'Sign up failed');
+    let data = null;
+    try { data = await res.json(); } catch {}
+    const err = new Error((data && data.message) || 'Sign up failed');
+    // Attach structured code if present
+    if (data && data.code) (err as any).code = data.code;
+    throw err;
   }
   const data = await res.json();
   if (data.user) {
