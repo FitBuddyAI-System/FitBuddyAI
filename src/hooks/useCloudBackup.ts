@@ -10,7 +10,7 @@ export function useCloudBackup() {
     const user = getCurrentUser();
     // Skip auto-restore if sign-out recently occurred in this tab
     try {
-      const noAuto = localStorage.getItem('fitbuddyaiai_no_auto_restore') || sessionStorage.getItem('fitbuddyaiai_no_auto_restore');
+      const noAuto = localStorage.getItem('fitbuddyai_no_auto_restore') || sessionStorage.getItem('fitbuddyai_no_auto_restore');
       if (noAuto) return;
     } catch {}
 

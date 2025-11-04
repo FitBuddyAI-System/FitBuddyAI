@@ -22,7 +22,7 @@ const IntroMobile: React.FC<{ onFinish?: () => void }> = ({ onFinish }) => {
           <Dumbbell size={36} color="#fff" />
         </div>
         <div className="intro-title-wrap">
-          <h1 className="intro-title">FitBuddyAIAI</h1>
+          <h1 className="intro-title">FitBuddyAI</h1>
           <p className="intro-sub">Your AI fitness companion</p>
         </div>
         <div className="intro-bubbles" aria-hidden>

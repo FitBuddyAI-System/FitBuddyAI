@@ -1,6 +1,6 @@
 {
   "Sit-ups": {
-    "images": ["/images/fitbuddyaiai_head.png"],
+    "images": ["/images/fitbuddyai_head.png"],
     "video": "https://www.youtube.com/embed/1fbU_MkV7NE",
     "featuredVideo": true,
     "resources": [
@@ -8,7 +8,7 @@
       { "label": "LIVESTRONG: How to Do a Sit Up", "url": "https://www.livestrong.com/article/137075-how-to-do-a-sit-up/" },
       { "label": "Video: How to Do a Sit Up (YouTube)", "url": "https://www.youtube.com/watch?v=1fbU_MkV7NE" }
     ],
-    "galleryImages": ["/images/fitbuddyaiai_head.png"],
+    "galleryImages": ["/images/fitbuddyai_head.png"],
     "imageCaptions": ["Controlled sit-up finish"],
     "difficulty": "Moderate",
     "duration": "3-10 min",
@@ -23,7 +23,7 @@
     }
   },
   "Reverse Crunches": {
-    "images": ["/images/fitbuddyaiai_head.png"],
+    "images": ["/images/fitbuddyai_head.png"],
     "video": "https://www.youtube.com/embed?listType=search&list=Reverse+Crunches",
     "resources": [
       { "label": "Reverse crunch tutorial", "url": "https://example.com/reverse-crunches/tutorial" },
@@ -67,14 +67,14 @@
     }
   },
   "Flutter Kicks": {
-    "images": ["/images/fitbuddyaiai_head.png"],
+    "images": ["/images/fitbuddyai_head.png"],
     "video": "https://www.youtube.com/embed?listType=search&list=Flutter+Kicks",
     "resources": [
       { "label": "Flutter kicks technique", "url": "https://example.com/flutter-kicks/technique" },
       { "label": "Core endurance workouts", "url": "https://example.com/flutter-kicks/endurance" },
       { "label": "Protect your lower back while flutter kicking", "url": "https://example.com/flutter-kicks/lower-back" }
     ],
-    "galleryImages": ["/images/fitbuddyaiai_head.png"],
+    "galleryImages": ["/images/fitbuddyai_head.png"],
     "imageCaptions": ["Flutter kicks supine"],
     "difficulty": "Moderate",
     "duration": "1-3 min",
@@ -89,7 +89,7 @@
     }
   },
   "Leg Raises": {
-    "images": ["/images/fitbuddyaiai_head.png"],
+    "images": ["/images/fitbuddyai_head.png"],
     "video": "https://www.youtube.com/embed/2XcmRr0Vj3I",
     "featuredVideo": true,
     "resources": [
@@ -97,7 +97,7 @@
       { "label": "Nuffield Health: Straight leg raise technique", "url": "https://www.nuffieldhealth.com/article/how-to-do-a-straight-leg-raise" },
       { "label": "Video: Lying Leg Raises (YouTube)", "url": "https://www.youtube.com/watch?v=2XcmRr0Vj3I" }
     ],
-    "galleryImages": ["/images/fitbuddyaiai_head.png"],
+    "galleryImages": ["/images/fitbuddyai_head.png"],
     "imageCaptions": ["Leg raise - controlled descent"],
     "difficulty": "Moderate",
     "duration": "5-10 min",
@@ -134,14 +134,14 @@
     }
   },
   "Lunges": {
-    "images": ["/images/fitbuddyaiai_head.png"],
+    "images": ["/images/fitbuddyai_head.png"],
     "video": "https://www.youtube.com/embed?listType=search&list=Lunges",
     "resources": [
       { "label": "Lunge technique guide", "url": "https://example.com/lunges/technique" },
       { "label": "Walking lunge progression", "url": "https://example.com/lunges/progression" },
       { "label": "Lunge programming for strength", "url": "https://example.com/lunges/programming" }
     ],
-    "galleryImages": ["/images/fitbuddyaiai_head.png"],
+    "galleryImages": ["/images/fitbuddyai_head.png"],
     "imageCaptions": ["Forward lunge finish"],
     "difficulty": "Moderate",
     "duration": "5-12 min",
@@ -156,14 +156,14 @@
     }
   },
   "High Knees": {
-    "images": ["/images/fitbuddyaiai_head.png"],
+    "images": ["/images/fitbuddyai_head.png"],
     "video": "https://www.youtube.com/embed?listType=search&list=High+Knees",
     "resources": [
       { "label": "High knees drill and form", "url": "https://example.com/high-knees/drill" },
       { "label": "Warm-up plyometrics", "url": "https://example.com/high-knees/plyometrics" },
       { "label": "Cardio interval ideas", "url": "https://example.com/high-knees/cardio" }
     ],
-    "galleryImages": ["/images/fitbuddyaiai_head.png"],
+    "galleryImages": ["/images/fitbuddyai_head.png"],
     "imageCaptions": ["High knees sprint form"],
     "difficulty": "Moderate",
     "duration": "30s-3min",
@@ -200,14 +200,14 @@
     }
   },
   "Mountain Climbers": {
-    "images": ["/images/fitbuddyaiai_head.png"],
+    "images": ["/images/fitbuddyai_head.png"],
     "video": "https://www.youtube.com/embed?listType=search&list=Mountain+Climbers",
     "resources": [
       { "label": "Mountain climber intervals", "url": "https://example.com/mountain-climbers/intervals" },
       { "label": "Plank-to-mountain transitions", "url": "https://example.com/mountain-climbers/transitions" },
       { "label": "Core conditioning with mountain climbers", "url": "https://example.com/mountain-climbers/core" }
     ],
-    "galleryImages": ["/images/fitbuddyaiai_head.png"],
+    "galleryImages": ["/images/fitbuddyai_head.png"],
     "imageCaptions": ["Mountain climbers quick drive"],
     "difficulty": "Moderate",
     "duration": "30s-2min",
@@ -222,7 +222,7 @@
     }
   },
   "Squats": {
-    "images": ["/images/fitbuddyaiai_head.png"],
+    "images": ["/images/fitbuddyai_head.png"],
     "video": "https://www.youtube.com/embed/aclHkVaku9U",
     "featuredVideo": true,
     "resources": [
@@ -230,7 +230,7 @@
       { "label": "ACE Fitness: Squat technique and tips", "url": "https://www.acefitness.org/education-and-resources/lifestyle/exercise-library/136/squat/" },
       { "label": "Video: How to Do a Barbell Squat (YouTube)", "url": "https://www.youtube.com/watch?v=aclHkVaku9U" }
     ],
-    "galleryImages": ["/images/fitbuddyaiai_head.png"],
+    "galleryImages": ["/images/fitbuddyai_head.png"],
     "imageCaptions": ["Proper squat depth and posture"],
     "difficulty": "Moderate",
     "duration": "8-15 min",
@@ -245,14 +245,14 @@
     }
   },
   "Donkey Kicks": {
-    "images": ["/images/fitbuddyaiai_head.png"],
+    "images": ["/images/fitbuddyai_head.png"],
     "video": "https://www.youtube.com/embed?listType=search&list=Donkey+Kicks",
     "resources": [
       { "label": "Donkey kick variations", "url": "https://example.com/donkey-kicks/variations" },
       { "label": "Glute activation exercises", "url": "https://example.com/donkey-kicks/activation" },
       { "label": "Band-assisted donkey kicks", "url": "https://example.com/donkey-kicks/band" }
     ],
-    "galleryImages": ["/images/fitbuddyaiai_head.png"],
+    "galleryImages": ["/images/fitbuddyai_head.png"],
     "imageCaptions": ["Donkey kick top"],
     "difficulty": "Easy",
     "duration": "3-8 min",
@@ -267,14 +267,14 @@
     }
   },
   "Bridges": {
-    "images": ["/images/fitbuddyaiai_head.png"],
+    "images": ["/images/fitbuddyai_head.png"],
     "video": "https://www.youtube.com/embed?listType=search&list=Bridges+exercise",
     "resources": [
       { "label": "Glute bridge progressions", "url": "https://example.com/bridges/progressions" },
       { "label": "Hip thrust vs bridge comparison", "url": "https://example.com/bridges/compare" },
       { "label": "Bridge programming for glute strength", "url": "https://example.com/bridges/program" }
     ],
-    "galleryImages": ["/images/fitbuddyaiai_head.png"],
+    "galleryImages": ["/images/fitbuddyai_head.png"],
     "imageCaptions": ["Bridge top squeeze"],
     "difficulty": "Easy",
     "duration": "5-10 min",
@@ -289,14 +289,14 @@
     }
   },
   "Jump Knee Tucks": {
-    "images": ["/images/fitbuddyaiai_head.png"],
+    "images": ["/images/fitbuddyai_head.png"],
     "video": "https://www.youtube.com/embed?listType=search&list=Jump+Knee+Tucks",
     "resources": [
       { "label": "Plyometric tuck jump progressions", "url": "https://example.com/jump-knee-tucks/progressions" },
       { "label": "Landing mechanics for knee tucks", "url": "https://example.com/jump-knee-tucks/landing" },
       { "label": "Plyometric conditioning", "url": "https://example.com/jump-knee-tucks/conditioning" }
     ],
-    "galleryImages": ["/images/fitbuddyaiai_head.png"],
+    "galleryImages": ["/images/fitbuddyai_head.png"],
     "imageCaptions": ["Tuck jump peak"],
     "difficulty": "Hard",
     "duration": "1-5 min",
@@ -311,14 +311,14 @@
     }
   },
   "Side Leg Raises": {
-    "images": ["/images/fitbuddyaiai_head.png"],
+    "images": ["/images/fitbuddyai_head.png"],
     "video": "https://www.youtube.com/embed?listType=search&list=Side+Leg+Raises",
     "resources": [
       { "label": "Side leg raise technique", "url": "https://example.com/side-leg-raises/technique" },
       { "label": "Glute med strengthening routine", "url": "https://example.com/side-leg-raises/routine" },
       { "label": "Ankle and hip mobility for side raises", "url": "https://example.com/side-leg-raises/mobility" }
     ],
-    "galleryImages": ["/images/fitbuddyaiai_head.png"],
+    "galleryImages": ["/images/fitbuddyai_head.png"],
     "imageCaptions": ["Side leg raise top"],
     "difficulty": "Easy",
     "duration": "3-8 min",
@@ -355,14 +355,14 @@
     }
   },
   "Punches": {
-    "images": ["/images/fitbuddyaiai_head.png"],
+    "images": ["/images/fitbuddyai_head.png"],
     "video": "https://www.youtube.com/embed?listType=search&list=Punches+drill",
     "resources": [
       { "label": "Basic punching technique", "url": "https://example.com/punches/technique" },
       { "label": "Shadowboxing routines", "url": "https://example.com/punches/shadowboxing" },
       { "label": "Rotational power drills", "url": "https://example.com/punches/power" }
     ],
-    "galleryImages": ["/images/fitbuddyaiai_head.png"],
+    "galleryImages": ["/images/fitbuddyai_head.png"],
     "imageCaptions": ["Punching stance"],
     "difficulty": "Moderate",
     "duration": "3-8 min",
@@ -377,14 +377,14 @@
     }
   },
   "Pseudo Planche": {
-    "images": ["/images/fitbuddyaiai_head.png"],
+    "images": ["/images/fitbuddyai_head.png"],
     "video": "https://www.youtube.com/embed?listType=search&list=Pseudo+Planche",
     "resources": [
       { "label": "Pseudo planche progressions", "url": "https://example.com/pseudo-planche/progressions" },
       { "label": "Wrist and shoulder prep for planche", "url": "https://example.com/pseudo-planche/prep" },
       { "label": "Advanced bodyweight skills programming", "url": "https://example.com/pseudo-planche/program" }
     ],
-    "galleryImages": ["/images/fitbuddyaiai_head.png"],
+    "galleryImages": ["/images/fitbuddyai_head.png"],
     "imageCaptions": ["Pseudo planche lean"],
     "difficulty": "Hard",
     "duration": "Varies",
@@ -421,14 +421,14 @@
     }
   },
   "Doorframe Rows": {
-    "images": ["/images/fitbuddyaiai_head.png"],
+    "images": ["/images/fitbuddyai_head.png"],
     "video": "https://www.youtube.com/embed?listType=search&list=Doorframe+Rows",
     "resources": [
       { "label": "Doorframe row setup and safety", "url": "https://example.com/doorframe-rows/setup" },
       { "label": "Horizontal pulling programming", "url": "https://example.com/doorframe-rows/programming" },
       { "label": "Grip and wrist considerations", "url": "https://example.com/doorframe-rows/grip" }
     ],
-    "galleryImages": ["/images/fitbuddyaiai_head.png"],
+    "galleryImages": ["/images/fitbuddyai_head.png"],
     "imageCaptions": ["Doorframe row body angle"],
     "difficulty": "Easy",
     "duration": "5-12 min",
@@ -443,14 +443,14 @@
     }
   },
   "Scapular Shrugs": {
-    "images": ["/images/fitbuddyaiai_head.png"],
+    "images": ["/images/fitbuddyai_head.png"],
     "video": "https://www.youtube.com/embed?listType=search&list=Scapular+Shrugs",
     "resources": [
       { "label": "Scapular control drills", "url": "https://example.com/scapular-shrugs/drills" },
       { "label": "Shoulder health routines", "url": "https://example.com/scapular-shrugs/shoulder-health" },
       { "label": "Band-based scapular work", "url": "https://example.com/scapular-shrugs/bands" }
     ],
-    "galleryImages": ["/images/fitbuddyaiai_head.png"],
+    "galleryImages": ["/images/fitbuddyai_head.png"],
     "imageCaptions": ["Scapular shrug small range"],
     "difficulty": "Easy",
     "duration": "2-6 min",
@@ -465,14 +465,14 @@
     }
   },
   "Superman": {
-    "images": ["/images/fitbuddyaiai_head.png"],
+    "images": ["/images/fitbuddyai_head.png"],
     "video": "https://www.youtube.com/embed?listType=search&list=Superman+exercise",
     "resources": [
       { "label": "Superman back extension tips", "url": "https://example.com/superman/tips" },
       { "label": "Lower back strengthening program", "url": "https://example.com/superman/program" },
       { "label": "Glute and hamstring pairing", "url": "https://example.com/superman/pairings" }
     ],
-    "galleryImages": ["/images/fitbuddyaiai_head.png"],
+    "galleryImages": ["/images/fitbuddyai_head.png"],
     "imageCaptions": ["Superman top position"],
     "difficulty": "Easy",
     "duration": "3-8 min",
@@ -487,14 +487,14 @@
     }
   },
   "Back Lifts": {
-    "images": ["/images/fitbuddyaiai_head.png"],
+    "images": ["/images/fitbuddyai_head.png"],
     "video": "https://www.youtube.com/embed?listType=search&list=Back+Lifts",
     "resources": [
       { "label": "Back lift variations", "url": "https://example.com/back-lifts/variations" },
       { "label": "Safe tempo for back lifts", "url": "https://example.com/back-lifts/tempo" },
       { "label": "Lower back strengthening plans", "url": "https://example.com/back-lifts/plans" }
     ],
-    "galleryImages": ["/images/fitbuddyaiai_head.png"],
+    "galleryImages": ["/images/fitbuddyai_head.png"],
     "imageCaptions": ["Back lift top"],
     "difficulty": "Moderate",
     "duration": "5-12 min",
@@ -509,14 +509,14 @@
     }
   },
   "Alternative Arm Leg Plank": {
-    "images": ["/images/fitbuddyaiai_head.png"],
+    "images": ["/images/fitbuddyai_head.png"],
     "video": "https://www.youtube.com/embed?listType=search&list=Arm+Leg+Plank",
     "resources": [
       { "label": "Arm/leg plank progressions", "url": "https://example.com/arm-leg-plank/progressions" },
       { "label": "Anti-rotation core drills", "url": "https://example.com/arm-leg-plank/anti-rotation" },
       { "label": "Plank stability programming", "url": "https://example.com/arm-leg-plank/program" }
     ],
-    "galleryImages": ["/images/fitbuddyaiai_head.png"],
+    "galleryImages": ["/images/fitbuddyai_head.png"],
     "imageCaptions": ["Arm-leg plank balance"],
     "difficulty": "Moderate",
     "duration": "30s-2min",
@@ -553,14 +553,14 @@
     }
   },
   "Chest Expansions": {
-    "images": ["/images/fitbuddyaiai_head.png"],
+    "images": ["/images/fitbuddyai_head.png"],
     "video": "https://www.youtube.com/embed?listType=search&list=Chest+Expansions",
     "resources": [
       { "label": "Chest expansion mobility sequence", "url": "https://example.com/chest-expansions/mobility" },
       { "label": "Band-assisted chest opens", "url": "https://example.com/chest-expansions/band" },
       { "label": "Upper body flexibility routine", "url": "https://example.com/chest-expansions/flexibility" }
     ],
-    "galleryImages": ["/images/fitbuddyaiai_head.png"],
+    "galleryImages": ["/images/fitbuddyai_head.png"],
     "imageCaptions": ["Chest expansion range"],
     "difficulty": "Easy",
     "duration": "3-8 min",
@@ -575,14 +575,14 @@
     }
   },
   "Chest Squeezes": {
-    "images": ["/images/fitbuddyaiai_head.png"],
+    "images": ["/images/fitbuddyai_head.png"],
     "video": "https://www.youtube.com/embed?listType=search&list=Chest+Squeezes",
     "resources": [
       { "label": "Chest squeeze variations", "url": "https://example.com/chest-squeezes/variations" },
       { "label": "Medicine ball chest squeeze", "url": "https://example.com/chest-squeezes/medicine-ball" },
       { "label": "Isometric chest work for posture", "url": "https://example.com/chest-squeezes/isometrics" }
     ],
-    "galleryImages": ["/images/fitbuddyaiai_head.png"],
+    "galleryImages": ["/images/fitbuddyai_head.png"],
     "imageCaptions": ["Chest squeeze hold"],
     "difficulty": "Easy",
     "duration": "2-6 min",
@@ -597,14 +597,14 @@
     }
   },
   "Pike Push-ups": {
-    "images": ["/images/fitbuddyaiai_head.png"],
+    "images": ["/images/fitbuddyai_head.png"],
     "video": "https://www.youtube.com/embed?listType=search&list=Pike+Push-ups",
     "resources": [
       { "label": "Pike push-up progression", "url": "https://example.com/pike-pushups/progression" },
       { "label": "Shoulder press alternatives", "url": "https://example.com/pike-pushups/alternatives" },
       { "label": "Inverted push-up technique", "url": "https://example.com/pike-pushups/inverted" }
     ],
-    "galleryImages": ["/images/fitbuddyaiai_head.png"],
+    "galleryImages": ["/images/fitbuddyai_head.png"],
     "imageCaptions": ["Pike push-up peak"],
     "difficulty": "Hard",
     "duration": "Varies",
@@ -619,14 +619,14 @@
     }
   },
   "Shoulder Taps": {
-    "images": ["/images/fitbuddyaiai_head.png"],
+    "images": ["/images/fitbuddyai_head.png"],
     "video": "https://www.youtube.com/embed?listType=search&list=Shoulder+Taps",
     "resources": [
       { "label": "Shoulder tap stability drill", "url": "https://example.com/shoulder-taps/drill" },
       { "label": "Anti-rotation core work", "url": "https://example.com/shoulder-taps/anti-rotation" },
       { "label": "Progressions for single-arm stability", "url": "https://example.com/shoulder-taps/progressions" }
     ],
-    "galleryImages": ["/images/fitbuddyaiai_head.png"],
+    "galleryImages": ["/images/fitbuddyai_head.png"],
     "imageCaptions": ["Shoulder tap balance"],
     "difficulty": "Easy",
     "duration": "1-5 min",
@@ -641,14 +641,14 @@
     }
   },
   "Clapping Push-ups": {
-    "images": ["/images/fitbuddyaiai_head.png"],
+    "images": ["/images/fitbuddyai_head.png"],
     "video": "https://www.youtube.com/embed?listType=search&list=Clapping+Push-ups",
     "resources": [
       { "label": "Plyometric push-up progressions", "url": "https://example.com/clapping-pushups/progressions" },
       { "label": "Safe landing mechanics for plyo", "url": "https://example.com/clapping-pushups/landing" },
       { "label": "Upper body power drills", "url": "https://example.com/clapping-pushups/power" }
     ],
-    "galleryImages": ["/images/fitbuddyaiai_head.png"],
+    "galleryImages": ["/images/fitbuddyai_head.png"],
     "imageCaptions": ["Clap push-up explosion"],
     "difficulty": "Hard",
     "duration": "Varies",
@@ -663,14 +663,14 @@
     }
   },
   "Cable Woodchop": {
-    "images": ["/images/fitbuddyaiai_head.png"],
+    "images": ["/images/fitbuddyai_head.png"],
     "video": "https://www.youtube.com/embed?listType=search&list=Cable+Woodchop",
     "resources": [
       { "label": "Cable woodchop technique", "url": "https://example.com/cable-woodchop/technique" },
       { "label": "Rotational core programming", "url": "https://example.com/cable-woodchop/programming" },
       { "label": "Anti-rotation vs rotation training", "url": "https://example.com/cable-woodchop/rotation" }
     ],
-    "galleryImages": ["/images/fitbuddyaiai_head.png"],
+    "galleryImages": ["/images/fitbuddyai_head.png"],
     "imageCaptions": ["Cable woodchop finish"],
     "difficulty": "Moderate",
     "duration": "5-12 min",
@@ -685,14 +685,14 @@
     }
   },
   "Hanging Leg Raises": {
-    "images": ["/images/fitbuddyaiai_head.png"],
+    "images": ["/images/fitbuddyai_head.png"],
     "video": "https://www.youtube.com/embed?listType=search&list=Hanging+Leg+Raises",
     "resources": [
       { "label": "Hanging leg raise progressions", "url": "https://example.com/hanging-leg-raises/progressions" },
       { "label": "Grip endurance tips", "url": "https://example.com/hanging-leg-raises/grip" },
       { "label": "Core-to-hip flexor coordination drills", "url": "https://example.com/hanging-leg-raises/coordination" }
     ],
-    "galleryImages": ["/images/fitbuddyaiai_head.png"],
+    "galleryImages": ["/images/fitbuddyai_head.png"],
     "imageCaptions": ["Hanging leg raise top"],
     "difficulty": "Hard",
     "duration": "Varies",
@@ -707,14 +707,14 @@
     }
   },
   "Crunch Machine": {
-    "images": ["/images/fitbuddyaiai_head.png"],
+    "images": ["/images/fitbuddyai_head.png"],
     "video": "https://www.youtube.com/embed?listType=search&list=Crunch+Machine",
     "resources": [
       { "label": "Using the crunch machine safely", "url": "https://example.com/crunch-machine/safety" },
       { "label": "Machine-based core workouts", "url": "https://example.com/crunch-machine/workouts" },
       { "label": "Adjusting machine settings for form", "url": "https://example.com/crunch-machine/settings" }
     ],
-    "galleryImages": ["/images/fitbuddyaiai_head.png"],
+    "galleryImages": ["/images/fitbuddyai_head.png"],
     "imageCaptions": ["Crunch machine setup"],
     "difficulty": "Easy",
     "duration": "5-12 min",
@@ -729,14 +729,14 @@
     }
   },
   "Cable Crunch": {
-    "images": ["/images/fitbuddyaiai_head.png"],
+    "images": ["/images/fitbuddyai_head.png"],
     "video": "https://www.youtube.com/embed?listType=search&list=Cable+Crunch",
     "resources": [
       { "label": "Cable crunch form and setup", "url": "https://example.com/cable-crunch/form" },
       { "label": "Rope attachment best practices", "url": "https://example.com/cable-crunch/rope" },
       { "label": "Core strength progressions", "url": "https://example.com/cable-crunch/progressions" }
     ],
-    "galleryImages": ["/images/fitbuddyaiai_head.png"],
+    "galleryImages": ["/images/fitbuddyai_head.png"],
     "imageCaptions": ["Cable crunch finish"],
     "difficulty": "Moderate",
     "duration": "5-12 min",
@@ -751,14 +751,14 @@
     }
   },
   "Rotary Torso Machine": {
-    "images": ["/images/fitbuddyaiai_head.png"],
+    "images": ["/images/fitbuddyai_head.png"],
     "video": "https://www.youtube.com/embed?listType=search&list=Rotary+Torso+Machine",
     "resources": [
       { "label": "Rotary torso machine technique", "url": "https://example.com/rotary-torso/technique" },
       { "label": "Machine-based rotation programming", "url": "https://example.com/rotary-torso/programming" },
       { "label": "Comparing rotational tools", "url": "https://example.com/rotary-torso/compare" }
     ],
-    "galleryImages": ["/images/fitbuddyaiai_head.png"],
+    "galleryImages": ["/images/fitbuddyai_head.png"],
     "imageCaptions": ["Rotary torso setup"],
     "difficulty": "Easy",
     "duration": "5-10 min",
@@ -773,14 +773,14 @@
     }
   },
   "Leg Press Machine": {
-    "images": ["/images/fitbuddyaiai_head.png"],
+    "images": ["/images/fitbuddyai_head.png"],
     "video": "https://www.youtube.com/embed?listType=search&list=Leg+Press+Machine",
     "resources": [
       { "label": "Leg press setup and foot placement", "url": "https://example.com/leg-press/setup" },
       { "label": "Programming leg press for hypertrophy", "url": "https://example.com/leg-press/programming" },
       { "label": "Knee and hip safety on leg press", "url": "https://example.com/leg-press/safety" }
     ],
-    "galleryImages": ["/images/fitbuddyaiai_head.png"],
+    "galleryImages": ["/images/fitbuddyai_head.png"],
     "imageCaptions": ["Leg press foot placement"],
     "difficulty": "Moderate",
     "duration": "Varies",
@@ -795,14 +795,14 @@
     }
   },
   "Weighted Lunges": {
-    "images": ["/images/fitbuddyaiai_head.png"],
+    "images": ["/images/fitbuddyai_head.png"],
     "video": "https://www.youtube.com/embed?listType=search&list=Weighted+Lunges",
     "resources": [
       { "label": "Weighted lunge variations", "url": "https://example.com/weighted-lunges/variations" },
       { "label": "Programming lunges for mass", "url": "https://example.com/weighted-lunges/programming" },
       { "label": "Lunge safety with weights", "url": "https://example.com/weighted-lunges/safety" }
     ],
-    "galleryImages": ["/images/fitbuddyaiai_head.png"],
+    "galleryImages": ["/images/fitbuddyai_head.png"],
     "imageCaptions": ["Weighted lunge stance"],
     "difficulty": "Moderate",
     "duration": "8-20 min",

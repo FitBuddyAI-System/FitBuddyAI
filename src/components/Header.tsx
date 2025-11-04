@@ -105,7 +105,7 @@ const Header: React.FC<HeaderProps> = ({ profileVersion, userData }) => {
   const getPageTitle = () => {
     switch (location.pathname) {
       case '/':
-        return 'Welcome to FitBuddyAIAI';
+        return 'Welcome to FitBuddyAI';
       case '/questionnaire':
         return 'Fitness Assessment';
       case '/calendar':
@@ -119,7 +119,7 @@ const Header: React.FC<HeaderProps> = ({ profileVersion, userData }) => {
       case '/chat':
         return 'Chat with Buddy';
       default:
-        return 'FitBuddyAIAI';
+        return 'FitBuddyAI';
     }
   };
 
@@ -134,7 +134,7 @@ const Header: React.FC<HeaderProps> = ({ profileVersion, userData }) => {
             <Dumbbell size={48} />
           </div>
           <div className="brand-text">
-            <h1 className="brand-title">FitBuddyAIAI</h1>
+            <h1 className="brand-title">FitBuddyAI</h1>
             <p className="brand-subtitle">Your AI Fitness Companion</p>
           </div>
         </div>
@@ -190,7 +190,7 @@ const Header: React.FC<HeaderProps> = ({ profileVersion, userData }) => {
           <button
             className={`nav-button ${isActive('/chat') ? 'active' : ''}`}
             onClick={() => {
-              try { window.dispatchEvent(new CustomEvent('fitbuddyaiai-open-chat')); } catch {}
+              try { window.dispatchEvent(new CustomEvent('fitbuddyai-open-chat')); } catch {}
               navigate('/chat');
             }}
             aria-label="Chat with Buddy"
@@ -227,7 +227,7 @@ const Header: React.FC<HeaderProps> = ({ profileVersion, userData }) => {
           )}
           <div className="profile-section">
             <img
-              src={tryOnAvatar || (currentUser && currentUser.avatar && currentUser.avatar.trim() ? currentUser.avatar : "/images/fitbuddyaiai_head.png")}
+              src={tryOnAvatar || (currentUser && currentUser.avatar && currentUser.avatar.trim() ? currentUser.avatar : "/images/fitbuddyai_head.png")}
               alt="Profile"
               className="profile-image"
               onClick={() => navigate(isSignedIn ? '/profile' : '/signin')}
@@ -246,8 +246,8 @@ const Header: React.FC<HeaderProps> = ({ profileVersion, userData }) => {
                     <button onClick={() => {
                         // Mirror SignOutButton behavior: attempt to backup sensitive keys before clearing
                         (async () => {
-                          try { localStorage.setItem('fitbuddyaiai_no_auto_restore', '1'); } catch {}
-                          try { sessionStorage.setItem('fitbuddyaiai_no_auto_restore', '1'); } catch {}
+                          try { localStorage.setItem('fitbuddyai_no_auto_restore', '1'); } catch {}
+                          try { sessionStorage.setItem('fitbuddyai_no_auto_restore', '1'); } catch {}
                           try {
                             const { loadUserData } = await import('../services/localStorage');
                             const parsed = loadUserData();
@@ -266,7 +266,7 @@ const Header: React.FC<HeaderProps> = ({ profileVersion, userData }) => {
                           // Also call legacy signOut to remove any auth cookies/local keys if needed
                           try { /* legacy signOut is handled elsewhere */ } catch {}
                           // Notify app and navigate to sign-in
-                          window.dispatchEvent(new Event('fitbuddyaiai-logout'));
+                          window.dispatchEvent(new Event('fitbuddyai-logout'));
                           navigate('/signin');
                         })();
                       }}>Sign Out</button>

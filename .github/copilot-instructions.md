@@ -1,6 +1,6 @@
 <!-- Use this file to provide workspace-specific custom instructions to Copilot. For more details, visit https://code.visualstudio.com/docs/copilot/copilot-customization#_use-a-githubcopilotinstructionsmd-file -->
 
-# FitBuddyAIAI - AI Fitness Companion
+# FitBuddyAI - AI Fitness Companion
 
 This is a modern fitness web application built with React, TypeScript, and Vite. The application features:
 
@@ -14,7 +14,7 @@ This is a modern fitness web application built with React, TypeScript, and Vite.
 - Lucide React for icons
 
 
-## FitBuddyAIAI Theme & Style Guidelines (Strict)
+## FitBuddyAI Theme & Style Guidelines (Strict)
 
 - **Color Palette:**
   - Primary green: #1ecb7b (Duolingo-like)

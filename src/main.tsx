@@ -35,7 +35,7 @@ const setupUnloadHandler = () => {
     if (!isAttached) {
       window.addEventListener('beforeunload', handler, { passive: true });
       // Also listen for our custom logout event so we can backup when the user clicks sign out
-      window.addEventListener('fitbuddyaiai-logout', async () => {
+      window.addEventListener('fitbuddyai-logout', async () => {
           try {
             const { loadUserData } = await import('./services/localStorage');
             const parsed = loadUserData();

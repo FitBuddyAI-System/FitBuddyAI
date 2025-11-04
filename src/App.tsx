@@ -68,8 +68,8 @@ function App() {
   // Listen for logout event to clear userData and stop polling
   useEffect(() => {
     const handleLogout = () => setUserData(null);
-    window.addEventListener('fitbuddyaiai-logout', handleLogout);
-    return () => window.removeEventListener('fitbuddyaiai-logout', handleLogout);
+    window.addEventListener('fitbuddyai-logout', handleLogout);
+    return () => window.removeEventListener('fitbuddyai-logout', handleLogout);
   }, []);
 
   // Listen for login event (dispatched after sign-in/restore) and sync saved data into state
@@ -80,11 +80,11 @@ function App() {
       if (savedUserData) setUserData(savedUserData);
   if (savedWorkoutPlan) { setWorkoutPlan(savedWorkoutPlan); setPlanVersion(v => v + 1); }
     };
-    window.addEventListener('fitbuddyaiai-login', handleLogin);
-    return () => window.removeEventListener('fitbuddyaiai-login', handleLogin);
+    window.addEventListener('fitbuddyai-login', handleLogin);
+    return () => window.removeEventListener('fitbuddyai-login', handleLogin);
   }, []);
 
-  // Listen for localStorage changes to fitbuddyaiai_user_data and update userData state
+  // Listen for localStorage changes to fitbuddyai_user_data and update userData state
   useEffect(() => {
     const syncUser = () => {
       const updated = loadUserData();
@@ -96,7 +96,7 @@ function App() {
     window.addEventListener('storage', syncUser);
     let bc: BroadcastChannel | null = null;
     try {
-      bc = new BroadcastChannel('fitbuddyaiai');
+      bc = new BroadcastChannel('fitbuddyai');
       bc.onmessage = () => syncUser();
     } catch (e) {
       // ignore if not available

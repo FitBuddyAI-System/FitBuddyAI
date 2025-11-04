@@ -113,8 +113,8 @@ export async function signIn(email: string, password: string): Promise<User> {
     }
   const toSave = { data: { id: user.id, email: user.email, username: usernameVal || user.email, energy: (user.user_metadata && user.user_metadata.energy) || 0 } };
   // Clear any cross-tab 'no auto restore' guard set during sign-out so sign-in can persist data
-  try { sessionStorage.removeItem('fitbuddyaiai_no_auto_restore'); } catch {}
-  try { localStorage.removeItem('fitbuddyaiai_no_auto_restore'); } catch {}
+  try { sessionStorage.removeItem('fitbuddyai_no_auto_restore'); } catch {}
+  try { localStorage.removeItem('fitbuddyai_no_auto_restore'); } catch {}
   try { saveUserData({ data: toSave.data, token }, { skipBackup: true, forceSave: true } as any); } catch { /* ignore */ }
   try { if (token) saveAuthToken(token); } catch {}
 
@@ -164,8 +164,8 @@ export async function signUp(email: string, username: string, password: string):
   // Supabase may require the user to confirm via email before signing in; do not mark them
   // as signed-in (or persist their profile) until a token exists.
   if (token && toSave) {
-    try { sessionStorage.removeItem('fitbuddyaiai_no_auto_restore'); } catch {}
-    try { localStorage.removeItem('fitbuddyaiai_no_auto_restore'); } catch {}
+    try { sessionStorage.removeItem('fitbuddyai_no_auto_restore'); } catch {}
+    try { localStorage.removeItem('fitbuddyai_no_auto_restore'); } catch {}
     try { saveUserData({ data: toSave, token }, { skipBackup: true, forceSave: true } as any); } catch { /* ignore */ }
   }
     // Ensure server-side app_users and user_data rows exist for this new Supabase user (best-effort).
@@ -216,10 +216,10 @@ export function getCurrentUser(): User | null {
 
 export function signOut() {
   try { clearAuthToken(); } catch {}
-  try { sessionStorage.removeItem('fitbuddyaiai_no_auto_restore'); } catch {}
-  try { localStorage.removeItem('fitbuddyaiai_no_auto_restore'); } catch {}
+  try { sessionStorage.removeItem('fitbuddyai_no_auto_restore'); } catch {}
+  try { localStorage.removeItem('fitbuddyai_no_auto_restore'); } catch {}
   try { const { clearUserData } = require('./localStorage'); clearUserData(); } catch {}
-  try { sessionStorage.removeItem('fitbuddyaiaiUsername'); } catch {}
+  try { sessionStorage.removeItem('fitbuddyaiUsername'); } catch {}
   // If using Supabase client, call signOut to clear its internal session
   try {
     if (supabase && typeof supabase.auth?.signOut === 'function') {

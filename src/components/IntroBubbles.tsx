@@ -21,7 +21,7 @@ const shouldShowIntro = () => {
     try {
       const refUrl = new URL(ref);
       console.log('[IntroBubbles] Referrer hostname:', refUrl.hostname, 'Current hostname:', window.location.hostname);
-      if (refUrl.hostname === window.location.hostname && window.sessionStorage.getItem('fitbuddyaiai-skip-intro') === '1') {
+      if (refUrl.hostname === window.location.hostname && window.sessionStorage.getItem('fitbuddyai-skip-intro') === '1') {
         console.log('[IntroBubbles] Skipping intro due to sessionStorage flag.');
         return false;
       }

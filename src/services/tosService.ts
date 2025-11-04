@@ -1,5 +1,5 @@
 // Clean tosService implementation - central localStorage-backed acceptance helpers
-const STORAGE_KEY = 'fitbuddyaiai_tos_accepted_v1';
+const STORAGE_KEY = 'fitbuddyai_tos_accepted_v1';
 
 type AcceptRecord = {
   tos?: { acceptedAt: string } | true;
@@ -62,7 +62,7 @@ export function acceptTos(userId?: string | number | undefined) {
     rec.tos = { acceptedAt: new Date().toISOString() };
     data[key] = rec;
     writeStore(data);
-    try { window.dispatchEvent(new CustomEvent('fitbuddyaiai-tos-accepted', { detail: { userId: key } })); } catch (e) { }
+    try { window.dispatchEvent(new CustomEvent('fitbuddyai-tos-accepted', { detail: { userId: key } })); } catch (e) { }
     return true;
   } catch (e) { return false; }
 }
@@ -75,7 +75,7 @@ export function acceptPrivacy(userId?: string | number | undefined) {
     rec.privacy = { acceptedAt: new Date().toISOString() };
     data[key] = rec;
     writeStore(data);
-    try { window.dispatchEvent(new CustomEvent('fitbuddyaiai-privacy-accepted', { detail: { userId: key } })); } catch (e) { }
+    try { window.dispatchEvent(new CustomEvent('fitbuddyai-privacy-accepted', { detail: { userId: key } })); } catch (e) { }
     return true;
   } catch (e) { return false; }
 }
@@ -95,8 +95,8 @@ export function migrateAnonToUser(userId?: string | number | undefined) {
       data[key] = rec;
       delete data['__anon__'];
       writeStore(data);
-      if (rec.tos) try { window.dispatchEvent(new CustomEvent('fitbuddyaiai-tos-accepted', { detail: { userId: key } })); } catch (e) {}
-      if (rec.privacy) try { window.dispatchEvent(new CustomEvent('fitbuddyaiai-privacy-accepted', { detail: { userId: key } })); } catch (e) {}
+      if (rec.tos) try { window.dispatchEvent(new CustomEvent('fitbuddyai-tos-accepted', { detail: { userId: key } })); } catch (e) {}
+      if (rec.privacy) try { window.dispatchEvent(new CustomEvent('fitbuddyai-privacy-accepted', { detail: { userId: key } })); } catch (e) {}
     }
     return changed;
   } catch (e) { return false; }

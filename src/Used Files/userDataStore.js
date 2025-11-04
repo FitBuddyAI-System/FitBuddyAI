@@ -1,5 +1,5 @@
 // userDataStore.js
-// Secure user data storage for FitBuddyAIAI (Node.js server-side)
+// Secure user data storage for FitBuddyAI (Node.js server-side)
 // Uses AES encryption for user data at rest
 
 const fs = require('fs');
@@ -7,7 +7,7 @@ const path = require('path');
 const crypto = require('crypto');
 
 const DATA_FILE = path.join(__dirname, 'users.enc.json');
-const ENCRYPTION_KEY = process.env.FITBUDDYAIAI_USERDATA_KEY || 'fitbuddyaiai_default_key_32bytes!'; // 32 bytes for AES-256
+const ENCRYPTION_KEY = process.env.FITBUDDYAI_USERDATA_KEY || 'fitbuddyai_default_key_32bytes!'; // 32 bytes for AES-256
 const IV_LENGTH = 16;
 
 function encrypt(text) {

@@ -46,9 +46,9 @@ export default async function handler(req: any, res: any) {
       const body = req.body || {};
       const userId = body.userId;
       const payload = body.payload ?? {
-        fitbuddyaiai_questionnaire_progress: body.fitbuddyaiai_questionnaire_progress ?? null,
-        fitbuddyaiai_workout_plan: body.fitbuddyaiai_workout_plan ?? null,
-        fitbuddyaiai_assessment_data: body.fitbuddyaiai_assessment_data ?? null,
+        fitbuddyai_questionnaire_progress: body.fitbuddyai_questionnaire_progress ?? null,
+        fitbuddyai_workout_plan: body.fitbuddyai_workout_plan ?? null,
+        fitbuddyai_assessment_data: body.fitbuddyai_assessment_data ?? null,
         // Optional new fields: terms acceptance and chat history
         accepted_terms: body.accepted_terms ?? null,
         accepted_privacy: body.accepted_privacy ?? null,
@@ -66,9 +66,9 @@ export default async function handler(req: any, res: any) {
             try { existing = JSON.parse(fs.readFileSync(filePath, 'utf8')); } catch (e) { existing = {}; }
           }
           const toWrite: any = { ...existing };
-          if (sanitizedPayload.fitbuddyaiai_workout_plan !== undefined) toWrite.fitbuddyaiai_workout_plan = typeof sanitizedPayload.fitbuddyaiai_workout_plan === 'string' ? sanitizedPayload.fitbuddyaiai_workout_plan : JSON.stringify(sanitizedPayload.fitbuddyaiai_workout_plan);
-          if (sanitizedPayload.fitbuddyaiai_questionnaire_progress !== undefined) toWrite.fitbuddyaiai_questionnaire_progress = typeof sanitizedPayload.fitbuddyaiai_questionnaire_progress === 'string' ? sanitizedPayload.fitbuddyaiai_questionnaire_progress : JSON.stringify(sanitizedPayload.fitbuddyaiai_questionnaire_progress);
-          if (sanitizedPayload.fitbuddyaiai_assessment_data !== undefined) toWrite.fitbuddyaiai_assessment_data = typeof sanitizedPayload.fitbuddyaiai_assessment_data === 'string' ? sanitizedPayload.fitbuddyaiai_assessment_data : JSON.stringify(sanitizedPayload.fitbuddyaiai_assessment_data);
+          if (sanitizedPayload.fitbuddyai_workout_plan !== undefined) toWrite.fitbuddyai_workout_plan = typeof sanitizedPayload.fitbuddyai_workout_plan === 'string' ? sanitizedPayload.fitbuddyai_workout_plan : JSON.stringify(sanitizedPayload.fitbuddyai_workout_plan);
+          if (sanitizedPayload.fitbuddyai_questionnaire_progress !== undefined) toWrite.fitbuddyai_questionnaire_progress = typeof sanitizedPayload.fitbuddyai_questionnaire_progress === 'string' ? sanitizedPayload.fitbuddyai_questionnaire_progress : JSON.stringify(sanitizedPayload.fitbuddyai_questionnaire_progress);
+          if (sanitizedPayload.fitbuddyai_assessment_data !== undefined) toWrite.fitbuddyai_assessment_data = typeof sanitizedPayload.fitbuddyai_assessment_data === 'string' ? sanitizedPayload.fitbuddyai_assessment_data : JSON.stringify(sanitizedPayload.fitbuddyai_assessment_data);
           if (sanitizedPayload.accepted_terms !== undefined) toWrite.accepted_terms = sanitizedPayload.accepted_terms;
           if (sanitizedPayload.accepted_privacy !== undefined) toWrite.accepted_privacy = sanitizedPayload.accepted_privacy;
           if (sanitizedPayload.chat_history !== undefined) {
@@ -171,9 +171,9 @@ export default async function handler(req: any, res: any) {
         }
         if (!ok) {
           try {
-            const clientUser = body.fitbuddyaiai_user_data && typeof body.fitbuddyaiai_user_data === 'string'
-              ? (JSON.parse(body.fitbuddyaiai_user_data).data || JSON.parse(body.fitbuddyaiai_user_data))
-              : (body.fitbuddyaiai_user_data?.data || body.fitbuddyaiai_user_data || null);
+            const clientUser = body.fitbuddyai_user_data && typeof body.fitbuddyai_user_data === 'string'
+              ? (JSON.parse(body.fitbuddyai_user_data).data || JSON.parse(body.fitbuddyai_user_data))
+              : (body.fitbuddyai_user_data?.data || body.fitbuddyai_user_data || null);
 
             const checkWithClient = async (client: any, selector: { id?: string; email?: string }) => {
               const uid = selector.id ? String(selector.id) : null;
@@ -264,9 +264,9 @@ export default async function handler(req: any, res: any) {
       } catch (e) {}
       if (!userId) return res.status(400).json({ error: 'userId required' });
       const hasFitbuddyFields = (body && (
-        body.fitbuddyaiai_workout_plan !== undefined ||
-        body.fitbuddyaiai_questionnaire_progress !== undefined ||
-        body.fitbuddyaiai_assessment_data !== undefined ||
+        body.fitbuddyai_workout_plan !== undefined ||
+        body.fitbuddyai_questionnaire_progress !== undefined ||
+        body.fitbuddyai_assessment_data !== undefined ||
         body.accepted_terms !== undefined ||
         body.accepted_privacy !== undefined ||
         body.chat_history !== undefined
@@ -275,9 +275,9 @@ export default async function handler(req: any, res: any) {
         ? (typeof body.payload === 'string' ? JSON.parse(body.payload) : body.payload)
         : (hasFitbuddyFields
           ? {
-              fitbuddyaiai_questionnaire_progress: body.fitbuddyaiai_questionnaire_progress ?? null,
-              fitbuddyaiai_workout_plan: body.fitbuddyaiai_workout_plan ?? null,
-              fitbuddyaiai_assessment_data: body.fitbuddyaiai_assessment_data ?? null
+              fitbuddyai_questionnaire_progress: body.fitbuddyai_questionnaire_progress ?? null,
+              fitbuddyai_workout_plan: body.fitbuddyai_workout_plan ?? null,
+              fitbuddyai_assessment_data: body.fitbuddyai_assessment_data ?? null
             }
           : null);
 
@@ -319,9 +319,9 @@ export default async function handler(req: any, res: any) {
             }
             // Ensure we persist fields in the same shape as other local files (stringified JSON)
             const toWrite: any = { ...existing };
-            if (payloadToStore.fitbuddyaiai_workout_plan !== undefined) toWrite.fitbuddyaiai_workout_plan = typeof payloadToStore.fitbuddyaiai_workout_plan === 'string' ? payloadToStore.fitbuddyaiai_workout_plan : JSON.stringify(payloadToStore.fitbuddyaiai_workout_plan);
-            if (payloadToStore.fitbuddyaiai_questionnaire_progress !== undefined) toWrite.fitbuddyaiai_questionnaire_progress = typeof payloadToStore.fitbuddyaiai_questionnaire_progress === 'string' ? payloadToStore.fitbuddyaiai_questionnaire_progress : JSON.stringify(payloadToStore.fitbuddyaiai_questionnaire_progress);
-            if (payloadToStore.fitbuddyaiai_assessment_data !== undefined) toWrite.fitbuddyaiai_assessment_data = typeof payloadToStore.fitbuddyaiai_assessment_data === 'string' ? payloadToStore.fitbuddyaiai_assessment_data : JSON.stringify(payloadToStore.fitbuddyaiai_assessment_data);
+            if (payloadToStore.fitbuddyai_workout_plan !== undefined) toWrite.fitbuddyai_workout_plan = typeof payloadToStore.fitbuddyai_workout_plan === 'string' ? payloadToStore.fitbuddyai_workout_plan : JSON.stringify(payloadToStore.fitbuddyai_workout_plan);
+            if (payloadToStore.fitbuddyai_questionnaire_progress !== undefined) toWrite.fitbuddyai_questionnaire_progress = typeof payloadToStore.fitbuddyai_questionnaire_progress === 'string' ? payloadToStore.fitbuddyai_questionnaire_progress : JSON.stringify(payloadToStore.fitbuddyai_questionnaire_progress);
+            if (payloadToStore.fitbuddyai_assessment_data !== undefined) toWrite.fitbuddyai_assessment_data = typeof payloadToStore.fitbuddyai_assessment_data === 'string' ? payloadToStore.fitbuddyai_assessment_data : JSON.stringify(payloadToStore.fitbuddyai_assessment_data);
             // Persist chat_history explicitly when present (store as JSON string)
             if (payloadToStore.chat_history !== undefined) {
               try {
@@ -384,9 +384,9 @@ export default async function handler(req: any, res: any) {
                 const raw = fs.readFileSync(filePath, 'utf8');
                 const parsed = JSON.parse(raw);
                 resultPayload = {
-                  fitbuddyaiai_questionnaire_progress: parsed.fitbuddyaiai_questionnaire_progress ? JSON.parse(parsed.fitbuddyaiai_questionnaire_progress) : null,
-                  fitbuddyaiai_workout_plan: parsed.fitbuddyaiai_workout_plan ? JSON.parse(parsed.fitbuddyaiai_workout_plan) : null,
-                  fitbuddyaiai_assessment_data: parsed.fitbuddyaiai_assessment_data ? JSON.parse(parsed.fitbuddyaiai_assessment_data) : null,
+                  fitbuddyai_questionnaire_progress: parsed.fitbuddyai_questionnaire_progress ? JSON.parse(parsed.fitbuddyai_questionnaire_progress) : null,
+                  fitbuddyai_workout_plan: parsed.fitbuddyai_workout_plan ? JSON.parse(parsed.fitbuddyai_workout_plan) : null,
+                  fitbuddyai_assessment_data: parsed.fitbuddyai_assessment_data ? JSON.parse(parsed.fitbuddyai_assessment_data) : null,
                   // include chat_history when present (stored as JSON string)
                   chat_history: parsed.chat_history ? ( (() => { try { return JSON.parse(parsed.chat_history); } catch { return parsed.chat_history; } })() ) : null,
                   accepted_terms: parsed.accepted_terms !== undefined ? parsed.accepted_terms : null,
@@ -486,9 +486,9 @@ export default async function handler(req: any, res: any) {
         };
         if (payload && typeof payload === 'object') {
           try {
-            payload.fitbuddyaiai_workout_plan = normalizeVal(payload.fitbuddyaiai_workout_plan);
-            payload.fitbuddyaiai_questionnaire_progress = normalizeVal(payload.fitbuddyaiai_questionnaire_progress);
-            payload.fitbuddyaiai_assessment_data = normalizeVal(payload.fitbuddyaiai_assessment_data);
+            payload.fitbuddyai_workout_plan = normalizeVal(payload.fitbuddyai_workout_plan);
+            payload.fitbuddyai_questionnaire_progress = normalizeVal(payload.fitbuddyai_questionnaire_progress);
+            payload.fitbuddyai_assessment_data = normalizeVal(payload.fitbuddyai_assessment_data);
             // New fields: normalize terms acceptance and chat history
             try { payload.accepted_terms = normalizeVal(payload.accepted_terms); } catch (e) {}
             try { payload.accepted_privacy = normalizeVal(payload.accepted_privacy); } catch (e) {}
@@ -543,9 +543,9 @@ export default async function handler(req: any, res: any) {
         let storedNorm: any = null;
         if (storedRaw && typeof storedRaw === 'object') {
           storedNorm = {
-            fitbuddyaiai_workout_plan: normalizeVal(storedRaw.fitbuddyaiai_workout_plan),
-            fitbuddyaiai_questionnaire_progress: normalizeVal(storedRaw.fitbuddyaiai_questionnaire_progress),
-            fitbuddyaiai_assessment_data: normalizeVal(storedRaw.fitbuddyaiai_assessment_data)
+            fitbuddyai_workout_plan: normalizeVal(storedRaw.fitbuddyai_workout_plan),
+            fitbuddyai_questionnaire_progress: normalizeVal(storedRaw.fitbuddyai_questionnaire_progress),
+            fitbuddyai_assessment_data: normalizeVal(storedRaw.fitbuddyai_assessment_data)
           };
           try { if (storedCols.accepted_terms !== null && storedCols.accepted_terms !== undefined) storedNorm.accepted_terms = storedCols.accepted_terms; else storedNorm.accepted_terms = normalizeVal(storedRaw.accepted_terms); } catch (e) {}
           try { if (storedCols.accepted_privacy !== null && storedCols.accepted_privacy !== undefined) storedNorm.accepted_privacy = storedCols.accepted_privacy; else storedNorm.accepted_privacy = normalizeVal(storedRaw.accepted_privacy); } catch (e) {}

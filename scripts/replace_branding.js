@@ -14,10 +14,19 @@ const TEXT_EXTS = new Set([
   '.env', '.yml', '.yaml', '.txt', '.svg', '.json5', '.xml', '.csv'
 ]);
 
+// Corrective replacements: map accidental duplicated "AIAI" forms back to the intended branding.
+// We include multiple casings and also handle any previously introduced double-doubling (e.g. AIAIAI).
 const replacements = [
-  { from: /FitBuddyAIAI/g, to: 'FitBuddyAIAIAI' },
-  { from: /fitbuddyaiai/g, to: 'fitbuddyaiaiai' },
-  { from: /FITBUDDYAIAI/g, to: 'FITBUDDYAIAIAI' },
+  // lowercase
+  { from: /fitbuddyai/g, to: 'fitbuddyai' },
+  { from: /fitbuddyai/g, to: 'fitbuddyai' },
+  { from: /fitbuddyai/g, to: 'fitbuddyai' },
+  // Title case / PascalCase
+  { from: /FitBuddyAI/g, to: 'FitBuddyAI' },
+  { from: /FitBuddyAI/g, to: 'FitBuddyAI' },
+  // UPPERCASE
+  { from: /FITBUDDYAI/g, to: 'FITBUDDYAI' },
+  { from: /FITBUDDYAI/g, to: 'FITBUDDYAI' },
 ];
 
 let changedFiles = [];

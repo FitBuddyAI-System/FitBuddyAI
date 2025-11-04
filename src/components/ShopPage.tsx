@@ -5,7 +5,7 @@ import { Dumbbell, Sparkles, Smile, RefreshCw, ShoppingCart, Search, Filter } fr
 
 // Example shop items
 const AVATARS = [
-  { id: 'avatar1', name: 'Bot Buddy', image: 'https://api.dicebear.com/7.x/bottts/svg?seed=FitBuddyAIAI1', price: 100, type: 'avatar', description: 'A friendly robot avatar.' },
+  { id: 'avatar1', name: 'Bot Buddy', image: 'https://api.dicebear.com/7.x/bottts/svg?seed=FitBuddyAI1', price: 100, type: 'avatar', description: 'A friendly robot avatar.' },
   { id: 'avatar2', name: 'Dragon Head', image: 'https://api.dicebear.com/7.x/bottts/svg?seed=DragonHead', price: 200, type: 'avatar', description: 'Unleash your inner dragon!' },
   { id: 'avatar3', name: 'Duolingo Owl', image: 'https://api.dicebear.com/7.x/bottts/svg?seed=Duolingo', price: 250, type: 'avatar', description: 'Inspired by the language learning legend.' },
   { id: 'avatar4', name: 'Neo Cat', image: 'https://api.dicebear.com/7.x/croodles/svg?seed=NeoCat', price: 120, type: 'avatar', description: 'A sleek cyber cat.' },
@@ -25,7 +25,7 @@ const POWERUPS = [
   { id: 'smile', name: 'Smile Badge', icon: <Smile size={32} color="#1ecb7b" />, price: 80, type: 'powerup', description: 'Show off your positivity!' },
   { id: 'glow', name: 'Glow Outline', icon: <Sparkles size={32} color="#1ecb7b" />, price: 140, type: 'powerup', description: 'Add a soft glow behind your avatar.' },
   { id: 'confetti', name: 'Confetti Burst', icon: <Sparkles size={32} color="#ffb347" />, price: 220, type: 'powerup', description: 'Celebrate finishes with confetti.' },
-  { id: 'badge-pro', name: 'Pro Badge', icon: <Smile size={32} color="#1ecb7b" />, price: 190, type: 'powerup', description: 'Show you are a FitBuddyAIAI Pro.' },
+  { id: 'badge-pro', name: 'Pro Badge', icon: <Smile size={32} color="#1ecb7b" />, price: 190, type: 'powerup', description: 'Show you are a FitBuddyAI Pro.' },
   { id: 'trail', name: 'Movement Trail', icon: <RefreshCw size={32} color="#1e90cb" />, price: 170, type: 'powerup', description: 'Leave a subtle trail when you move.' },
   { id: 'animated-frames', name: 'Animated Frames', icon: <Sparkles size={32} color="#ffb347" />, price: 250, type: 'powerup', description: 'Frame your avatar with animated borders.' },
   { id: 'voice-chime', name: 'Voice Chime', icon: <Smile size={32} color="#1ecb7b" />, price: 120, type: 'powerup', description: 'Play a chime when you start workouts.' },
@@ -152,7 +152,7 @@ const ShopPage: React.FC<ShopPageProps> = ({ user, onPurchase }) => {
     <div className="shop-page fade-in-bounce">
       <header className="shop-header">
         <Dumbbell size={32} className="shop-logo" />
-        <h1 className="shop-title gradient-text">FitBuddyAIAI Shop</h1>
+        <h1 className="shop-title gradient-text">FitBuddyAI Shop</h1>
         <div className="shop-energy">
           <div className={`energy-pill ${energyPulse ? 'pulse' : ''}`} aria-live="polite">
             <span className="energy-value">⚡ {user.energy}</span>

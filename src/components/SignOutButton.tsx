@@ -9,8 +9,8 @@ const SignOutButton: React.FC = () => {
   const navigate = useNavigate();
   const handleSignOut = () => {
   // Mirror Header sign-out behavior: set cross-tab no-auto-restore
-  try { localStorage.setItem('fitbuddyaiai_no_auto_restore', '1'); } catch {}
-  try { sessionStorage.setItem('fitbuddyaiai_no_auto_restore', '1'); } catch {}
+  try { localStorage.setItem('fitbuddyai_no_auto_restore', '1'); } catch {}
+  try { sessionStorage.setItem('fitbuddyai_no_auto_restore', '1'); } catch {}
 
   // Immediately clear auth token and user data so no other listeners can re-persist them
   try { clearAuthToken(); } catch {}
@@ -21,7 +21,7 @@ const SignOutButton: React.FC = () => {
   try { signOut(); } catch {}
 
   // Notify app early to prevent other parts from re-saving user data
-  try { window.dispatchEvent(new Event('fitbuddyaiai-logout')); } catch {}
+  try { window.dispatchEvent(new Event('fitbuddyai-logout')); } catch {}
   navigate('/signin');
 
   // Fire-and-forget: attempt backups and sensitive deletion in background without touching storage
@@ -38,8 +38,8 @@ const SignOutButton: React.FC = () => {
   // Clear the 'no auto restore' guard after a short timeout so normal saves resume
   try {
     setTimeout(() => {
-      try { sessionStorage.removeItem('fitbuddyaiai_no_auto_restore'); } catch {}
-      try { localStorage.removeItem('fitbuddyaiai_no_auto_restore'); } catch {}
+      try { sessionStorage.removeItem('fitbuddyai_no_auto_restore'); } catch {}
+      try { localStorage.removeItem('fitbuddyai_no_auto_restore'); } catch {}
     }, 3000);
   } catch (e) {}
   };

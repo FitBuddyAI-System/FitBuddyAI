@@ -11,13 +11,13 @@ export interface QuestionnaireProgress {
 }
 
 const STORAGE_KEYS = {
-  QUESTIONNAIRE_PROGRESS: 'fitbuddyaiai_questionnaire_progress',
-  USER_DATA: 'fitbuddyaiai_user_data',
-  ASSESSMENT_DATA: 'fitbuddyaiai_assessment_data',
-  WORKOUT_PLAN: 'fitbuddyaiai_workout_plan'
+  QUESTIONNAIRE_PROGRESS: 'fitbuddyai_questionnaire_progress',
+  USER_DATA: 'fitbuddyai_user_data',
+  ASSESSMENT_DATA: 'fitbuddyai_assessment_data',
+  WORKOUT_PLAN: 'fitbuddyai_workout_plan'
 };
 const AUTH_KEYS = {
-  TOKEN: 'fitbuddyaiai_token'
+  TOKEN: 'fitbuddyai_token'
 };
 // Auto-backup: import cloud backup helper and provide a debounced scheduler
 import { backupUserDataToServer } from './cloudBackupService';
@@ -161,7 +161,7 @@ export const saveUserData = (userData: any, opts?: { skipBackup?: boolean }): vo
   try {
     // If an explicit guard was set (e.g., during sign-out), avoid re-saving user data to localStorage.
     try {
-      const guard = sessionStorage.getItem('fitbuddyaiai_no_auto_restore') || localStorage.getItem('fitbuddyaiai_no_auto_restore');
+      const guard = sessionStorage.getItem('fitbuddyai_no_auto_restore') || localStorage.getItem('fitbuddyai_no_auto_restore');
       if (guard && !(opts && (opts as any).forceSave)) {
         // Skip saving while guard is present to avoid races where background tasks re-persist user data during sign-out.
         return;
@@ -186,15 +186,15 @@ export const saveUserData = (userData: any, opts?: { skipBackup?: boolean }): vo
     try { sessionStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(payload)); } catch {}
     // Broadcast to other tabs so they can sync via BroadcastChannel
     try {
-      const bc = new BroadcastChannel('fitbuddyaiai');
+      const bc = new BroadcastChannel('fitbuddyai');
       bc.postMessage({ type: 'user-update', timestamp: Date.now() });
       bc.close();
     } catch (e) {}
     // When user signs in / user data changes, trigger backup of any existing keys
     if (!opts || !opts.skipBackup) scheduleBackup();
     // Clear the "no auto restore" guard when a user explicitly signs in (cross-tab)
-    try { sessionStorage.removeItem('fitbuddyaiai_no_auto_restore'); } catch {}
-    try { localStorage.removeItem('fitbuddyaiai_no_auto_restore'); } catch {}
+    try { sessionStorage.removeItem('fitbuddyai_no_auto_restore'); } catch {}
+    try { localStorage.removeItem('fitbuddyai_no_auto_restore'); } catch {}
   } catch (error) {
     console.warn('Failed to save user data:', error);
   }
@@ -231,7 +231,7 @@ export const clearUserData = (): void => {
       backupTimeout = null;
     }
     // Broadcast clear event
-    try { const bc = new BroadcastChannel('fitbuddyaiai'); bc.postMessage({ type: 'user-clear', timestamp: Date.now() }); bc.close(); } catch {}
+    try { const bc = new BroadcastChannel('fitbuddyai'); bc.postMessage({ type: 'user-clear', timestamp: Date.now() }); bc.close(); } catch {}
   } catch (error) {
     console.warn('Failed to clear user data:', error);
   }
@@ -381,7 +381,7 @@ export const appendChatMessage = (message: { role: string; text: string; ts?: nu
     const uid = opts?.userId || (() => {
       try { const raw = sessionStorage.getItem(STORAGE_KEYS.USER_DATA); return raw ? (JSON.parse(raw).data?.id || null) : null; } catch { return null; }
     })();
-    const key = `fitbuddyaiai_chat_${uid || 'anon'}`;
+    const key = `fitbuddyai_chat_${uid || 'anon'}`;
     const raw = sessionStorage.getItem(key) || localStorage.getItem(key);
     let arr: any[] = [];
     if (raw) {

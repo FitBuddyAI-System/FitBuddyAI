@@ -2,7 +2,7 @@
 	"version": "2.0.0",
 	"tasks": [
 		{
-			"label": "Start FitBuddyAIAI Development Server",
+			"label": "Start FitBuddyAI Development Server",
 			"type": "shell",
 			"command": "npm",
 			"args": [

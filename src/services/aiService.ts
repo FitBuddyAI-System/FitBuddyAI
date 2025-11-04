@@ -433,9 +433,9 @@ export async function getAITextResponse(payload: { prompt: string; workoutPlan?:
   const parts: string[] = [payload.prompt];
   const ctx = payload.localStorageContext;
   if (ctx) {
-    if (ctx.questionnaire) parts.push(`\n\nLocal: fitbuddyaiai_questionnaire_progress: ${JSON.stringify(ctx.questionnaire).slice(0,1200)}`);
-    if (ctx.userData) parts.push(`\n\nLocal: fitbuddyaiai_user_data: ${JSON.stringify(ctx.userData).slice(0,1200)}`);
-    if (ctx.workoutPlan) parts.push(`\n\nLocal: fitbuddyaiai_workout_plan: ${JSON.stringify(ctx.workoutPlan).slice(0,2000)}`);
+    if (ctx.questionnaire) parts.push(`\n\nLocal: fitbuddyai_questionnaire_progress: ${JSON.stringify(ctx.questionnaire).slice(0,1200)}`);
+    if (ctx.userData) parts.push(`\n\nLocal: fitbuddyai_user_data: ${JSON.stringify(ctx.userData).slice(0,1200)}`);
+    if (ctx.workoutPlan) parts.push(`\n\nLocal: fitbuddyai_workout_plan: ${JSON.stringify(ctx.workoutPlan).slice(0,2000)}`);
   } else if (payload.workoutPlan) {
     // Backwards-compatible: support single workoutPlan param
     parts.push(`\n\nUser workoutPlan (truncated): ${JSON.stringify(payload.workoutPlan).slice(0,2000)}`);

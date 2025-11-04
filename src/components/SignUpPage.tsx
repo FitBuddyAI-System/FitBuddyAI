@@ -27,7 +27,7 @@ const SignUpPage: React.FC = () => {
       // After signUp, Supabase may require email verification. The shared helper will
       // persist the token only if a session was returned. If no token exists, show the
       // verify page so the UI does not pretend the user is signed in.
-      const stored = (() => { try { const s = sessionStorage.getItem('fitbuddyaiai_user_data'); return s ? JSON.parse(s) : null; } catch { return null; } })();
+      const stored = (() => { try { const s = sessionStorage.getItem('fitbuddyai_user_data'); return s ? JSON.parse(s) : null; } catch { return null; } })();
       if (stored && stored.token) {
         navigate('/profile');
       } else {
