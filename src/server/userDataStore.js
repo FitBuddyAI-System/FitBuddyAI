@@ -19,15 +19,15 @@ function getUserFilePath(userId) {
 // Save user data (questionnaire progress and workout plan)
 
 router.post('/api/userdata/save', (req, res) => {
-  const { userId, fitbuddy_questionnaire_progress, fitbuddy_workout_plan, fitbuddy_assessment_data } = req.body;
+  const { userId, fitbuddyaiai_questionnaire_progress, fitbuddyaiai_workout_plan, fitbuddyaiai_assessment_data } = req.body;
   if (!userId) return res.status(400).json({ error: 'Missing userId' });
   const filePath = getUserFilePath(userId);
 
   // If the POST contains only userId (no keys to save), treat it as a fetch/restore request and return stored payload
-  const hasKeysToSave = (fitbuddy_questionnaire_progress !== undefined) || (fitbuddy_workout_plan !== undefined) || (fitbuddy_assessment_data !== undefined);
+  const hasKeysToSave = (fitbuddyaiai_questionnaire_progress !== undefined) || (fitbuddyaiai_workout_plan !== undefined) || (fitbuddyaiai_assessment_data !== undefined);
   if (!hasKeysToSave) {
     if (!fs.existsSync(filePath)) {
-      return res.json({ fitbuddy_questionnaire_progress: null, fitbuddy_workout_plan: null, fitbuddy_assessment_data: null });
+      return res.json({ fitbuddyaiai_questionnaire_progress: null, fitbuddyaiai_workout_plan: null, fitbuddyaiai_assessment_data: null });
     }
     try {
       const content = fs.readFileSync(filePath, 'utf8');
@@ -40,9 +40,9 @@ router.post('/api/userdata/save', (req, res) => {
 
   // Otherwise, perform save/update
   const data = {
-    fitbuddy_questionnaire_progress: fitbuddy_questionnaire_progress || null,
-    fitbuddy_workout_plan: fitbuddy_workout_plan || null,
-    fitbuddy_assessment_data: fitbuddy_assessment_data || null,
+    fitbuddyaiai_questionnaire_progress: fitbuddyaiai_questionnaire_progress || null,
+    fitbuddyaiai_workout_plan: fitbuddyaiai_workout_plan || null,
+    fitbuddyaiai_assessment_data: fitbuddyaiai_assessment_data || null,
     updated: new Date().toISOString()
   };
   fs.writeFile(filePath, JSON.stringify(data, null, 2), err => {
@@ -58,7 +58,7 @@ router.post('/api/userdata/load', (req, res) => {
   const filePath = getUserFilePath(userId);
 
   if (!fs.existsSync(filePath)) {
-    return res.json({ fitbuddy_questionnaire_progress: null, fitbuddy_workout_plan: null, fitbuddy_assessment_data: null });
+    return res.json({ fitbuddyaiai_questionnaire_progress: null, fitbuddyaiai_workout_plan: null, fitbuddyaiai_assessment_data: null });
   }
   try {
     const content = fs.readFileSync(filePath, 'utf8');

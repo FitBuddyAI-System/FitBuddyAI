@@ -20,11 +20,11 @@ export default function AgreementGuard({ userData, children }: Props) {
     check();
     const onTos = () => { setTosAccepted(true); setVisible(!hasAcceptedAll(userData?.id)); };
     const onPrivacy = () => { setPrivacyAccepted(true); setVisible(!hasAcceptedAll(userData?.id)); };
-    window.addEventListener('fitbuddy-tos-accepted', onTos);
-    window.addEventListener('fitbuddy-privacy-accepted', onPrivacy);
+    window.addEventListener('fitbuddyaiai-tos-accepted', onTos);
+    window.addEventListener('fitbuddyaiai-privacy-accepted', onPrivacy);
     return () => {
-      window.removeEventListener('fitbuddy-tos-accepted', onTos);
-      window.removeEventListener('fitbuddy-privacy-accepted', onPrivacy);
+      window.removeEventListener('fitbuddyaiai-tos-accepted', onTos);
+      window.removeEventListener('fitbuddyaiai-privacy-accepted', onPrivacy);
     };
   }, [userData?.id]);
 

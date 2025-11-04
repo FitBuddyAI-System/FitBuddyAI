@@ -1,12 +1,12 @@
-# FitBuddy - Enterprise AI Fitness Platform
+# FitBuddyAIAI - Enterprise AI Fitness Platform
 
 ## Business Overview
 
-FitBuddy is a comprehensive AI-powered fitness web application designed for business use, featuring user authentication, cloud persistence, administrative controls, and intelligent workout generation. The platform provides a complete fitness solution with modern UX/UI patterns inspired by successful apps like Duolingo.
+FitBuddyAIAI is a comprehensive AI-powered fitness web application designed for business use, featuring user authentication, cloud persistence, administrative controls, and intelligent workout generation. The platform provides a complete fitness solution with modern UX/UI patterns inspired by successful apps like Duolingo.
 
-[![Vercel Preview](https://badgen.net/badge/Vercel/View%20Latest%20Development%20Deployment/cyan?icon=vercel)](https://fitbuddy-git-development-william-ericksons-projects.vercel.app) <!-- To change the preview target URL manually, edit `public/vercel-preview-badge.json` or update the markdown link target below -->
+[![Vercel Preview](https://badgen.net/badge/Vercel/View%20Latest%20Development%20Deployment/cyan?icon=vercel)](https://fitbuddyaiai-git-development-william-ericksons-projects.vercel.app) <!-- To change the preview target URL manually, edit `public/vercel-preview-badge.json` or update the markdown link target below -->
 
-[![Vercel Preview](https://badgen.net/badge/Vercel/View%20Latest%20Deployment/green?icon=vercel)](https://aifitbuddy.vercel.app/) <!-- To change the preview target URL manually, edit `public/vercel-preview-badge.json` or update the markdown link target below -->
+[![Vercel Preview](https://badgen.net/badge/Vercel/View%20Latest%20Deployment/green?icon=vercel)](https://aifitbuddyaiai.vercel.app/) <!-- To change the preview target URL manually, edit `public/vercel-preview-badge.json` or update the markdown link target below -->
 
 ### Core Business Features
 
@@ -86,7 +86,7 @@ FitBuddy is a comprehensive AI-powered fitness web application designed for busi
 
 You can link the latest preview deployment from Vercel here for quick access during development.
 
-[![Vercel Preview](https://badgen.net/badge/Vercel/View%20Latest%20Development%20Deployment/cyan?icon=vercel)](https://fitbuddy-git-development-william-ericksons-projects.vercel.app) <!-- To change the preview target URL manually, edit `public/vercel-preview-badge.json` or update the markdown link target below -->
+[![Vercel Preview](https://badgen.net/badge/Vercel/View%20Latest%20Development%20Deployment/cyan?icon=vercel)](https://fitbuddyaiai-git-development-william-ericksons-projects.vercel.app) <!-- To change the preview target URL manually, edit `public/vercel-preview-badge.json` or update the markdown link target below -->
 
 If automation is failing or you prefer manual control, change the preview link yourself:
 

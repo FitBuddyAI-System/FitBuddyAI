@@ -15,7 +15,7 @@ export default function HelpCenter() {
           <div className="hero-logo"><Dumbbell size={36} color="#fff" /></div>
           <div>
             <h1 className="hero-title">Help Center</h1>
-            <p className="hero-sub">Find answers to common questions about using FitBuddy.</p>
+            <p className="hero-sub">Find answers to common questions about using FitBuddyAIAI.</p>
           </div>
         </div>
       </header>

@@ -3,25 +3,25 @@
 
 
 export async function backupUserDataToServer(userId: string) {
-  const fitbuddy_questionnaire_progress = localStorage.getItem('fitbuddy_questionnaire_progress');
-  const fitbuddy_workout_plan = localStorage.getItem('fitbuddy_workout_plan');
-  const fitbuddy_assessment_data = localStorage.getItem('fitbuddy_assessment_data');
-  const fitbuddy_chat = sessionStorage.getItem(`fitbuddy_chat_${userId}`) || localStorage.getItem(`fitbuddy_chat_${userId}`);
-  const fitbuddy_user_data = sessionStorage.getItem('fitbuddy_user_data') || localStorage.getItem('fitbuddy_user_data');
+  const fitbuddyaiai_questionnaire_progress = localStorage.getItem('fitbuddyaiai_questionnaire_progress');
+  const fitbuddyaiai_workout_plan = localStorage.getItem('fitbuddyaiai_workout_plan');
+  const fitbuddyaiai_assessment_data = localStorage.getItem('fitbuddyaiai_assessment_data');
+  const fitbuddyaiai_chat = sessionStorage.getItem(`fitbuddyaiai_chat_${userId}`) || localStorage.getItem(`fitbuddyaiai_chat_${userId}`);
+  const fitbuddyaiai_user_data = sessionStorage.getItem('fitbuddyaiai_user_data') || localStorage.getItem('fitbuddyaiai_user_data');
   if (!userId) return;
   try {
     // Only include keys that actually exist to avoid overwriting server data with nulls
   const payload: any = { userId };
-  if (fitbuddy_questionnaire_progress != null) payload.fitbuddy_questionnaire_progress = fitbuddy_questionnaire_progress;
-  if (fitbuddy_workout_plan != null) payload.fitbuddy_workout_plan = fitbuddy_workout_plan;
-  if (fitbuddy_assessment_data != null) payload.fitbuddy_assessment_data = fitbuddy_assessment_data;
+  if (fitbuddyaiai_questionnaire_progress != null) payload.fitbuddyaiai_questionnaire_progress = fitbuddyaiai_questionnaire_progress;
+  if (fitbuddyaiai_workout_plan != null) payload.fitbuddyaiai_workout_plan = fitbuddyaiai_workout_plan;
+  if (fitbuddyaiai_assessment_data != null) payload.fitbuddyaiai_assessment_data = fitbuddyaiai_assessment_data;
   // include chat history and user data if present so server can persist chat_history into payload
-  if (fitbuddy_chat != null) payload.chat_history = fitbuddy_chat;
-  if (fitbuddy_user_data != null) payload.fitbuddy_user_data = fitbuddy_user_data;
+  if (fitbuddyaiai_chat != null) payload.chat_history = fitbuddyaiai_chat;
+  if (fitbuddyaiai_user_data != null) payload.fitbuddyaiai_user_data = fitbuddyaiai_user_data;
 
-    // Attach local fitbuddy_user_data so server can cross-check client identity when needed
+    // Attach local fitbuddyaiai_user_data so server can cross-check client identity when needed
     try {
-  const rawUser = sessionStorage.getItem('fitbuddy_user_data') || localStorage.getItem('fitbuddy_user_data');
+  const rawUser = sessionStorage.getItem('fitbuddyaiai_user_data') || localStorage.getItem('fitbuddyaiai_user_data');
       if (rawUser) {
         try {
           const parsed = JSON.parse(rawUser);
@@ -30,7 +30,7 @@ export async function backupUserDataToServer(userId: string) {
             const safe = { ...parsed };
             if (safe.token) delete safe.token;
             if (safe.jwt) delete safe.jwt;
-            payload.fitbuddy_user_data = safe;
+            payload.fitbuddyaiai_user_data = safe;
             if (safe.accepted_terms !== undefined) payload.accepted_terms = safe.accepted_terms;
             if (safe.accepted_privacy !== undefined) payload.accepted_privacy = safe.accepted_privacy;
             if (safe.chat_history !== undefined && payload.chat_history === undefined) payload.chat_history = safe.chat_history;
@@ -51,16 +51,16 @@ export function beaconBackupUserData(userId: string) {
   try {
     if (!userId) return false;
     if (typeof navigator === 'undefined' || typeof navigator.sendBeacon !== 'function') return false;
-    const fitbuddy_questionnaire_progress = localStorage.getItem('fitbuddy_questionnaire_progress');
-    const fitbuddy_workout_plan = localStorage.getItem('fitbuddy_workout_plan');
-    const fitbuddy_assessment_data = localStorage.getItem('fitbuddy_assessment_data');
+    const fitbuddyaiai_questionnaire_progress = localStorage.getItem('fitbuddyaiai_questionnaire_progress');
+    const fitbuddyaiai_workout_plan = localStorage.getItem('fitbuddyaiai_workout_plan');
+    const fitbuddyaiai_assessment_data = localStorage.getItem('fitbuddyaiai_assessment_data');
     const payload: any = { userId };
-    if (fitbuddy_questionnaire_progress != null) payload.fitbuddy_questionnaire_progress = fitbuddy_questionnaire_progress;
-    if (fitbuddy_workout_plan != null) payload.fitbuddy_workout_plan = fitbuddy_workout_plan;
-    if (fitbuddy_assessment_data != null) payload.fitbuddy_assessment_data = fitbuddy_assessment_data;
+    if (fitbuddyaiai_questionnaire_progress != null) payload.fitbuddyaiai_questionnaire_progress = fitbuddyaiai_questionnaire_progress;
+    if (fitbuddyaiai_workout_plan != null) payload.fitbuddyaiai_workout_plan = fitbuddyaiai_workout_plan;
+    if (fitbuddyaiai_assessment_data != null) payload.fitbuddyaiai_assessment_data = fitbuddyaiai_assessment_data;
     // Include acceptance flags if present in unified user_data
     try {
-  const rawUser = sessionStorage.getItem('fitbuddy_user_data') || localStorage.getItem('fitbuddy_user_data');
+  const rawUser = sessionStorage.getItem('fitbuddyaiai_user_data') || localStorage.getItem('fitbuddyaiai_user_data');
       if (rawUser) {
         try {
           const parsed = JSON.parse(rawUser);
@@ -115,7 +115,7 @@ export async function restoreUserDataFromServer(userId: string) {
         const toStore = typeof v === 'string' ? v : JSON.stringify(v);
         // Persist restored keys into sessionStorage only for sensitive or user-scoped data.
         // We intentionally avoid writing restored user payload or chat to localStorage to prevent tokens/exposure.
-        if (key === 'fitbuddy_user_data') {
+        if (key === 'fitbuddyaiai_user_data') {
           try { sessionStorage.setItem(key, toStore); } catch {}
         } else {
           // Non-user long-term keys (questionnaire/workout/assessment) may remain in localStorage
@@ -126,16 +126,16 @@ export async function restoreUserDataFromServer(userId: string) {
       }
     };
 
-  writeIfPresent('fitbuddy_questionnaire_progress');
-  writeIfPresent('fitbuddy_workout_plan');
-  writeIfPresent('fitbuddy_assessment_data');
+  writeIfPresent('fitbuddyaiai_questionnaire_progress');
+  writeIfPresent('fitbuddyaiai_workout_plan');
+  writeIfPresent('fitbuddyaiai_assessment_data');
   // Also handle chat history: write into per-user chat key if present
   try {
-    const chat = payload.chat_history ?? payload.fitbuddy_chat ?? payload.fitbuddy_chat_history;
+    const chat = payload.chat_history ?? payload.fitbuddyaiai_chat ?? payload.fitbuddyaiai_chat_history;
         if (chat !== undefined && chat !== null) {
       try {
         const toStore = typeof chat === 'string' ? chat : JSON.stringify(chat);
-        try { sessionStorage.setItem(`fitbuddy_chat_${userId}`, toStore); } catch { try { localStorage.setItem(`fitbuddy_chat_${userId}`, toStore); } catch {} }
+        try { sessionStorage.setItem(`fitbuddyaiai_chat_${userId}`, toStore); } catch { try { localStorage.setItem(`fitbuddyaiai_chat_${userId}`, toStore); } catch {} }
       } catch (e) {
         // ignore
       }
@@ -152,22 +152,22 @@ export async function restoreUserDataFromServer(userId: string) {
 export async function backupAndDeleteSensitive(userId: string) {
   if (!userId) return false;
   try {
-    const chatKey = `fitbuddy_chat_${userId}`;
-    const fitbuddy_chat = localStorage.getItem(chatKey);
+    const chatKey = `fitbuddyaiai_chat_${userId}`;
+    const fitbuddyaiai_chat = localStorage.getItem(chatKey);
     // TOS store is a keyed object; include the whole object so server can store it
-    const fitbuddy_tos = localStorage.getItem('fitbuddy_tos_accepted_v1');
+    const fitbuddyaiai_tos = localStorage.getItem('fitbuddyaiai_tos_accepted_v1');
 
     // Build minimal payload with these keys only to avoid shipping unrelated user data
     const payload: any = { userId };
-    if (fitbuddy_chat != null) {
-      try { payload.chat_history = JSON.parse(fitbuddy_chat); } catch { payload.chat_history = fitbuddy_chat; }
+    if (fitbuddyaiai_chat != null) {
+      try { payload.chat_history = JSON.parse(fitbuddyaiai_chat); } catch { payload.chat_history = fitbuddyaiai_chat; }
     }
-    if (fitbuddy_tos != null) {
-      try { payload.fitbuddy_tos_accepted_v1 = JSON.parse(fitbuddy_tos); } catch { payload.fitbuddy_tos_accepted_v1 = fitbuddy_tos; }
+    if (fitbuddyaiai_tos != null) {
+      try { payload.fitbuddyaiai_tos_accepted_v1 = JSON.parse(fitbuddyaiai_tos); } catch { payload.fitbuddyaiai_tos_accepted_v1 = fitbuddyaiai_tos; }
     }
 
     // If nothing to send, consider it successful (nothing to remove)
-    if (payload.chat_history === undefined && payload.fitbuddy_tos_accepted_v1 === undefined) return true;
+    if (payload.chat_history === undefined && payload.fitbuddyaiai_tos_accepted_v1 === undefined) return true;
 
     const init = await import('./apiAuth').then(m => m.attachAuthHeaders({ method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }));
     const res = await fetch('/api/userdata/save', init);
@@ -175,7 +175,7 @@ export async function backupAndDeleteSensitive(userId: string) {
 
     // On success, remove the local sensitive keys
     try { localStorage.removeItem(chatKey); } catch {}
-    try { localStorage.removeItem('fitbuddy_tos_accepted_v1'); } catch {}
+    try { localStorage.removeItem('fitbuddyaiai_tos_accepted_v1'); } catch {}
     return true;
   } catch (e) {
     return false;

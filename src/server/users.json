@@ -11,7 +11,7 @@
       {
         "id": "avatar1",
         "name": "Bot Buddy",
-        "image": "https://api.dicebear.com/7.x/bottts/svg?seed=FitBuddy1",
+        "image": "https://api.dicebear.com/7.x/bottts/svg?seed=FitBuddyAIAI1",
         "price": 100,
         "type": "avatar",
         "description": "A friendly robot avatar."

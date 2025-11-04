@@ -45,7 +45,7 @@ const SignInPage: React.FC = () => {
           return null;
         };
         await waitForToken(3000);
-        try { sessionStorage.setItem('fitbuddyUsername', data.user.username); } catch {}
+        try { sessionStorage.setItem('fitbuddyaiaiUsername', data.user.username); } catch {}
         // Attempt to restore any server-stored questionnaire/workout/assessment data
         try {
           await restoreUserDataFromServer(data.user.id);
@@ -53,7 +53,7 @@ const SignInPage: React.FC = () => {
           console.warn('Failed to restore user data from server:', err);
         }
   // Notify other app parts (same-tab) that a login occurred so they can sync state
-  try { window.dispatchEvent(new Event('fitbuddy-login')); } catch (err) {}
+  try { window.dispatchEvent(new Event('fitbuddyaiai-login')); } catch (err) {}
         // Fetch consolidated user-data payload (questionnaire, plan, assessment) via POST so we don't rely on GET routing
         try {
           const postUrl = '/api/userdata/load';
@@ -114,8 +114,8 @@ const SignInPage: React.FC = () => {
             const payload = body?.stored ?? body?.payload ?? body;
             if (payload) {
               try {
-                const assessRaw = payload.fitbuddy_assessment_data;
-                const planRaw = payload.fitbuddy_workout_plan;
+                const assessRaw = payload.fitbuddyaiai_assessment_data;
+                const planRaw = payload.fitbuddyaiai_workout_plan;
                 // Unwrap if the server returned a wrapper { data, timestamp }
                 const assessmentVal = assessRaw?.data ?? assessRaw ?? null;
                 const planVal = planRaw?.data ?? planRaw ?? null;

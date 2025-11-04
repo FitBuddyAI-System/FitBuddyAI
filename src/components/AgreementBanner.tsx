@@ -46,11 +46,11 @@ export default function AgreementBanner({ userData }: Props) {
       else setVisible(true);
     };
 
-    window.addEventListener('fitbuddy-tos-accepted', handleTos);
-    window.addEventListener('fitbuddy-privacy-accepted', handlePrivacy);
+    window.addEventListener('fitbuddyaiai-tos-accepted', handleTos);
+    window.addEventListener('fitbuddyaiai-privacy-accepted', handlePrivacy);
     return () => {
-      window.removeEventListener('fitbuddy-tos-accepted', handleTos);
-      window.removeEventListener('fitbuddy-privacy-accepted', handlePrivacy);
+      window.removeEventListener('fitbuddyaiai-tos-accepted', handleTos);
+      window.removeEventListener('fitbuddyaiai-privacy-accepted', handlePrivacy);
     };
   }, [userData?.id]);
 

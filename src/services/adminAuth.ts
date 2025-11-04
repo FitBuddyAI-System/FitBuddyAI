@@ -47,10 +47,10 @@ export async function isAdminRequest(req: any): Promise<{ ok: boolean; userId?: 
     }
   }
 
-  // 4) If client supplied fitbuddy_user_data in body, cross-check server-side DB for that id's role
+  // 4) If client supplied fitbuddyaiai_user_data in body, cross-check server-side DB for that id's role
   try {
     const body = req.body || {};
-    const clientUser = body?.fitbuddy_user_data?.data || body?.fitbuddy_user_data || null;
+    const clientUser = body?.fitbuddyaiai_user_data?.data || body?.fitbuddyaiai_user_data || null;
   if (clientUser && clientUser.id && SUPABASE_URL && (SUPABASE_SERVICE_ROLE_KEY || SUPABASE_KEY)) {
       try {
     const key = SUPABASE_SERVICE_ROLE_KEY || SUPABASE_KEY as string;

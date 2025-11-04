@@ -439,7 +439,7 @@ const Questionnaire: React.FC<QuestionnaireProps> = ({ onComplete }) => {
   const tryRestore = async () => {
       try {
         // If local progress or plan already exists, skip restoring from server to avoid overwriting
-        try { if (localStorage.getItem('fitbuddy_no_auto_restore') || sessionStorage.getItem('fitbuddy_no_auto_restore')) return; } catch {}
+        try { if (localStorage.getItem('fitbuddyaiai_no_auto_restore') || sessionStorage.getItem('fitbuddyaiai_no_auto_restore')) return; } catch {}
         const existingProgress = loadQuestionnaireProgress();
         const existingPlan = loadWorkoutPlan();
         if (existingProgress || existingPlan) return;

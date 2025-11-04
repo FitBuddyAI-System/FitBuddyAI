@@ -9,7 +9,7 @@ export default function Footer() {
         <div className="fb-brand">
           <div className="fb-logo"><Dumbbell size={28} color="#fff" /></div>
           <div>
-            <h4>FitBuddy</h4>
+            <h4>FitBuddyAIAI</h4>
             <p className="muted">Your friendly AI fitness companion</p>
           </div>
         </div>
@@ -28,13 +28,13 @@ export default function Footer() {
           </div>
           <div className="fb-col">
             <h5>Support</h5>
-            <a href="mailto:support@fitbuddy.example">support@fitbuddy.example</a>
+            <a href="mailto:support@fitbuddyaiai.example">support@fitbuddyaiai.example</a>
             <Link to="/help">Help Center</Link>
           </div>
         </div>
 
         <div className="fb-bottom">
-          <div>© {new Date().getFullYear()} FitBuddy, LLC. All rights reserved.</div>
+          <div>© {new Date().getFullYear()} FitBuddyAIAI, LLC. All rights reserved.</div>
           <div className="socials muted">Made with ❤️ for a healthier life</div>
         </div>
       </div>

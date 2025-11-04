@@ -20,7 +20,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onProfileUpdate }) 
   // Remove stats state, always use user for stats
   const [editMode, setEditMode] = useState(false);
   const [editUsername, setEditUsername] = useState(user?.username || '');
-  const [editAvatar, setEditAvatar] = useState(user?.avatar || '/images/fitbuddy_head.png');
+  const [editAvatar, setEditAvatar] = useState(user?.avatar || '/images/fitbuddyaiai_head.png');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
@@ -53,7 +53,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onProfileUpdate }) 
         <div className="profile-card fade-in-bounce">
           <div className="profile-avatar-bg">
             <img
-              src="/images/fitbuddy_head.png"
+              src="/images/fitbuddyaiai_head.png"
               alt="User Avatar"
               className="avatar"
               data-testid="profile-avatar"
@@ -72,16 +72,16 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onProfileUpdate }) 
 
   // Shop avatars (must match ShopPage)
   const shopAvatars = [
-    'https://api.dicebear.com/7.x/bottts/svg?seed=FitBuddy1',
+    'https://api.dicebear.com/7.x/bottts/svg?seed=FitBuddyAIAI1',
     'https://api.dicebear.com/7.x/bottts/svg?seed=DragonHead',
     'https://api.dicebear.com/7.x/bottts/svg?seed=Duolingo',
   ];
   const premadeAvatars = [
-    '/images/fitbuddy_head.png',
+    '/images/fitbuddyaiai_head.png',
     ...shopAvatars,
-    'https://api.dicebear.com/7.x/bottts/svg?seed=FitBuddy2',
-    'https://api.dicebear.com/7.x/bottts/svg?seed=FitBuddy3',
-    'https://api.dicebear.com/7.x/bottts/svg?seed=FitBuddy4',
+    'https://api.dicebear.com/7.x/bottts/svg?seed=FitBuddyAIAI2',
+    'https://api.dicebear.com/7.x/bottts/svg?seed=FitBuddyAIAI3',
+    'https://api.dicebear.com/7.x/bottts/svg?seed=FitBuddyAIAI4',
     'https://api.dicebear.com/7.x/bottts/svg?seed=Pizza',
     'https://we09532.github.io/Image_Hosting/Fishwins/Fishwin_Head.png',
     'https://api.dicebear.com/7.x/bottts/svg?seed=Language',
@@ -91,7 +91,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onProfileUpdate }) 
 
   const handleEdit = () => {
     setEditUsername(user?.username || '');
-    setEditAvatar(user?.avatar || '/images/fitbuddy_head.png');
+    setEditAvatar(user?.avatar || '/images/fitbuddyaiai_head.png');
     setEditMode(true);
     setError('');
   };
@@ -154,7 +154,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onProfileUpdate }) 
       <div className="profile-card fade-in-bounce">
         <div className="profile-avatar-bg">
           <img
-            src={editMode ? editAvatar : (user.avatar || '/images/fitbuddy_head.png')}
+            src={editMode ? editAvatar : (user.avatar || '/images/fitbuddyaiai_head.png')}
             alt="User Avatar"
             className="avatar"
             data-testid="profile-avatar"

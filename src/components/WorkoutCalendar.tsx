@@ -70,7 +70,7 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
         // If parent already provided a plan, don't overwrite it with server data.
         if (workoutPlan && workoutPlan.dailyWorkouts && workoutPlan.dailyWorkouts.length > 0) return;
         // Respect cross-tab guard set on logout
-        try { if (localStorage.getItem('fitbuddy_no_auto_restore') || sessionStorage.getItem('fitbuddy_no_auto_restore')) return; } catch {}
+        try { if (localStorage.getItem('fitbuddyaiai_no_auto_restore') || sessionStorage.getItem('fitbuddyaiai_no_auto_restore')) return; } catch {}
         const user = loadUserData();
         if (!user || !user.id) return;
         await restoreUserDataFromServer(user.id);
@@ -913,12 +913,12 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
 
     // Set a stronger guard to prevent immediate server/local restore from repopulating
     try {
-      localStorage.setItem('fitbuddy_no_auto_restore', '1');
-      sessionStorage.setItem('fitbuddy_no_auto_restore', '1');
+      localStorage.setItem('fitbuddyaiai_no_auto_restore', '1');
+      sessionStorage.setItem('fitbuddyaiai_no_auto_restore', '1');
       // keep the guard for 5 minutes so restores won't overwrite the user's manual clear
       setTimeout(() => {
-        try { localStorage.removeItem('fitbuddy_no_auto_restore'); } catch {}
-        try { sessionStorage.removeItem('fitbuddy_no_auto_restore'); } catch {}
+        try { localStorage.removeItem('fitbuddyaiai_no_auto_restore'); } catch {}
+        try { sessionStorage.removeItem('fitbuddyaiai_no_auto_restore'); } catch {}
       }, 300000);
     } catch (err) {
       console.warn('Failed to set no-auto-restore guard:', err);

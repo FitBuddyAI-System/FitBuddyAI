@@ -15,9 +15,9 @@ const TEXT_EXTS = new Set([
 ]);
 
 const replacements = [
-  { from: /FitBuddy/g, to: 'FitBuddyAI' },
-  { from: /fitbuddy/g, to: 'fitbuddyai' },
-  { from: /FITBUDDY/g, to: 'FITBUDDYAI' },
+  { from: /FitBuddyAIAI/g, to: 'FitBuddyAIAIAI' },
+  { from: /fitbuddyaiai/g, to: 'fitbuddyaiaiai' },
+  { from: /FITBUDDYAIAI/g, to: 'FITBUDDYAIAIAI' },
 ];
 
 let changedFiles = [];
