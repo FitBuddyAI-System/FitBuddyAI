@@ -205,6 +205,28 @@ export async function signUp(email: string, username: string, password: string):
   return data.user;
 }
 
+// Initiate Google OAuth sign-in (client-side). When running against Supabase this will
+// redirect the browser to Google's OAuth consent screen and back to the app. For
+// non-Supabase local server mode this function currently throws to indicate it's
+// unsupported.
+export async function signInWithGoogle(): Promise<void> {
+  const useSupabase = Boolean(import.meta.env.VITE_LOCAL_USE_SUPABASE || import.meta.env.VITE_SUPABASE_URL);
+  if (useSupabase) {
+    try {
+      // Redirect to Google OAuth; redirectTo should return to the app root so the
+      // app can detect the session on return.
+      await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + '/' } });
+      return;
+    } catch (e) {
+      console.warn('[authService] Google sign-in failed', e);
+      throw e;
+    }
+  }
+  // If Supabase isn't available in this environment, surface an error so UI can
+  // show a helpful message. Implement server-side OAuth flow if needed.
+  throw new Error('Google sign-in is not available in this environment.');
+}
+
 export function getCurrentUser(): User | null {
   try {
     const ud = loadUserData();

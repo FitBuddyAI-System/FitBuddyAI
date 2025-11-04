@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './SignUpPage.css';
-import { signUp } from '../services/authService';
+import { signUp, signInWithGoogle } from '../services/authService';
 
 const SignUpPage: React.FC = () => {
   const navigate = useNavigate();
@@ -63,6 +63,25 @@ const SignUpPage: React.FC = () => {
         </label>
         {error && <div className="error">{error}</div>}
         <button className="btn" type="submit" disabled={loading}>{loading ? 'Signing up...' : 'Sign Up'}</button>
+        <div className="oauth-divider">or</div>
+        <button
+          type="button"
+          className="btn btn-google"
+          onClick={async () => {
+            setError('');
+            setLoading(true);
+            try {
+              await signInWithGoogle();
+            } catch (e: any) {
+              setError(e?.message || 'Google sign-in not available');
+            } finally {
+              setLoading(false);
+            }
+          }}
+          disabled={loading}
+        >
+          Continue with Google
+        </button>
         <div className="signin-link">Already have an account? <span onClick={() => navigate('/signin')}>Sign In</span></div>
       </form>
     </div>

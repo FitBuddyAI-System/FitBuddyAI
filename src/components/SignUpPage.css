@@ -64,6 +64,26 @@
   cursor: not-allowed;
 }
 
+.oauth-divider {
+  text-align: center;
+  color: #888;
+  margin: 8px 0;
+  font-size: 0.9rem;
+}
+
+.btn-google {
+  background: #fff;
+  color: #222;
+  border: 1px solid #dcdcdc;
+  display: block;
+  width: 100%;
+  padding: 0.7rem 0;
+  border-radius: 0.7rem;
+  font-weight: 600;
+}
+
+.btn-google:hover { filter: brightness(0.98); }
+
 .error {
   color: var(--color-error, #e74c3c);
   background: #ffeaea;
