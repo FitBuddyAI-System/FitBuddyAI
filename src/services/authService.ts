@@ -217,9 +217,14 @@ export async function signInWithGoogle(): Promise<void> {
       // branded domain after it finishes the provider exchange). If you set
       // VITE_PUBLIC_APP_URL in your .env (for example https://app.fitbuddyai.com)
       // Supabase will redirect there after handling the OAuth callback.
-      const publicUrl = (import.meta.env.VITE_PUBLIC_APP_URL && String(import.meta.env.VITE_PUBLIC_APP_URL).trim()) || window.location.origin;
-      const redirectTo = publicUrl.replace(/\/$/, '') + '/';
-      await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo } });
+  // Build an explicit redirectTo that points back to the exact page the
+  // user started the flow from. Supabase will redirect the browser back to
+  // this URL after it finishes the provider exchange.
+  const envPublic = (import.meta.env.VITE_PUBLIC_APP_URL && String(import.meta.env.VITE_PUBLIC_APP_URL).trim()) || '';
+  const currentFullUrl = window.location.origin + window.location.pathname + window.location.search + window.location.hash;
+  const redirectTo = (envPublic && envPublic !== 'PUT_YOUR_PUBLIC_APP_URL_HERE') ? envPublic.replace(/\/$/, '') + window.location.pathname : currentFullUrl;
+  console.log('[authService] initiating Google sign-in, redirectTo=', redirectTo);
+  await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo } });
       return;
     } catch (e) {
       console.warn('[authService] Google sign-in failed', e);
