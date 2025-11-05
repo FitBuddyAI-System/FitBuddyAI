@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './SignUpPage.css';
-import { signUp, signInWithGoogle } from '../services/authService';
+import { signUp } from '../services/authService';
+import GoogleIdentityButton from './GoogleIdentityButton';
 
 const SignUpPage: React.FC = () => {
   const navigate = useNavigate();
@@ -22,16 +23,13 @@ const SignUpPage: React.FC = () => {
     setLoading(true);
     try {
       const normalizedEmail = String(email).trim().toLowerCase();
-      // Use the shared signUp helper which handles client persistence correctly
-      await signUp(normalizedEmail, username, password);
-      // After signUp, Supabase may require email verification. The shared helper will
-      // persist the token only if a session was returned. If no token exists, show the
-      // verify page so the UI does not pretend the user is signed in.
-      const stored = (() => { try { const s = sessionStorage.getItem('fitbuddyai_user_data'); return s ? JSON.parse(s) : null; } catch { return null; } })();
-      if (stored && stored.token) {
+      const dataUser = await signUp(normalizedEmail, username, password);
+      if (dataUser && (dataUser as any).id) {
+        try { sessionStorage.setItem('fitbuddyaiUsername', (dataUser as any).username); } catch {}
+        // Post-signup redirect to profile; additional restore/backup logic lives elsewhere
         navigate('/profile');
       } else {
-        navigate(`/verify-email?email=${encodeURIComponent(normalizedEmail)}`);
+        throw new Error('Invalid server response.');
       }
     } catch (err: any) {
       const m = String(err?.message || err || '');
@@ -64,24 +62,7 @@ const SignUpPage: React.FC = () => {
         {error && <div className="error">{error}</div>}
         <button className="btn" type="submit" disabled={loading}>{loading ? 'Signing up...' : 'Sign Up'}</button>
         <div className="oauth-divider">or</div>
-        <button
-          type="button"
-          className="btn btn-google"
-          onClick={async () => {
-            setError('');
-            setLoading(true);
-            try {
-              await signInWithGoogle();
-            } catch (e: any) {
-              setError(e?.message || 'Google sign-in not available');
-            } finally {
-              setLoading(false);
-            }
-          }}
-          disabled={loading}
-        >
-          Continue with Google
-        </button>
+        <GoogleIdentityButton />
         <div className="signin-link">Already have an account? <span onClick={() => navigate('/signin')}>Sign In</span></div>
       </form>
     </div>

@@ -227,7 +227,7 @@ const Header: React.FC<HeaderProps> = ({ profileVersion, userData }) => {
           )}
           <div className="profile-section">
             <img
-              src={tryOnAvatar || (currentUser && currentUser.avatar && currentUser.avatar.trim() ? currentUser.avatar : "/images/fitbuddyai_head.png")}
+              src={tryOnAvatar || (currentUser && currentUser.avatar && currentUser.avatar.trim() ? currentUser.avatar : "/images/fitbuddy_head.png")}
               alt="Profile"
               className="profile-image"
               onClick={() => navigate(isSignedIn ? '/profile' : '/signin')}

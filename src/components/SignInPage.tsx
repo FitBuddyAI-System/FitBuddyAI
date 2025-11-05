@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { saveAssessmentData, saveWorkoutPlan, saveUserData } from '../services/localStorage';
-import { signIn, signInWithGoogle } from '../services/authService';
+import { signIn } from '../services/authService';
+import GoogleIdentityButton from './GoogleIdentityButton';
 import { restoreUserDataFromServer } from '../services/cloudBackupService';
 import { useNavigate } from 'react-router-dom';
 import './SignInPage.css';
@@ -161,26 +162,7 @@ const SignInPage: React.FC = () => {
         {error && <div className="error">{error}</div>}
         <button className="btn" type="submit" disabled={loading}>{loading ? 'Signing in...' : 'Sign In'}</button>
         <div className="oauth-divider">or</div>
-        <button
-          type="button"
-          className="btn btn-google"
-          onClick={async () => {
-            setError('');
-            setLoading(true);
-            try {
-              await signInWithGoogle();
-              // If signInWithGoogle doesn't redirect (fallback), do nothing here; it will
-              // either throw or redirect the browser to complete the flow.
-            } catch (e: any) {
-              setError(e?.message || 'Google sign-in failed');
-            } finally {
-              setLoading(false);
-            }
-          }}
-          disabled={loading}
-        >
-          Continue with Google
-        </button>
+        <GoogleIdentityButton />
         <div className="signup-link">Don't have an account? <span onClick={() => navigate('/signup')}>Sign Up</span></div>
       </form>
       {resendModalOpen && (

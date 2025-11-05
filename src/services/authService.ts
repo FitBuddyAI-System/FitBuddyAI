@@ -213,9 +213,13 @@ export async function signInWithGoogle(): Promise<void> {
   const useSupabase = Boolean(import.meta.env.VITE_LOCAL_USE_SUPABASE || import.meta.env.VITE_SUPABASE_URL);
   if (useSupabase) {
     try {
-      // Redirect to Google OAuth; redirectTo should return to the app root so the
-      // app can detect the session on return.
-      await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + '/' } });
+      // Prefer an explicit public app URL (so Supabase redirects back to your
+      // branded domain after it finishes the provider exchange). If you set
+      // VITE_PUBLIC_APP_URL in your .env (for example https://app.fitbuddyai.com)
+      // Supabase will redirect there after handling the OAuth callback.
+      const publicUrl = (import.meta.env.VITE_PUBLIC_APP_URL && String(import.meta.env.VITE_PUBLIC_APP_URL).trim()) || window.location.origin;
+      const redirectTo = publicUrl.replace(/\/$/, '') + '/';
+      await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo } });
       return;
     } catch (e) {
       console.warn('[authService] Google sign-in failed', e);
@@ -225,6 +229,33 @@ export async function signInWithGoogle(): Promise<void> {
   // If Supabase isn't available in this environment, surface an error so UI can
   // show a helpful message. Implement server-side OAuth flow if needed.
   throw new Error('Google sign-in is not available in this environment.');
+}
+
+// Send a Google ID token (credential) to the server for verification and session creation.
+// The server should verify the token with Google's tokeninfo endpoint or using
+// Google's public keys, then create or link a user and return a session payload.
+export async function signInWithGoogleCredential(idToken: string): Promise<any> {
+  try {
+    const res = await fetch('/api/auth?action=google_id_token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id_token: idToken })
+    });
+    if (!res.ok) {
+      let data = null;
+      try { data = await res.json(); } catch {}
+      throw new Error((data && data.message) || `Google ID token sign-in failed (${res.status})`);
+    }
+    const data = await res.json();
+    // If the server returned a consolidated user payload, persist it locally
+    if (data && data.user) {
+      try { saveUserData({ data: data.user, token: data.token ?? null }, { skipBackup: true } as any); } catch {}
+    }
+    return data;
+  } catch (e) {
+    console.warn('[authService] signInWithGoogleCredential error', e);
+    throw e;
+  }
 }
 
 export function getCurrentUser(): User | null {

@@ -73,16 +73,27 @@
 
 .btn-google {
   background: #fff;
-  color: #222;
-  border: 1px solid #dcdcdc;
-  display: block;
+  color: #3c4043;
+  border: 1px solid #dadce0;
+  display: inline-flex;
+  align-items: center;
   width: 100%;
-  padding: 0.7rem 0;
-  border-radius: 0.7rem;
+  height: 40px;
+  gap: 12px;
+  padding: 0 12px;
+  border-radius: 4px;
   font-weight: 600;
+  font-size: 14px;
+  box-sizing: border-box;
 }
 
-.btn-google:hover { filter: brightness(0.98); }
+.btn-google:hover { background: #f7f8f9; }
+
+.btn-google .google-icon { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; }
+.btn-google .google-icon svg { display: block; width: 18px; height: 18px; }
+.btn-google .google-text { flex: 1; text-align: center; }
+
+.google-fallback { margin-top: 8px; }
 
 .error {
   color: var(--color-error, #e74c3c);
