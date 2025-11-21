@@ -4,7 +4,7 @@
 
 FitBuddyAI is a comprehensive AI-powered fitness web application designed for business use, featuring user authentication, cloud persistence, administrative controls, and intelligent workout generation. The platform provides a complete fitness solution with modern UX/UI patterns inspired by successful apps like Duolingo.
 
-[![Vercel Preview](https://badgen.net/badge/Vercel/View%20Latest%20Development%20Deployment/cyan?icon=vercel)](https://fitbuddyai-git-development-william-ericksons-projects.vercel.app) <!-- To change the preview target URL manually, edit `public/vercel-preview-badge.json` or update the markdown link target below -->
+[![Vercel Preview](https://badgen.net/badge/Vercel/View%20Latest%20Development%20Deployment/cyan?icon=vercel)](https://fitbuddyai-git-rename-branding-william-ericksons-projects.vercel.app/) <!-- To change the preview target URL manually, edit `public/vercel-preview-badge.json` or update the markdown link target below -->
 
 [![Vercel Preview](https://badgen.net/badge/Vercel/View%20Latest%20Deployment/green?icon=vercel)](https://aifitbuddyai.vercel.app/) <!-- To change the preview target URL manually, edit `public/vercel-preview-badge.json` or update the markdown link target below -->
 
