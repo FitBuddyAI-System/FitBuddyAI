@@ -20,7 +20,7 @@ export default async function handler(req: any, res: any) {
     if (!id) return res.status(400).json({ code: 'ERR_INVALID_INPUT', message: 'User id required.' });
 
     if (req.method === 'GET') {
-      const { data, error } = await supabase.from('app_users').select('*').eq('id', id).limit(1).maybeSingle();
+      const { data, error } = await supabase.from('fitbuddyai_userdata').select('*').eq('user_id', id).limit(1).maybeSingle();
       if (error) {
         console.error('[api/user/index] supabase error', error);
         return res.status(500).json({ message: 'Supabase error.' });
@@ -48,9 +48,9 @@ export default async function handler(req: any, res: any) {
         if (!uid) return res.status(400).json({ code: 'ERR_INVALID_INPUT', message: 'User id required for update.' });
         const updates: any = {};
         if (body.username !== undefined) updates.username = body.username;
-        if (body.avatar !== undefined) updates.avatar = body.avatar;
+        if (body.avatar !== undefined) updates.avatar_url = body.avatar;
         if (Object.keys(updates).length === 0) return res.status(400).json({ code: 'ERR_INVALID_INPUT', message: 'No update fields provided.' });
-        const { data, error } = await supabase.from('app_users').update(updates).eq('id', uid).select().limit(1).maybeSingle();
+        const { data, error } = await supabase.from('fitbuddyai_userdata').update(updates).eq('user_id', uid).select().limit(1).maybeSingle();
         if (error) {
           console.error('[api/user/index] update error', error);
           return res.status(500).json({ code: 'ERR_INTERNAL', message: 'Failed to update user.' });
@@ -118,7 +118,7 @@ export default async function handler(req: any, res: any) {
         }
 
         // Fetch user
-        const { data: userData, error: fetchErr } = await supabase.from('app_users').select('*').eq('id', uid).limit(1).maybeSingle();
+        const { data: userData, error: fetchErr } = await supabase.from('fitbuddyai_userdata').select('*').eq('user_id', uid).limit(1).maybeSingle();
         if (fetchErr) {
           console.error('[api/user/index] buy supabase fetch error', fetchErr);
           return res.status(500).json({ code: 'ERR_INTERNAL', message: 'Failed to fetch user.' });
@@ -133,7 +133,7 @@ export default async function handler(req: any, res: any) {
         const newInventory = [...existingInventory, item];
         const newEnergy = currentEnergy - price;
 
-        const { data: updated, error: updateErr } = await supabase.from('app_users').update({ inventory: newInventory, energy: newEnergy }).eq('id', uid).select().maybeSingle();
+        const { data: updated, error: updateErr } = await supabase.from('fitbuddyai_userdata').update({ inventory: newInventory, energy: newEnergy }).eq('user_id', uid).select().maybeSingle();
         if (updateErr) {
           console.error('[api/user/index] buy supabase update error', updateErr);
           return res.status(500).json({ code: 'ERR_INTERNAL', message: 'Failed to update user.' });

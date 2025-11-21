@@ -107,7 +107,7 @@ export default async function handler(req: any, res: any) {
           delete payloadToWrite.chat_history;
         }
         upsertRow.payload = payloadToWrite;
-        const { error } = await supabase.from('user_data').upsert(upsertRow, { onConflict: 'user_id' });
+        const { error } = await supabase.from('fitbuddyai_userdata').upsert(upsertRow, { onConflict: 'user_id' });
         if (error) {
           console.error('[api/userdata] supabase upsert error:', error);
           return res.status(500).json({ error: error.message || 'Upsert failed' });
@@ -147,10 +147,10 @@ export default async function handler(req: any, res: any) {
             const { data: ud, error: ue } = await client.auth.getUser(tokenToVerify);
             if (!ue && ud && ud.user) {
               const uid = ud.user.id;
-              try {
-                const { data: appRow } = await client.from('app_users').select('role').eq('id', uid).limit(1).maybeSingle();
-                if (appRow && appRow.role === 'admin') ok = true;
-              } catch {}
+                try {
+                  const { data: appRow } = await client.from('fitbuddyai_userdata').select('role').eq('user_id', uid).limit(1).maybeSingle();
+                  if (appRow && appRow.role === 'admin') ok = true;
+                } catch {}
               try {
                 const { data: pubRow } = await client.from('public.users').select('role').eq('id', uid).limit(1).maybeSingle();
                 if (pubRow && pubRow.role === 'admin') ok = true;
@@ -180,7 +180,7 @@ export default async function handler(req: any, res: any) {
               const email = selector.email ? String(selector.email) : null;
               if (uid) {
                 try {
-                  const { data: appRow } = await client.from('app_users').select('role').eq('id', uid).limit(1).maybeSingle();
+                  const { data: appRow } = await client.from('fitbuddyai_userdata').select('role').eq('user_id', uid).limit(1).maybeSingle();
                   if (appRow && appRow.role === 'admin') return true;
                 } catch {}
                 try {
@@ -190,7 +190,7 @@ export default async function handler(req: any, res: any) {
               }
               if (email) {
                 try {
-                  const { data: appRow } = await client.from('app_users').select('role').eq('email', email).limit(1).maybeSingle();
+                  const { data: appRow } = await client.from('fitbuddyai_userdata').select('role').eq('email', email).limit(1).maybeSingle();
                   if (appRow && appRow.role === 'admin') return true;
                 } catch {}
                 try {
@@ -301,7 +301,7 @@ export default async function handler(req: any, res: any) {
             delete payloadToWriteAdmin.chat_history;
           }
           upsertRow.payload = payloadToWriteAdmin;
-          const { error } = await dbClient.from('user_data').upsert(upsertRow, { onConflict: 'user_id' });
+          const { error } = await dbClient.from('fitbuddyai_userdata').upsert(upsertRow, { onConflict: 'user_id' });
           if (error) return res.status(500).json({ error: error.message || 'Upsert failed' });
           res.setHeader('x-userdata-source', 'supabase');
           return res.status(200).json({ ok: true, stored: payloadToWriteAdmin, chat_history: upsertRow.chat_history ?? null });
@@ -346,7 +346,7 @@ export default async function handler(req: any, res: any) {
       if (dbClient) {
         try {
           // request explicit columns if available
-          const { data, error } = await dbClient.from('user_data').select('payload, accepted_terms, accepted_privacy, chat_history').eq('user_id', userId).limit(1).maybeSingle();
+          const { data, error } = await dbClient.from('fitbuddyai_userdata').select('payload, accepted_terms, accepted_privacy, chat_history').eq('user_id', userId).limit(1).maybeSingle();
           if (error) {
             console.error('[api/userdata] admin fetch error:', error);
           } else {
@@ -431,7 +431,7 @@ export default async function handler(req: any, res: any) {
         // Fetch profile: prefer app_users (app-specific), fall back to public.users
         let profile: any = null;
         try {
-          const { data: appRow } = await supabase.from('app_users').select('*').eq('id', uid).limit(1).maybeSingle();
+          const { data: appRow } = await supabase.from('fitbuddyai_userdata').select('*').eq('user_id', uid).limit(1).maybeSingle();
           if (appRow) profile = appRow;
         } catch (e) {
           // ignore
@@ -446,7 +446,7 @@ export default async function handler(req: any, res: any) {
         // Fetch stored payload from user_data table
         let payload: any = null;
         try {
-          const { data, error } = await supabase.from('user_data').select('payload, accepted_terms, accepted_privacy, chat_history').eq('user_id', uid).limit(1).maybeSingle();
+          const { data, error } = await supabase.from('fitbuddyai_userdata').select('payload, accepted_terms, accepted_privacy, chat_history').eq('user_id', uid).limit(1).maybeSingle();
           if (error) {
             console.error('[api/userdata] payload fetch error:', error);
           } else {
@@ -524,7 +524,7 @@ export default async function handler(req: any, res: any) {
       if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
 
       try {
-        const { data, error } = await supabase.from('user_data').select('payload, accepted_terms, accepted_privacy, chat_history').eq('user_id', String(userId)).limit(1).maybeSingle();
+        const { data, error } = await supabase.from('fitbuddyai_userdata').select('payload, accepted_terms, accepted_privacy, chat_history').eq('user_id', String(userId)).limit(1).maybeSingle();
         if (error) {
           console.error('[api/userdata] load fetch error:', error);
           return res.status(500).json({ error: error.message || 'Fetch failed' });
@@ -573,7 +573,7 @@ export default async function handler(req: any, res: any) {
       const userId = req.query.userId || req.query?.[0];
       if (!userId) return res.status(400).json({ error: 'userId required' });
       if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
-      const { data, error } = await supabase.from('user_data').select('payload, accepted_terms, accepted_privacy, chat_history').eq('user_id', userId).single();
+      const { data, error } = await supabase.from('fitbuddyai_userdata').select('payload, accepted_terms, accepted_privacy, chat_history').eq('user_id', userId).single();
       if (error && error.code !== 'PGRST116') return res.status(500).json({ error: error.message || 'Fetch failed' });
       const payloadFromDb = data?.payload || null;
       const cols = { accepted_terms: data?.accepted_terms ?? null, accepted_privacy: data?.accepted_privacy ?? null, chat_history: data?.chat_history ?? null };

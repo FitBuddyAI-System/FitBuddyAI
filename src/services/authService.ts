@@ -47,7 +47,7 @@ export async function fetchUserById(id: string): Promise<User | null> {
     const useSupabase = Boolean(import.meta.env.VITE_LOCAL_USE_SUPABASE || import.meta.env.VITE_SUPABASE_URL);
     if (useSupabase) {
       try {
-        const { data, error } = await supabase.from('app_users').select('*').eq('id', id).limit(1).maybeSingle();
+        const { data, error } = await supabase.from('fitbuddyai_userdata').select('*').eq('user_id', id).limit(1).maybeSingle();
   if (error || !data) return null;
   try { saveUserData({ data }); } catch {}
   return data as User;
@@ -104,8 +104,8 @@ export async function signIn(email: string, password: string): Promise<User> {
     let usernameVal = (user.user_metadata && user.user_metadata.username) || null;
     if (!usernameVal) {
       // try to read from app_users table if present
-      try {
-        const { data: profile } = await supabase.from('app_users').select('username').eq('id', user.id).limit(1).maybeSingle();
+    try {
+        const { data: profile } = await supabase.from('fitbuddyai_userdata').select('username').eq('user_id', user.id).limit(1).maybeSingle();
         if (profile && profile.username) usernameVal = profile.username;
       } catch (e) {
         // ignore; we'll fallback to email

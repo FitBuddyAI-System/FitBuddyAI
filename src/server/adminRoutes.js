@@ -44,7 +44,7 @@ router.all('/api/admin/users', async (req, res) => {
 
   try {
     if (req.method === 'GET') {
-      const { data, error } = await supabaseAdmin.from('app_users').select('*').order('created_at', { ascending: false });
+      const { data, error } = await supabaseAdmin.from('fitbuddyai_userdata').select('*').order('created_at', { ascending: false });
       if (error) {
         console.error('[api/admin/users] GET error', error);
         return res.status(500).json({ message: 'Failed to fetch users', detail: error.message });
@@ -57,21 +57,21 @@ router.all('/api/admin/users', async (req, res) => {
 
     if (req.method === 'POST' && action === 'ban') {
       const { userId } = body;
-      const { error } = await supabaseAdmin.from('app_users').update({ banned: true }).eq('id', userId);
+      const { error } = await supabaseAdmin.from('fitbuddyai_userdata').update({ banned: true }).eq('user_id', userId);
       if (error) throw error;
       return res.json({ ok: true });
     }
 
     if (req.method === 'POST' && action === 'unban') {
       const { userId } = body;
-      const { error } = await supabaseAdmin.from('app_users').update({ banned: false }).eq('id', userId);
+      const { error } = await supabaseAdmin.from('fitbuddyai_userdata').update({ banned: false }).eq('user_id', userId);
       if (error) throw error;
       return res.json({ ok: true });
     }
 
     if (req.method === 'DELETE' && action === 'delete') {
       const { userId } = body;
-      const { error } = await supabaseAdmin.from('app_users').delete().eq('id', userId);
+      const { error } = await supabaseAdmin.from('fitbuddyai_userdata').delete().eq('user_id', userId);
       if (error) throw error;
       return res.json({ ok: true });
     }

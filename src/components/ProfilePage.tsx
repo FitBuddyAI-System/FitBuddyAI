@@ -154,7 +154,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onProfileUpdate }) 
       <div className="profile-card fade-in-bounce">
         <div className="profile-avatar-bg">
           <img
-            src={editMode ? editAvatar : (user.avatar || '/images/fitbuddyai_head.png')}
+            src={editMode ? editAvatar : (user.avatar || '/images/fitbuddy_head.png')}
             alt="User Avatar"
             className="avatar"
             data-testid="profile-avatar"

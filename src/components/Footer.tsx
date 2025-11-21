@@ -28,7 +28,7 @@ export default function Footer() {
           </div>
           <div className="fb-col">
             <h5>Support</h5>
-            <a href="mailto:support@fitbuddyai.example">support@fitbuddyai.example</a>
+            <a href="mailto:fitbuddyaig@gmail.com">fitbuddyaig@gmail.com</a>
             <Link to="/help">Help Center</Link>
           </div>
         </div>

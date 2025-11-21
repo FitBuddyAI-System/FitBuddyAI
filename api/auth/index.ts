@@ -33,10 +33,11 @@ export default async function handler(req: any, res: any) {
     if (action === 'signin') {
       const { email, password } = req.body as { email: string; password: string };
       if (!email || !password) return res.status(400).json({ message: 'Email and password required.' });
-      const { data } = await supabase.from('app_users').select('*').eq('email', email).limit(1).maybeSingle();
+      // Look up user in fitbuddyai_userdata by email (legacy API flow)
+      const { data } = await supabase.from('fitbuddyai_userdata').select('*').eq('email', email).limit(1).maybeSingle();
       const user = data as any;
       if (!user || user.password !== password) return res.status(401).json({ message: 'Invalid email or password.' });
-      const safeUser = { id: user.id, email: user.email, username: user.username, energy: user.energy, streak: user.streak, role: user.role };
+      const safeUser = { id: user.user_id || user.id, email: user.email, username: user.username, energy: user.energy, streak: user.streak, role: user.role };
       // Issue a local JWT for server-side verification when Supabase token is not used
       const jwtSecret = process.env.JWT_SECRET || 'dev_secret_change_me';
       let token: string | null = null;
@@ -56,15 +57,16 @@ export default async function handler(req: any, res: any) {
       const normalizedEmail = String(email).trim().toLowerCase();
       // Quick existence check to return a friendly message without attempting insert
       try {
-        const { data: existing } = await supabase.from('app_users').select('id,email').ilike('email', normalizedEmail).limit(1).maybeSingle();
+        const { data: existing } = await supabase.from('fitbuddyai_userdata').select('user_id,email').ilike('email', normalizedEmail).limit(1).maybeSingle();
   if (existing) return res.status(409).json({ code: 'EMAIL_EXISTS', message: 'Email already exists.' });
       } catch (e) {
         // ignore and proceed to insert; DB unique index will enforce constraint
       }
 
       const userId = uuidv4();
-      const userRow = { id: userId, email: normalizedEmail, username, password, avatar: '', energy: 100, streak: 0, inventory: [] };
-      const { error } = await supabase.from('app_users').insert(userRow);
+      // Insert into unified fitbuddyai_userdata table keyed by user_id
+      const userRow = { user_id: userId, email: normalizedEmail, username, password, avatar: '', energy: 100, streak: 0, inventory: [] };
+      const { error } = await supabase.from('fitbuddyai_userdata').insert(userRow);
       if (error) {
         // Supabase returns Postgres error details; detect unique violation (23505) or text mentioning 'unique'/'duplicate'
         const pgCode = (error as any)?.code || (error as any)?.details || null;
@@ -84,19 +86,10 @@ export default async function handler(req: any, res: any) {
       const { id, email, username } = req.body as { id: string; email: string; username: string };
       if (!id || !email || !username) return res.status(400).json({ message: 'id, email and username required.' });
       try {
-        // Insert into app_users with provided id (id comes from Supabase auth user)
-        const userRow = { id, email: String(email).trim().toLowerCase(), username, avatar: '', energy: 100, streak: 0, inventory: [] };
-        const { error: uErr } = await supabase.from('app_users').upsert(userRow, { onConflict: 'id' as any });
-        if (uErr) console.warn('[api/auth/create_profile] app_users upsert error', uErr);
-
-        // Insert initial user_data row (json payloads), ignore error but log
-        try {
-          const userDataRow: any = { id, payload: {}, chat_history: [], accepted_privacy: false, accepted_terms: false, updated_at: new Date().toISOString() };
-          const { error: dErr } = await supabase.from('user_data').upsert(userDataRow, { onConflict: 'id' as any });
-          if (dErr) console.warn('[api/auth/create_profile] user_data upsert error', dErr);
-        } catch (inner) {
-          console.warn('[api/auth/create_profile] failed to upsert user_data', inner);
-        }
+        // Upsert into unified fitbuddyai_userdata table using user_id as primary key
+        const userRow = { user_id: id, email: String(email).trim().toLowerCase(), username, avatar: '', energy: 100, streak: 0, inventory: [], accepted_privacy: false, accepted_terms: false, chat_history: [], workout_plan: null, questionnaire_progress: null, banned: false, role: 'basic_member' };
+        const { error: uErr } = await supabase.from('fitbuddyai_userdata').upsert(userRow, { onConflict: 'user_id' as any });
+        if (uErr) console.warn('[api/auth/create_profile] fitbuddyai_userdata upsert error', uErr);
 
         return res.status(200).json({ ok: true });
       } catch (e) {

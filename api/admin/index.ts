@@ -60,16 +60,16 @@ export default async function handler(req: any, res: any) {
         console.error('[api/admin/index] supabaseAdmin not available for GET users');
         return res.status(500).json({ message: 'Supabase admin client unavailable' });
       }
-      const { data, error } = await supabaseAdmin.from('app_users').select('*').order('created_at', { ascending: false });
+      const { data, error } = await supabaseAdmin.from('fitbuddyai_userdata').select('*').order('created_at', { ascending: false });
       if (error) {
         console.error('[api/admin/index] supabase error fetching users', error.message);
         const diag = { message: 'Failed to fetch users', detail: error.message };
         return res.status(500).json({ message: 'Failed to fetch users', diagnostic: diag });
       }
       const sanitized = (data || []).map((u: any) => ({
-        id: u.id,
+        id: u.user_id || u.id,
         username: u.username,
-        avatar: u.avatar,
+        avatar: u.avatar_url || u.avatar,
         created_at: u.created_at,
         banned: Boolean(u.banned),
       }));
@@ -81,7 +81,7 @@ export default async function handler(req: any, res: any) {
     if (req.method === 'POST' && actionStr === 'ban') {
       const { userId } = body;
       if (!supabaseAdmin || typeof supabaseAdmin.from !== 'function') return res.status(500).json({ message: 'Supabase admin client unavailable' });
-      const { error } = await supabaseAdmin.from('app_users').update({ banned: true }).eq('id', userId);
+      const { error } = await supabaseAdmin.from('fitbuddyai_userdata').update({ banned: true }).eq('user_id', userId);
       if (error) return res.status(500).json({ message: 'Failed to ban user', detail: error.message });
       return res.json({ ok: true });
     }
@@ -89,7 +89,7 @@ export default async function handler(req: any, res: any) {
     if (req.method === 'POST' && actionStr === 'unban') {
       const { userId } = body;
       if (!supabaseAdmin || typeof supabaseAdmin.from !== 'function') return res.status(500).json({ message: 'Supabase admin client unavailable' });
-      const { error } = await supabaseAdmin.from('app_users').update({ banned: false }).eq('id', userId);
+      const { error } = await supabaseAdmin.from('fitbuddyai_userdata').update({ banned: false }).eq('user_id', userId);
       if (error) return res.status(500).json({ message: 'Failed to unban user', detail: error.message });
       return res.json({ ok: true });
     }
@@ -97,7 +97,7 @@ export default async function handler(req: any, res: any) {
     if (req.method === 'DELETE' && actionStr === 'delete') {
       const { userId } = body;
       if (!supabaseAdmin || typeof supabaseAdmin.from !== 'function') return res.status(500).json({ message: 'Supabase admin client unavailable' });
-      const { error } = await supabaseAdmin.from('app_users').delete().eq('id', userId);
+      const { error } = await supabaseAdmin.from('fitbuddyai_userdata').delete().eq('user_id', userId);
       if (error) return res.status(500).json({ message: 'Failed to delete user', detail: error.message });
       return res.json({ ok: true });
     }

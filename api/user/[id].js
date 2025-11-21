@@ -10,9 +10,9 @@ export default async function handler(req, res) {
   try {
     if (req.method === 'GET') {
       const { data, error } = await supabase
-        .from('app_users')
+        .from('fitbuddyai_userdata')
         .select('*')
-        .eq('id', id)
+        .eq('user_id', id)
         .limit(1)
         .maybeSingle();
       if (error) {

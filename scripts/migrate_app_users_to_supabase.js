@@ -37,7 +37,7 @@ function randomPassword() {
 }
 
 async function fetchAppUsers() {
-  const { data, error } = await supabase.from('app_users').select('id,email,password,username,avatar,energy').limit(2000);
+  const { data, error } = await supabase.from('fitbuddyai_userdata').select('user_id as id,email,password,username,avatar_url as avatar,energy').limit(2000);
   if (error) throw error;
   return data || [];
 }
@@ -102,12 +102,12 @@ async function main() {
   const outIdx = args.findIndex(a => a === '--output');
   const outFile = outIdx >= 0 && args[outIdx + 1] ? args[outIdx + 1] : 'migrated_auth_users.json';
 
-    console.log('NOTE: This script is non-destructive by default. It will NOT delete or modify rows in app_users.');
+    console.log('NOTE: This script is non-destructive by default. It will NOT delete or modify rows in fitbuddyai_userdata.');
     if (!confirm) console.log('Running in dry-run mode. Use --confirm to actually create Auth users.');
 
-    console.log('Fetching app_users rows...');
+    console.log('Fetching fitbuddyai_userdata rows...');
     const rows = await fetchAppUsers();
-    console.log(`Found ${rows.length} rows in app_users`);
+    console.log(`Found ${rows.length} rows in fitbuddyai_userdata`);
 
     const results = { created: [], skipped: [], failed: [] };
     for (const r of rows) {

@@ -39,7 +39,7 @@ app.get('/api/admin/users', async (req, res) => {
   if (!isAdminRequest(req)) return res.status(403).json({ message: 'Forbidden' });
 
     if (supabase) {
-      const { data, error } = await supabase.from('app_users').select('*').order('created_at', { ascending: false });
+      const { data, error } = await supabase.from('fitbuddyai_userdata').select('*').order('created_at', { ascending: false });
       if (error) return res.status(500).json({ message: 'Failed to fetch users from Supabase', detail: error.message });
       return res.json({ users: data || [] });
     }
@@ -62,8 +62,8 @@ app.post('/api/admin/users', async (req, res) => {
 
     if (action === 'ban') {
       const { userId } = body;
-      if (supabase) {
-        const { error } = await supabase.from('app_users').update({ banned: true }).eq('id', userId);
+        if (supabase) {
+        const { error } = await supabase.from('fitbuddyai_userdata').update({ banned: true }).eq('user_id', userId);
         if (error) throw error;
         return res.json({ ok: true });
       }
@@ -76,8 +76,8 @@ app.post('/api/admin/users', async (req, res) => {
 
     if (action === 'unban') {
       const { userId } = body;
-      if (supabase) {
-        const { error } = await supabase.from('app_users').update({ banned: false }).eq('id', userId);
+        if (supabase) {
+        const { error } = await supabase.from('fitbuddyai_userdata').update({ banned: false }).eq('user_id', userId);
         if (error) throw error;
         return res.json({ ok: true });
       }
@@ -692,8 +692,7 @@ app.post('/api/auth/signup', (req, res) => {
     (async () => {
       try {
         if (supabase) {
-          await supabase.from('app_users').upsert({ id: user.id, email: user.email, username: user.username, avatar: '', energy: 100, streak: 0, inventory: [] }, { onConflict: 'id' });
-          await supabase.from('user_data').upsert({ id: user.id, payload: {}, chat_history: [], accepted_privacy: false, accepted_terms: false, updated_at: new Date().toISOString() }, { onConflict: 'id' });
+          await supabase.from('fitbuddyai_userdata').upsert({ user_id: user.id, email: user.email, username: user.username, avatar_url: '', energy: 100, streak: 0, inventory: [], payload: {}, chat_history: [], accepted_privacy: false, accepted_terms: false, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
         }
       } catch (sErr) {
         console.warn('[authServer] supabase upsert during signup failed', sErr);

@@ -21,7 +21,7 @@ export async function isAdminRequest(req: any): Promise<{ ok: boolean; userId?: 
         const uid = userData.user.id;
         // check app_users then public.users
         try {
-          const { data: appRow } = await client.from('app_users').select('role').eq('id', uid).limit(1).maybeSingle();
+          const { data: appRow } = await client.from('fitbuddyai_userdata').select('role').eq('user_id', uid).limit(1).maybeSingle();
           if (appRow && appRow.role === 'admin') return { ok: true, userId: uid };
         } catch {}
         try {
@@ -57,7 +57,7 @@ export async function isAdminRequest(req: any): Promise<{ ok: boolean; userId?: 
     const adminClient = createClient(SUPABASE_URL as string, key as string);
         const uid = String(clientUser.id);
         try {
-          const { data: appRow } = await adminClient.from('app_users').select('role').eq('id', uid).limit(1).maybeSingle();
+          const { data: appRow } = await adminClient.from('fitbuddyai_userdata').select('role').eq('user_id', uid).limit(1).maybeSingle();
           if (appRow && appRow.role === 'admin') return { ok: true, userId: uid };
         } catch {}
         try {

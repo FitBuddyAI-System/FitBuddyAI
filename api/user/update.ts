@@ -25,11 +25,11 @@ export default async function handler(req: any, res: any) {
 
     const updates: any = {};
     if (typeof username === 'string') updates.username = username;
-    if (typeof avatar === 'string') updates.avatar = avatar;
+    if (typeof avatar === 'string') updates.avatar_url = avatar;
 
     if (Object.keys(updates).length === 0) return res.status(400).json({ message: 'No fields to update.' });
 
-    const { data, error } = await supabase.from('app_users').update(updates).eq('id', id).select().maybeSingle();
+    const { data, error } = await supabase.from('fitbuddyai_userdata').update(updates).eq('user_id', id).select().maybeSingle();
     if (error) {
       console.error('[api/user/update] Supabase update error', error);
       return res.status(500).json({ message: 'Failed to update user.', detail: error.message });
