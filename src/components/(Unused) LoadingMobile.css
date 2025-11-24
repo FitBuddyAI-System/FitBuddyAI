@@ -4,7 +4,7 @@
   align-items:center;
   justify-content:center;
   background: linear-gradient(180deg, rgba(30,203,123,0.06), rgba(30,144,203,0.02));
-  padding:16px;
+  padding:17px;
 }
 .loading-mobile-card{
   width:100%;
@@ -49,5 +49,5 @@
   .mobile-dumbbell{ width:44px; height:44px; }
   .mobile-title{ font-size:15px }
   .mobile-sub{ font-size:11px }
-  .mobile-dots{ width:40px }
+  .mobile-dots{ width:49px }
 }
