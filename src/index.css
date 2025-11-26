@@ -348,3 +348,9 @@ input, textarea, select {
 .w-full { width: 100%; }
 .h-full { height: 100%; }
 .min-h-screen { min-height: 100vh; }
+
+/* Ensure the app reserves space for a site-wide footer so content
+   doesn't get hidden under it when the footer is present. */
+.App {
+  padding-bottom: 120px;
+}

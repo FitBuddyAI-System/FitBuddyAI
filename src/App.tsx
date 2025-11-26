@@ -6,6 +6,7 @@ import AgreementGuard from './components/AgreementGuard';
 import { useState, useEffect } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import Header from './components/Header';
+import Footer from './components/Footer';
 
 import LoadingPage from './components/LoadingPage';
 import ProfilePage from './components/ProfilePage';
@@ -280,11 +281,11 @@ function App() {
   })();
 
   return (
-    <div className={`App ${effectiveThemeClass}`}>
+    <div className={`App ${effectiveThemeClass}`} style={{ paddingBottom: '120px' }}>
       <Header userData={userData} profileVersion={profileVersion} theme={effectiveThemeClass} />
       <AgreementBanner userData={userData} />
       <Routes>
-        <Route path="/" element={<WelcomePage themeMode={themeMode} onChangeThemeMode={setThemeModeHandler} />} />
+        <Route path="/" element={<WelcomePage />} />
         <Route path="/profile" element={<ProfilePage userData={userData} onProfileUpdate={(user) => { setUserData(user); setProfileVersion(v => v + 1); }} profileVersion={profileVersion} />} />
         <Route path="/profile/settings" element={<SettingsPage theme={effectiveThemeClass} onToggleTheme={toggleTheme} />} />
         <Route path="/loading" element={<LoadingPage />} />
@@ -331,6 +332,8 @@ function App() {
   {/* 404 Not Found Route */}
   <Route path="*" element={<NotFoundPage />} />
       </Routes>
+      {/* Site-wide footer ensures visibility on all routes and deployments */}
+      <Footer themeMode={themeMode} onChangeThemeMode={setThemeModeHandler} />
     </div>
   );
 }

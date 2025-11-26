@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Target, Calendar, Zap, Dumbbell } from 'lucide-react';
 import './WelcomePage.css';
-import Footer from './Footer';
+// Footer is now rendered site-wide in `App.tsx`
 import IntroBubbles from './IntroBubbles';
 import BackgroundDots from './BackgroundDots';
 
@@ -17,12 +17,7 @@ while (random.length < 3) {
   }
 }
 
-interface WelcomePageProps {
-  themeMode?: 'auto' | 'light' | 'dark';
-  onChangeThemeMode?: (mode: 'auto' | 'light' | 'dark') => void;
-}
-
-const WelcomePage: React.FC<WelcomePageProps> = ({ themeMode, onChangeThemeMode }) => {
+const WelcomePage: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   // Parse query param
@@ -187,9 +182,7 @@ const WelcomePage: React.FC<WelcomePageProps> = ({ themeMode, onChangeThemeMode 
           </div>
         </div>
       </div>
-      <div className="welcome-footer-spacer">
-        <Footer themeMode={themeMode} onChangeThemeMode={onChangeThemeMode} />
-      </div>
+      {/* Footer is rendered site-wide in App.tsx to ensure visibility on all routes */}
     </div>
   );
 };
