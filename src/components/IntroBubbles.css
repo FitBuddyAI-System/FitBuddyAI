@@ -8,9 +8,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: opacity 0.7s;
+  transition: opacity 0.9s ease;
 }
 .intro-bubbles-overlay.hide {
+  opacity: 0;
+  pointer-events: none;
+}
+.intro-bubbles-overlay.fade-out {
   opacity: 0;
   pointer-events: none;
 }
@@ -43,7 +47,8 @@
   width: 420px;
   height: 420px;
   transform: translate(-50%, -50%);
-  animation: rotateCircle 3s linear infinite;
+  /* Keep layout static; disable rotation for calmer load */
+  animation: none;
   pointer-events: none;
 }
 
