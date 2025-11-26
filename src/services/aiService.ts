@@ -337,7 +337,6 @@ Current date: ${today}
 Generate one DayWorkout JSON for ${targetDate}, type '${workoutType}', compatible with others. No wrappers, no markdown, pure JSON.`;
   const schemaReminderDay = '\nIMPORTANT: return only the pure JSON object matching the DayWorkout schema, no markdown or code fences.';
 
-  let lastErrorDay: Error | null = null;
   const fallbackDay = () => ({
     date: targetDate,
     type: (workoutType || 'mixed'),
@@ -383,7 +382,6 @@ Generate one DayWorkout JSON for ${targetDate}, type '${workoutType}', compatibl
       return JSON.parse(cleaned);
     } catch (e: any) {
       console.warn(`generateWorkoutForDay: parse failed on attempt ${attempt}:`, e);
-      lastErrorDay = e;
       if (attempt === 2) {
         console.warn('generateWorkoutForDay: using fallback day due to parse errors');
         return fallbackDay();
