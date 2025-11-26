@@ -91,3 +91,6 @@ This is a modern fitness web application built with React, TypeScript, and Vite.
 - Use semantic HTML elements for accessibility
 
 When working on this project, prioritize user experience, type safety, and maintainable code structure.
+
+## Compatibility Policy
+- **Do NOT add compatibility helpers or legacy mapping code:** Fail fast on missing columns or schema mismatches. Avoid adding server-side compatibility shims that map legacy `fitbuddyai_*` keys to new columns. These helpers create code bloat and hidden behavior; prefer explicit schema changes and migrations.

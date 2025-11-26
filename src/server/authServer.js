@@ -160,16 +160,35 @@ function isUsernameBanned(username) {
 }
 
 function readUsers() {
-  try {
-    const data = fs.readFileSync(usersFile, 'utf-8');
-    return JSON.parse(data);
-  } catch (err) {
-    return [];
+  // Do not read local users file. Require Supabase for user store.
+  if (!supabase) {
+    console.error('[authServer] readUsers attempted but Supabase is not configured; local users file reads are disabled.');
+    throw new Error('Supabase not configured; user store unavailable.');
   }
+  // When Supabase is configured, callers should use Supabase-aware endpoints.
+  console.info('[authServer] readUsers: Supabase is configured; returning empty array. Use Supabase client directly for authoritative reads.');
+  return [];
 }
 
 function writeUsers(users) {
-  fs.writeFileSync(usersFile, JSON.stringify(users, null, 2));
+  // Do not write to local users.json. Persist to Supabase if available, otherwise refuse.
+  if (!supabase) {
+    console.error('[authServer] writeUsers attempted but Supabase is not configured; refusing to write local users file.');
+    throw new Error('Supabase not configured; cannot persist users.');
+  }
+  try {
+    // Upsert users into fitbuddyai_userdata (best-effort). Map only core fields to avoid leaking passwords.
+    const rows = users.map(u => ({ user_id: u.id, email: u.email, username: u.username, avatar_url: u.avatar || '', payload: u.payload || {}, chat_history: u.chat_history || [], role: u.role || null, banned: u.banned || false, updated_at: new Date().toISOString() }));
+    supabase.from('fitbuddyai_userdata').upsert(rows, { onConflict: 'user_id' }).then(({ error }) => {
+      if (error) console.error('[authServer] writeUsers: Supabase upsert error', error);
+      else console.info('[authServer] writeUsers: upserted', rows.length, 'users to Supabase');
+    }).catch(e => {
+      console.error('[authServer] writeUsers: upsert exception', e);
+    });
+  } catch (e) {
+    console.error('[authServer] writeUsers: unexpected error', e);
+    throw e;
+  }
 }
 
 app.get('/api/user/:id', (req, res) => {
@@ -678,16 +697,8 @@ app.post('/api/auth/signup', (req, res) => {
     user.token = uuidv4();
     users.push(user);
     writeUsers(users);
-    // Also create a user_data file for local dev so chat history and payloads can be stored
-    try {
-      const userDataDir = path.join(__dirname, 'user_data');
-      if (!fs.existsSync(userDataDir)) fs.mkdirSync(userDataDir, { recursive: true });
-      const dataPath = path.join(userDataDir, `${user.id}.json`);
-      const initial = { id: user.id, payload: {}, chat_history: [], accepted_privacy: false, accepted_terms: false, updated_at: new Date().toISOString() };
-      fs.writeFileSync(dataPath, JSON.stringify(initial, null, 2));
-    } catch (udErr) {
-      console.warn('[authServer] failed to write local user_data file', udErr);
-    }
+    // Local filesystem persistence for user_data is disabled by policy.
+    console.info('[authServer] skipped creating local user_data file for new user (Supabase-only persistence enforced).');
     // Try to upsert into Supabase if configured (best-effort)
     (async () => {
       try {
