@@ -538,7 +538,7 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
       const updatedWorkout = {
         ...existingWorkout,
         type: 'rest' as const,
-        types: ['rest'],
+        types: ['rest'] as WorkoutType[],
         workouts: [
           {
             name: 'Rest Day',
@@ -717,7 +717,6 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
               sets: typeof w?.sets === 'number' ? w.sets : undefined,
               rest: w?.rest || undefined
             })),
-            completed: !!day?.completed,
             totalTime: day?.totalTime || ''
           } as DayWorkout;
         };
@@ -932,7 +931,6 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
             sets: typeof w?.sets === 'number' ? w.sets : undefined,
             rest: w?.rest || undefined
           })),
-          completed: !!day?.completed,
           totalTime: day?.totalTime || ''
         } as DayWorkout;
       };
@@ -1108,7 +1106,9 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
 
     // Block moving anything into or out of past dates
     const targetDateObj = new Date(targetDateString + 'T00:00:00');
-    const sourceDateString = draggedWorkout?.date;
+    // ensure sourceDateString is available for later comparisons (declared outside the draggedWorkout block)
+    const sourceDateString = draggedWorkout ? draggedWorkout.date : '';
+
     if (draggedWorkout) {
       const [sy, sm, sd] = sourceDateString.split('-').map(Number);
       const sourceDate = new Date(sy, sm - 1, sd);
