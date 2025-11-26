@@ -135,8 +135,11 @@ If automation is failing or you prefer manual control, change the preview link y
    Create a `.env` file in the project root with the following variables:
    
    ```env
-   # Frontend Environment Variables (VITE_ prefix required)
-   VITE_GEMINI_API_KEY=your-gemini-api-key-here
+   # Server-side Environment Variables (DO NOT expose these to the client)
+   # Set your GEMINI API key here for server processes and Vercel (no VITE_ prefix):
+   GEMINI_API_KEY=your-gemini-api-key-here
+
+   # Optional feature flags for the frontend (non-secret values only)
    VITE_ENABLE_AI=true
    VITE_SUPABASE_URL=your-supabase-project-url
    VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
@@ -193,11 +196,13 @@ If you want a temporary developer fallback (opt-in) instead of failing when Supa
 
 ### Getting Required API Keys
 
-#### Google Gemini API Key
+#### Google Gemini API Key (server-side)
 1. Visit [Google AI Studio](https://makersuite.google.com/app/apikey)
 2. Sign in with your Google account
 3. Create a new API key
-4. Copy the key to your `.env` file as `VITE_GEMINI_API_KEY`
+4. Copy the key to your `.env` file as `GEMINI_API_KEY` (server-side only)
+   - Do NOT set a `VITE_` prefixed Gemini key; the client must never contain secret API keys.
+   - In production, set `GEMINI_API_KEY` in your Vercel project environment variables (Project → Settings → Environment Variables).
 
 #### Supabase Configuration
 1. Create a new project at [supabase.com](https://supabase.com)

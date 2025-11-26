@@ -2,8 +2,19 @@
 import { WorkoutPlan } from '../types';
 
 // API endpoint and key for Gemini via REST call
-const GEMINI_API_KEY = 'AIzaSyCdu8joW4s3FN2ybROS9f0Vj26fsmNGSlQ'; // Hardcoded API key per request
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
+// Prefer server-side env (process.env.GEMINI_API_KEY) — set this in Vercel or
+// in your local environment for server processes. We intentionally do NOT
+// read any `VITE_` prefixed env here to avoid exposing secrets to the client.
+const GEMINI_API_KEY = (typeof process !== 'undefined' && (process as any).env && (process as any).env.GEMINI_API_KEY) || '';
+
+// Build the Gemini REST URL when an API key is present. If no key is available
+// (for example when client code shouldn't have a secret), callers should use
+// the local server endpoint (`/api/ai/generate`) instead.
+// If an API key is not available in the environment, route requests to the
+// local server endpoint which should handle calling the Gemini API.
+const GEMINI_URL = GEMINI_API_KEY
+  ? `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${encodeURIComponent(GEMINI_API_KEY)}`
+  : '/api/ai/generate';
 
 export const generateWorkoutPlan = async (
   userData: UserData,
