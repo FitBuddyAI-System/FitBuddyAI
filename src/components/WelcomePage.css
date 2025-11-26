@@ -5,6 +5,21 @@
   background: linear-gradient(135deg, #f7f7f7 0%, #e8f5e8 100%);
 }
 
+.welcome-main {
+  opacity: 0;
+  filter: blur(12px);
+  transform: translateY(10px);
+  transition: opacity 0.45s ease, filter 0.55s ease, transform 0.55s ease;
+  pointer-events: none;
+}
+
+.welcome-main.is-visible {
+  opacity: 1;
+  filter: blur(0);
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
 .hero-section {
   /* allow the hero to grow but don't forcibly consume full viewport - footer sits after content */
   flex: 0 0 auto;

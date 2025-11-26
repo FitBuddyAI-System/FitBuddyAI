@@ -9,6 +9,9 @@
   align-items: center;
   justify-content: center;
   transition: opacity 0.9s ease;
+  backdrop-filter: blur(10px) saturate(1.05);
+  -webkit-backdrop-filter: blur(10px) saturate(1.05);
+  will-change: opacity;
 }
 .intro-bubbles-overlay.hide {
   opacity: 0;
@@ -37,6 +40,7 @@
   justify-content: center;
   z-index: 2;
   transition: transform 0.5s;
+  will-change: transform;
 }
 
 
