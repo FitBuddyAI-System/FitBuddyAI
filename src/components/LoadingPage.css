@@ -4,10 +4,12 @@
   align-items: center;
   justify-content: center;
   background: var(--gradient-primary, linear-gradient(135deg, #f7f7f7 0%, #e8f5e8 100%));
+  position: relative;
+  z-index: 2; /* keep loader above animated backgrounds */
 }
 
 .loading-container {
-  background: #fff;
+  background: var(--background-white, #ffffff);
   border-radius: 20px;
   box-shadow: 0 4px 24px 0 rgba(30, 203, 123, 0.10), 0 1.5px 6px 0 rgba(30, 144, 203, 0.10);
   padding: 48px 32px 40px 32px;
@@ -42,8 +44,8 @@
   align-items: center;
   gap: 6px;
   padding: 8px 10px;
-  background: rgba(30, 203, 123, 0.08);
-  border: 1px solid rgba(30, 144, 203, 0.12);
+  background: rgba(30, 203, 123, 0.10);
+  border: 1px solid rgba(30, 144, 203, 0.16);
   border-radius: 12px;
   color: var(--text-dark, #222);
   font-weight: 600;
@@ -73,6 +75,38 @@
   color: var(--text-light, #888);
   font-size: 13px;
   margin-top: 18px;
+}
+
+/* Dark mode */
+body.theme-dark .loading-screen {
+  background: linear-gradient(135deg, #0b111b 0%, #0f1828 100%);
+}
+
+body.theme-dark .loading-container {
+  background: #0f1624;
+  box-shadow: 0 14px 38px rgba(0, 0, 0, 0.55);
+}
+
+body.theme-dark .loading-dumbbell {
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
+}
+
+body.theme-dark .loading-icon-pill {
+  background: rgba(12, 200, 140, 0.12);
+  border: 1px solid rgba(12, 200, 200, 0.18);
+  color: #e9eef5;
+}
+
+body.theme-dark .loading-title {
+  color: #e9eef5;
+}
+
+body.theme-dark .loading-desc {
+  color: #c0c7d4;
+}
+
+body.theme-dark .ai-disclaimer {
+  color: #8892a2;
 }
 
 @keyframes fadeInBounce {

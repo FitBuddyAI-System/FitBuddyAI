@@ -338,6 +338,24 @@ Generate one DayWorkout JSON for ${targetDate}, type '${workoutType}', compatibl
   const schemaReminderDay = '\nIMPORTANT: return only the pure JSON object matching the DayWorkout schema, no markdown or code fences.';
 
   let lastErrorDay: Error | null = null;
+  const fallbackDay = () => ({
+    date: targetDate,
+    type: (workoutType || 'mixed'),
+    completed: false,
+    totalTime: '30 minutes',
+    workouts: [{
+      name: workoutType === 'cardio' ? 'Tempo Walk' : workoutType === 'rest' ? 'Rest Day' : 'Bodyweight Circuit',
+      description: workoutType === 'rest'
+        ? 'Take a breather to recover.'
+        : 'A quick, equipment-free session to keep you moving.',
+      difficulty: 'beginner',
+      duration: workoutType === 'rest' ? '0 min' : '30 minutes',
+      reps: workoutType === 'rest' ? '' : '3 rounds',
+      muscleGroups: workoutType === 'cardio' ? ['cardio'] : ['full body'],
+      equipment: []
+    }],
+    alternativeWorkouts: []
+  });
   // attempt fetch+parse up to 2 times
   for (let attempt = 1; attempt <= 2; attempt++) {
     // add nonce/ts to per-day prompt to avoid identical outputs
@@ -360,15 +378,19 @@ Generate one DayWorkout JSON for ${targetDate}, type '${workoutType}', compatibl
       let cleaned = codeFenceMatch?.[1]?.trim() ?? generatedText.replace(/```[a-zA-Z]*\\n?|```/g, '').trim();
       const jsonMatch = cleaned.match(/{[\s\S]*}/);
       if (jsonMatch) cleaned = jsonMatch[0];
+      if (!cleaned || cleaned.length < 2) throw new Error('Empty AI response');
       console.log('generateWorkoutForDay: parsing cleaned=', cleaned);
       return JSON.parse(cleaned);
     } catch (e: any) {
       console.warn(`generateWorkoutForDay: parse failed on attempt ${attempt}:`, e);
       lastErrorDay = e;
-      if (attempt === 2) throw lastErrorDay;
+      if (attempt === 2) {
+        console.warn('generateWorkoutForDay: using fallback day due to parse errors');
+        return fallbackDay();
+      }
     }
   }
-  throw new Error('generateWorkoutForDay: unknown error');
+  return fallbackDay();
 }
 
 // Adding a proper TypeScript type for userData

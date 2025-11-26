@@ -5,6 +5,9 @@ export interface User {
   password?: string;
   avatar?: string;
 }
+
+export type WorkoutType = 'strength' | 'cardio' | 'flexibility' | 'rest' | 'mixed';
+
 export interface Exercise {
   name: string;
   sets?: number;
@@ -23,7 +26,11 @@ export interface DayWorkout {
   alternativeWorkouts: Exercise[];
   completed: boolean;
   totalTime?: string; // overall workout duration, e.g., '30 minutes'
-  type: 'strength' | 'cardio' | 'flexibility' | 'rest' | 'mixed';
+  type: WorkoutType;
+  // Optional multi-type support (first entry is treated as primary)
+  types?: WorkoutType[];
+  // Track which types within this day have been completed
+  completedTypes?: WorkoutType[];
 }
 
 export interface WorkoutPlan {

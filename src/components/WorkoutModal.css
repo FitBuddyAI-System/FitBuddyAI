@@ -72,7 +72,7 @@
 }
 
 .workout-type-badge.flexibility {
-  background: linear-gradient(135deg, #a8e6cf, #88d8a3);
+  background: linear-gradient(135deg, #a855f7, #9333ea);
 }
 
 .workout-type-badge.mixed {
@@ -424,6 +424,20 @@
   color: var(--primary-green);
 }
 
+.duration-input {
+  flex: 1;
+  padding: 6px 8px;
+  border: 1px solid var(--border-light);
+  border-radius: 6px;
+  font-size: 14px;
+  color: var(--text-dark);
+}
+
+.duration-input:focus {
+  outline: 2px solid var(--primary-green);
+  border-color: transparent;
+}
+
 .exercise-description {
   font-size: 14px;
   color: var(--text-medium);
@@ -446,12 +460,224 @@
   font-weight: 500;
 }
 
+.type-multi-select {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.type-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 1px solid var(--border-light);
+  border-radius: 999px;
+  cursor: pointer;
+  background: #f7f9f7;
+  font-size: 13px;
+  color: var(--text-dark);
+  transition: all 0.2s ease;
+}
+
+.type-pill input {
+  accent-color: var(--primary-green);
+}
+
+.type-pill.selected {
+  border-color: var(--primary-green);
+  background: rgba(88, 204, 2, 0.12);
+  font-weight: 600;
+}
+
+.type-helper {
+  display: block;
+  margin-top: 6px;
+  color: var(--text-medium);
+  font-size: 12px;
+}
+
+.locked-note {
+  background: rgba(255, 179, 71, 0.15);
+  border: 1px solid rgba(255, 179, 71, 0.4);
+  color: #8a5a11;
+  padding: 8px 10px;
+  border-radius: 10px;
+  font-size: 13px;
+  margin-bottom: 10px;
+}
+
+.type-tab-strip {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.type-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  background: #f5f7f5;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-dark);
+  transition: all 0.2s ease;
+}
+
+.type-tab .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-medium);
+}
+
+.type-tab.active {
+  border-color: var(--primary-green);
+  box-shadow: 0 2px 10px rgba(88,204,2,0.12);
+}
+
+.type-tab.completed .dot {
+  background: var(--primary-green);
+}
+
+.type-tab .tab-check {
+  color: var(--primary-green);
+}
+
+.type-tab:hover {
+  transform: translateY(-1px);
+}
+
+body.theme-dark .type-multi-select {
+  background: #0b1320;
+  border-radius: 8px;
+  padding: 6px;
+}
+
+body.theme-dark .type-pill {
+  border-color: #1f2a36;
+  background: #0f1624;
+  color: var(--text-dark);
+}
+
+body.theme-dark .type-pill.selected {
+  background: rgba(88, 204, 2, 0.14);
+  border-color: var(--primary-green);
+}
+
+body.theme-dark .type-helper {
+  color: #9fb3ce;
+}
+
+body.theme-dark .duration-input {
+  background: #0b1320;
+  border: 1px solid #1f2a36;
+  color: var(--text-dark);
+}
+
+body.theme-dark .type-tab {
+  background: #0f1624;
+  border-color: #1f2a36;
+  color: var(--text-dark);
+}
+
+body.theme-dark .type-tab.active {
+  border-color: var(--primary-green);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.35);
+}
+
+body.theme-dark .type-tab .dot {
+  background: #4a5568;
+}
+
+body.theme-dark .type-tab.completed .dot {
+  background: var(--primary-green);
+}
+
+body.theme-dark .locked-note {
+  background: rgba(255, 179, 71, 0.12);
+  border-color: rgba(255, 179, 71, 0.28);
+  color: #f6d9a0;
+}
+
 .modal-footer {
   padding: 20px;
   position: sticky;
   bottom: 0;
   background: white; /* Ensure footer is always visible */
   z-index: 10;
+}
+
+/* Dark mode */
+body.theme-dark .workout-modal {
+  background: #0f1624;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+  color: var(--text-dark);
+}
+body.theme-dark .modal-header {
+  background: linear-gradient(135deg, #0b111b, #0f1828);
+  border-bottom-color: #1f2a36;
+}
+body.theme-dark .modal-header h2,
+body.theme-dark .modal-title-section,
+body.theme-dark .rest-day-content h3 {
+  color: var(--text-dark);
+}
+body.theme-dark .close-button:hover {
+  background: rgba(255,255,255,0.06);
+  color: var(--text-dark);
+}
+body.theme-dark .modal-content {
+  background: #0f1624;
+}
+body.theme-dark .workout-toggle {
+  background: #0b1320;
+  border: 1px solid #1f2a36;
+}
+body.theme-dark .toggle-button {
+  color: var(--text-medium);
+}
+body.theme-dark .toggle-button.active {
+  background: #111b2b;
+  color: var(--text-dark);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.35);
+}
+body.theme-dark .exercise-card {
+  background: #0b1320;
+  border: 1px solid #1f2a36;
+}
+body.theme-dark .exercise-card:hover {
+  background: #111b2b;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+}
+body.theme-dark .exercise-title-section h4,
+body.theme-dark .detail-item,
+body.theme-dark .exercise-description,
+body.theme-dark .rest-day-content p {
+  color: var(--text-dark);
+}
+body.theme-dark .exercise-detail-link .btn-link {
+  color: var(--secondary-blue);
+}
+body.theme-dark .equipment-tag {
+  background: rgba(27,159,224,0.14);
+  color: var(--text-dark);
+}
+body.theme-dark .modal-footer {
+  background: #0b1320;
+  border-top: 1px solid #1f2a36;
+}
+body.theme-dark .action-btn {
+  background: #0f1624;
+  border: 1px solid #1f2a36;
+}
+body.theme-dark .action-btn:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
 }
 
 .action-buttons {

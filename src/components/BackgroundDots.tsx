@@ -1,4 +1,5 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import './BackgroundDots.css';
 
 /**
  * Background canvas of tiny dots that gently react to the cursor.
@@ -8,8 +9,12 @@ const BackgroundDots: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const rafRef = useRef<number | null>(null);
   const mouseRef = useRef<{ x: number; y: number; active: boolean }>({ x: 0, y: 0, active: false });
+  const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
+    // Fade canvas in after mount so it's always visible behind the UI
+    const readyTimer = window.setTimeout(() => setIsReady(true), 20);
+
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
@@ -36,7 +41,7 @@ const BackgroundDots: React.FC = () => {
       baseY: Math.random() * height,
       x: 0,
       y: 0,
-      r: Math.random() * 1.25 + 0.35,
+      r: Math.random() * 1.4 + 0.75, // slightly larger for better visibility
       jitter: (Math.random() - 0.5) * 0.25,
     })).map(d => ({ ...d, x: d.baseX, y: d.baseY }));
 
@@ -74,7 +79,7 @@ const BackgroundDots: React.FC = () => {
         ctx.moveTo(d.x + d.r, d.y);
         ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
       }
-      ctx.fillStyle = 'rgba(20, 120, 80, 0.18)'; // slightly darker for visibility
+      ctx.fillStyle = 'rgba(20, 120, 80, 0.26)'; // darker alpha to make dots more visible
       ctx.fill();
       if (!oneShot) rafRef.current = requestAnimationFrame(loop);
     };
@@ -116,10 +121,11 @@ const BackgroundDots: React.FC = () => {
       window.removeEventListener('mouseleave', handleLeave);
       window.removeEventListener('resize', handleResize);
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      window.clearTimeout(readyTimer);
     };
   }, []);
 
-  return <canvas ref={canvasRef} className="dots-canvas" aria-hidden="true" />;
+  return <canvas ref={canvasRef} className={`dots-canvas${isReady ? ' dots-ready' : ''}`} aria-hidden="true" />;
 };
 
 export default BackgroundDots;

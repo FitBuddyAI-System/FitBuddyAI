@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, Check, RotateCcw, Clock, Zap, Edit3, Trash2, ArrowRight, ArrowLeft, Save, Dumbbell } from 'lucide-react';
-import { DayWorkout } from '../types';
+import { DayWorkout, WorkoutType } from '../types';
 import './WorkoutModal.css';
 import ExerciseDetailModal from './ExerciseDetailModal';
 import confetti from 'canvas-confetti';
@@ -8,7 +8,7 @@ import confetti from 'canvas-confetti';
 interface WorkoutModalProps {
   workout: DayWorkout;
   onClose: () => void;
-  onComplete: () => void;
+  onComplete: (type?: WorkoutType) => void;
   onRegenerateWorkout: () => void;
   isRegenerating?: boolean;
   onUpdateWorkout?: (updatedWorkout: DayWorkout) => void;
@@ -26,11 +26,45 @@ const WorkoutModal: React.FC<WorkoutModalProps> = ({
   const [isEditing, setIsEditing] = useState(false);
   const [editingWorkout, setEditingWorkout] = useState<DayWorkout>(workout);
   const [completed, setCompleted] = useState(workout.completed);
+  const resolveWorkoutTypes = (target: DayWorkout): WorkoutType[] => {
+    const raw = (target as any)?.types;
+    const types = Array.isArray(raw) ? raw.filter(Boolean) : [];
+    if (types.length === 0 && target.type) types.push(target.type);
+    return Array.from(new Set(types)).slice(0, 4) as WorkoutType[];
+  };
+
+  const [localCompletedTypes, setLocalCompletedTypes] = useState<WorkoutType[]>(resolveWorkoutTypes(workout).filter(t => (workout.completedTypes || []).includes(t)));
+  const availableTypes = resolveWorkoutTypes(workout);
+  const [selectedType, setSelectedType] = useState<WorkoutType>(availableTypes[0] || 'mixed');
+
+  const getWorkoutTypeLabel = (types: WorkoutType[]) => {
+    const formatSingle = (type: WorkoutType) => {
+      switch (type) {
+        case 'strength': return 'Strength';
+        case 'cardio': return 'Cardio';
+        case 'flexibility': return 'Flexibility';
+        case 'rest': return 'Rest';
+        default: return 'Mixed';
+      }
+    };
+    if (!types || types.length === 0) return 'Mixed';
+    if (types.length > 1) return types.map(formatSingle).join(' / ');
+    return formatSingle(types[0]);
+  };
 
   // Keep local completed state in sync if workout prop changes
   React.useEffect(() => {
     setCompleted(workout.completed);
+    setLocalCompletedTypes(resolveWorkoutTypes(workout).filter(t => (workout.completedTypes || []).includes(t)));
   }, [workout.completed]);
+
+  // Keep local editing snapshot in sync with incoming workout changes
+  React.useEffect(() => {
+    setEditingWorkout(workout);
+    const types = resolveWorkoutTypes(workout);
+    setSelectedType(types[0] || 'mixed');
+    setLocalCompletedTypes(types.filter(t => (workout.completedTypes || []).includes(t)));
+  }, [workout]);
 
   const formatDate = (dateString: string) => {
     const [year, month, day] = dateString.split('-').map(Number);
@@ -43,7 +77,7 @@ const WorkoutModal: React.FC<WorkoutModalProps> = ({
     });
   };
 
-  const getWorkoutTypeColor = (type: string) => {
+  const getWorkoutTypeColor = (type: WorkoutType | string) => {
     switch (type) {
       case 'strength': return 'strength';
       case 'cardio': return 'cardio';
@@ -98,6 +132,33 @@ const WorkoutModal: React.FC<WorkoutModalProps> = ({
       });
     }
   };
+
+  const handleTypeToggle = (type: WorkoutType, checked: boolean) => {
+    setEditingWorkout(prev => {
+      const current = resolveWorkoutTypes(prev);
+      if (checked && current.length >= 4 && !current.includes(type)) return prev;
+      let nextTypes = checked ? [...current, type] : current.filter(t => t !== type);
+      if (nextTypes.length === 0) nextTypes = [prev.type || 'mixed'];
+      return { ...prev, types: nextTypes, type: nextTypes[0] };
+    });
+  };
+
+  const handleExerciseFieldChange = (
+    exerciseIndex: number,
+    field: 'duration',
+    value: string,
+    isAlternative: boolean = false
+  ) => {
+    setEditingWorkout(prev => {
+      const updated = { ...prev };
+      const listKey = isAlternative ? 'alternativeWorkouts' : 'workouts';
+      const list = [...updated[listKey]];
+      list[exerciseIndex] = { ...list[exerciseIndex], [field]: value };
+      (updated as any)[listKey] = list;
+      return updated;
+    });
+  };
+
   const handleSaveChanges = () => {
     // Check if all exercises have been deleted
     const hasMainExercises = editingWorkout.workouts.length > 0;
@@ -112,8 +173,14 @@ const WorkoutModal: React.FC<WorkoutModalProps> = ({
       return;
     }
     
+    const normalizedTypes = resolveWorkoutTypes(editingWorkout);
+    const normalizedWorkout: DayWorkout = {
+      ...editingWorkout,
+      type: (normalizedTypes[0] || editingWorkout.type || 'mixed') as WorkoutType,
+      types: normalizedTypes
+    };
     if (onUpdateWorkout) {
-      onUpdateWorkout(editingWorkout);
+      onUpdateWorkout(normalizedWorkout);
     }
     setIsEditing(false);
     onClose(); // Close modal to reflect changes in calendar view
@@ -125,7 +192,12 @@ const WorkoutModal: React.FC<WorkoutModalProps> = ({
   };
 
   const handleComplete = () => {
-    if (!completed) {
+    if (!isTodayDay) {
+      alert('You can only complete or undo today\'s workout.');
+      return;
+    }
+    const type = selectedType || availableTypes[0];
+    if (!localCompletedTypes.includes(type)) {
       confetti({
         particleCount: 100,
         spread: 70,
@@ -133,13 +205,36 @@ const WorkoutModal: React.FC<WorkoutModalProps> = ({
         zIndex: 9999,
       });
     }
-    const newCompleted = !completed;
-    setCompleted(newCompleted);
+    let nextCompleted = localCompletedTypes.includes(type)
+      ? localCompletedTypes.filter(t => t !== type)
+      : [...localCompletedTypes, type];
+
+    // keep only valid types
+    nextCompleted = nextCompleted.filter(t => availableTypes.includes(t));
+    const isAllComplete = availableTypes.length > 0 ? nextCompleted.length === availableTypes.length : false;
+
+    setLocalCompletedTypes(nextCompleted);
+    setCompleted(isAllComplete);
+
     if (onUpdateWorkout) {
-      onUpdateWorkout({ ...workout, completed: newCompleted });
+      onUpdateWorkout({ ...workout, completed: isAllComplete, completedTypes: nextCompleted });
     }
-    onComplete();
+    onComplete(type);
   };
+
+  const typeList = resolveWorkoutTypes(workout);
+  const primaryType = typeList[0] || 'mixed';
+  const typeLabel = getWorkoutTypeLabel(typeList);
+  const editingTypes = resolveWorkoutTypes(editingWorkout);
+  const selectedTypeCompleted = localCompletedTypes.includes(selectedType);
+  const overallCompleted = typeList.length > 0
+    ? localCompletedTypes.length === typeList.length
+    : completed;
+  const [year, month, day] = workout.date.split('-').map(Number);
+  const workoutDateObj = new Date(year, month - 1, day);
+  const today = new Date(); today.setHours(0,0,0,0);
+  const isPastDay = workoutDateObj < today;
+  const isTodayDay = workoutDateObj.getTime() === today.getTime();
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -147,15 +242,12 @@ const WorkoutModal: React.FC<WorkoutModalProps> = ({
         {/* Header */}
         <div className="modal-header">
           <div className="modal-title-section">
-            <div className={`workout-type-badge ${getWorkoutTypeColor(workout.type)}`}>
-              {workout.type === 'rest' ? 'Rest Day' : 
-               workout.type === 'strength' ? 'Strength' :
-               workout.type === 'cardio' ? 'Cardio' :
-               workout.type === 'flexibility' ? 'Flexibility' : 'Mixed'}
+            <div className={`workout-type-badge ${getWorkoutTypeColor(primaryType)}`}>
+              {typeLabel}
             </div>
             <div>
               <h2>{formatDate(workout.date)}</h2>
-              {workout.completed && (
+              {overallCompleted && (
                 <span className="completed-badge">
                   <Check size={16} />
                   Completed
@@ -169,7 +261,32 @@ const WorkoutModal: React.FC<WorkoutModalProps> = ({
 
         {/* Content */}
         <div className="modal-content">
-          {workout.type === 'rest' ? (
+          {!isTodayDay && (
+            <div className="locked-note">
+              {isPastDay ? 'Past workouts are locked. View only.' : 'You can only complete workouts on the current day.'}
+            </div>
+          )}
+          {typeList.length > 1 && (
+            <div className="type-tab-strip" role="tablist" aria-label="Workout types">
+              {typeList.map((type) => {
+                const completedType = localCompletedTypes.includes(type);
+                return (
+                  <button
+                    key={type}
+                    role="tab"
+                    aria-selected={selectedType === type}
+                    className={`type-tab ${selectedType === type ? 'active' : ''} ${completedType ? 'completed' : ''}`}
+                    onClick={() => setSelectedType(type)}
+                  >
+                    <span className="dot" aria-hidden="true"></span>
+                    {getWorkoutTypeLabel([type])}
+                    {completedType && <Check size={14} className="tab-check" />}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+          {primaryType === 'rest' ? (
             (workout as any).isRickroll ? (
               <div className="rest-day-content rickroll-rest">
                 <div className="rest-icon">
@@ -291,10 +408,20 @@ const WorkoutModal: React.FC<WorkoutModalProps> = ({
                           <span>{exercise.sets} sets × {exercise.reps} reps</span>
                         </div>
                       )}
-                      {exercise.duration && (
+                      {(isEditing || exercise.duration) && (
                         <div className="detail-item">
                           <Clock size={16} />
-                          <span>{exercise.duration}</span>
+                          {isEditing ? (
+                            <input
+                              type="text"
+                              className="duration-input"
+                              value={(showAlternative ? editingWorkout.alternativeWorkouts[index].duration : editingWorkout.workouts[index].duration) || ''}
+                              onChange={(e) => handleExerciseFieldChange(index, 'duration', e.target.value, showAlternative)}
+                              placeholder="e.g., 30 min"
+                            />
+                          ) : (
+                            <span>{exercise.duration}</span>
+                          )}
                         </div>
                       )}
                       {exercise.muscleGroups && exercise.muscleGroups.length > 0 && (
@@ -328,7 +455,7 @@ const WorkoutModal: React.FC<WorkoutModalProps> = ({
           <ExerciseDetailModal name={detailExercise} exercise={detailExerciseObj || undefined} onClose={() => { setDetailExercise(null); setDetailExerciseObj(null); }} />
         )}
         {/* Footer: Only show for non-rest days */}
-        {workout.type !== 'rest' && (
+        {primaryType !== 'rest' && (
           <div className="modal-footer">
             <div className="action-buttons">
               {!isEditing ? (
@@ -336,6 +463,7 @@ const WorkoutModal: React.FC<WorkoutModalProps> = ({
                   <button 
                     className="btn btn-secondary"
                     onClick={() => setIsEditing(true)}
+                    disabled={isPastDay}
                   >
                     <Edit3 size={16} />
                     Edit Workout
@@ -343,7 +471,7 @@ const WorkoutModal: React.FC<WorkoutModalProps> = ({
                   <button
                     className="btn btn-secondary"
                     onClick={onRegenerateWorkout}
-                    disabled={!!(isRegenerating)}
+                    disabled={!!(isRegenerating) || isPastDay}
                     aria-busy={!!(isRegenerating)}
                   >
                     {isRegenerating ? (
@@ -363,18 +491,19 @@ const WorkoutModal: React.FC<WorkoutModalProps> = ({
                     )}
                   </button>
                   <button 
-                    className={`btn ${completed ? 'btn-accent' : 'btn-primary'}`}
+                    className={`btn ${selectedTypeCompleted ? 'btn-accent' : 'btn-primary'}`}
                     onClick={handleComplete}
+                    disabled={!isTodayDay}
                   >
-                    {completed ? (
+                    {selectedTypeCompleted ? (
                       <>
                         <RotateCcw size={16} />
-                        Mark Incomplete
+                        Mark {getWorkoutTypeLabel([selectedType])} Incomplete
                       </>
                     ) : (
                       <>
                         <Check size={16} />
-                        Complete Workout
+                        Complete {getWorkoutTypeLabel([selectedType])}
                       </>
                     )}
                   </button>
@@ -402,9 +531,9 @@ const WorkoutModal: React.FC<WorkoutModalProps> = ({
         )}
         
         {/* Add Workout Day Section: Only show for non-rest days */}
-        {workout.type !== 'rest' && (
+        {primaryType !== 'rest' && (
           <div className="add-workout-section">
-            <h3>Select Date and Workout Type</h3>
+            <h3>Select Date and Workout Types</h3>
             <div className="date-picker-container">
               <label htmlFor="workout-date">Date:</label>
               <input
@@ -416,18 +545,23 @@ const WorkoutModal: React.FC<WorkoutModalProps> = ({
               />
             </div>
             <div className="workout-type-container">
-              <label htmlFor="workout-type">Workout Type:</label>
-              <select
-                id="workout-type"
-                className="workout-type-selector"
-                value={editingWorkout.type}
-                onChange={(e) => setEditingWorkout({ ...editingWorkout, type: e.target.value as 'strength' | 'cardio' | 'flexibility' | 'rest' | 'mixed' })}
-              >
-                <option value="strength">Strength</option>
-                <option value="cardio">Cardio</option>
-                <option value="flexibility">Flexibility</option>
-                <option value="rest">Rest</option>
-              </select>
+              <label>Workout Types (choose up to 4):</label>
+              <div className="type-multi-select">
+                {(['strength','cardio','flexibility','mixed','rest'] as WorkoutType[]).map((type) => {
+                  const checked = editingTypes.includes(type);
+                  return (
+                    <label key={type} className={`type-pill ${checked ? 'selected' : ''}`}>
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={(e) => handleTypeToggle(type, e.target.checked)}
+                      />
+                      {getWorkoutTypeLabel([type])}
+                    </label>
+                  );
+                })}
+              </div>
+              <small className="type-helper">First selected type becomes the primary color on the calendar.</small>
             </div>
             <button
               className="add-workout-button"

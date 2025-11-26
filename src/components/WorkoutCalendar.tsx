@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ChevronLeft, ChevronRight, Calendar, Play, Check, Clock, Target, Edit3, Plus, Settings, Save, X, Trash2, Dumbbell } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay } from 'date-fns';
-import { WorkoutPlan, DayWorkout } from '../types';
+import { WorkoutPlan, DayWorkout, WorkoutType } from '../types';
 import { UserData } from '../services/aiService';
 import WorkoutModal from './WorkoutModal';
 import './WorkoutCalendar.css';
@@ -41,6 +41,7 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
   const [selectedWorkoutDate, setSelectedWorkoutDate] = useState<string>('');const [draggedWorkout, setDraggedWorkout] = useState<DayWorkout | null>(null);
   const [dragOverDate, setDragOverDate] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [draggedLegendType, setDraggedLegendType] = useState<string | null>(null);
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [lastUpdatedDate, setLastUpdatedDate] = useState<string | null>(null);
   const [isManualDateChange, setIsManualDateChange] = useState(false);
@@ -53,6 +54,74 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
   // Add delete mode state
   const [deleteMode, setDeleteMode] = useState(false);
   const [selectedForDeletion, setSelectedForDeletion] = useState<string[]>([]);
+  const previewPlanSeededRef = useRef(false);
+  const guestUserData: UserData = {
+    username: 'Guest',
+    age: 28,
+    fitnessLevel: 'beginner',
+    goals: ['Get active'],
+    timeAvailable: 30,
+    equipment: [],
+    preferences: ['Preview mode user'],
+    exerciseFormat: 'bodyweight',
+    daysPerWeek: '3'
+  };
+  const effectiveUserData: UserData = userData || guestUserData;
+  const isGuestUser = !userData;
+
+  useEffect(() => {
+    if (workoutPlan || previewPlanSeededRef.current) return;
+    const today = new Date();
+    const start = format(today, 'yyyy-MM-dd');
+    const endDateObj = new Date(today.getTime() + 6 * 24 * 60 * 60 * 1000);
+    const end = format(endDateObj, 'yyyy-MM-dd');
+    const previewDays: DayWorkout[] = Array.from({ length: 7 }).map((_, idx) => {
+      const date = new Date(today.getTime() + idx * 24 * 60 * 60 * 1000);
+      const dateStr = format(date, 'yyyy-MM-dd');
+      const type = idx % 3 === 0 ? 'strength' : idx % 3 === 1 ? 'cardio' : 'rest';
+      const isRest = type === 'rest';
+      return {
+        date: dateStr,
+        type: type as DayWorkout['type'],
+        completed: false,
+        totalTime: isRest ? '0 min' : '30 min',
+        workouts: isRest
+          ? [{
+              name: 'Rest Day',
+              description: 'Take a breather before your next session.',
+              difficulty: 'beginner',
+              duration: '0 min',
+              reps: '',
+              muscleGroups: [],
+              equipment: []
+            }]
+          : [{
+              name: idx % 3 === 0 ? 'Bodyweight Circuit' : 'Tempo Walk',
+              description: idx % 3 === 0
+                ? 'Squats, pushups, and lunges to warm up your whole body.'
+                : 'Light cardio to keep you moving.',
+              difficulty: 'beginner',
+              duration: '30 minutes',
+              reps: idx % 3 === 0 ? '3 rounds' : '20 min',
+              muscleGroups: idx % 3 === 0 ? ['full body'] : ['cardio'],
+              equipment: idx % 3 === 0 ? [] : ['sneakers']
+            }],
+        alternativeWorkouts: []
+      };
+    });
+    const previewPlan: WorkoutPlan = {
+      id: 'preview-plan',
+      name: 'Preview Plan',
+      description: 'Preview the schedule builder. Complete the questionnaire to personalize your plan.',
+      startDate: start,
+      endDate: end,
+      totalDays: previewDays.length,
+      weeklyStructure: ['Strength', 'Cardio', 'Rest', 'Strength', 'Cardio', 'Rest', 'Mixed'],
+      dailyWorkouts: previewDays
+    };
+    previewPlanSeededRef.current = true;
+    onUpdatePlan(previewPlan);
+  }, [workoutPlan, onUpdatePlan]);
 
   useEffect(() => {
     if (workoutPlan && workoutPlan.dailyWorkouts.length > 0 && !isManualDateChange) {
@@ -178,17 +247,20 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
     }
   }, [workoutPlan, onUpdatePlan]);
 
-  if (!workoutPlan || !userData) {
+  const displayName = (userData?.username?.trim()) || effectiveUserData.username || effectiveUserData.name || 'Guest';
+
+  if (!workoutPlan) {
     return (
-      <div className="calendar-no-plan-container">
-        <div className="calendar-no-plan-content fade-in-bounce">
-          <div className="calendar-no-plan-icon-bg">
-            <Dumbbell size={48} color="#fff" />
+      <div className="calendar-page">
+        <div className="calendar-container">
+          <div className="calendar-preview-callout fade-in-bounce">
+            <div className="calendar-no-plan-icon-bg">
+              <Dumbbell size={48} color="#fff" />
+            </div>
+            <h2 className="calendar-no-plan-message">Building a preview schedule...</h2>
+            <p className="calendar-no-plan-desc">Hang tight — a starter calendar will load so you can explore the schedule builder before filling the questionnaire.</p>
+            <a className="calendar-no-plan-btn" href="/questionnaire">Start questionnaire</a>
           </div>
-          <h1 className="calendar-no-plan-title">No Plan</h1>
-          <h2 className="calendar-no-plan-message">No Workout Plan Found</h2>
-          <p className="calendar-no-plan-desc">Please complete the questionnaire first to generate your personalized workout plan.</p>
-          <a className="calendar-no-plan-btn" href="/questionnaire">Go to Questionnaire</a>
         </div>
       </div>
     );
@@ -222,6 +294,34 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
     }
 
     return format(date, 'yyyy-MM-dd');
+  };
+
+  // Normalize per-day types to an array (max 4, de-duped) for rendering and logic
+  const resolveWorkoutTypes = (workout: DayWorkout): WorkoutType[] => {
+    const raw = (workout as any)?.types;
+    const types = Array.isArray(raw) ? raw.filter(Boolean) : [];
+    if (types.length === 0 && workout.type) types.push(workout.type);
+    return Array.from(new Set(types)).slice(0, 4) as WorkoutType[];
+  };
+
+  const getPrimaryType = (workout: DayWorkout): WorkoutType => {
+    const types = resolveWorkoutTypes(workout);
+    return types[0] || 'mixed';
+  };
+
+  // Normalize to midnight and check if the target date has already passed
+  const isDateInPast = (date: Date) => {
+    const normalized = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return normalized < today;
+  };
+
+  const isDateToday = (date: Date) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const normalized = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    return normalized.getTime() === today.getTime();
   };
 
   const getWorkoutForDate = (date: Date): DayWorkout | null => {
@@ -277,15 +377,46 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
     }
   };
 
-  const handleCompleteWorkout = (workoutDate: string) => {
-    const updatedWorkouts = workoutPlan.dailyWorkouts.map(workout =>
-      workout.date === workoutDate
-        ? { ...workout, completed: !workout.completed }
-        : workout
-    );
-    
+  const handleCompleteWorkout = (workoutDate: string, type?: WorkoutType) => {
+    const [y, m, d] = workoutDate.split('-').map(Number);
+    const target = new Date(y, m - 1, d);
+    if (!isDateToday(target)) {
+      alert('You can only complete or undo today\'s workout.');
+      return;
+    }
+    const updatedWorkouts = workoutPlan.dailyWorkouts.map(workout => {
+      if (workout.date !== workoutDate) return workout;
+
+      const types = resolveWorkoutTypes(workout);
+      const targetType = type || types[0] || workout.type;
+      const currentCompleted = Array.isArray(workout.completedTypes) ? workout.completedTypes : (workout.completed ? types : []);
+      let nextCompleted = currentCompleted;
+
+      if (targetType) {
+        if (currentCompleted.includes(targetType)) {
+          nextCompleted = currentCompleted.filter(t => t !== targetType);
+        } else {
+          nextCompleted = [...currentCompleted, targetType];
+        }
+      }
+
+      // only keep types that still exist
+      nextCompleted = nextCompleted.filter(t => types.includes(t));
+      const isAllComplete = types.length > 0
+        ? nextCompleted.length === types.length
+        : !workout.completed;
+
+      return {
+        ...workout,
+        completed: isAllComplete,
+        completedTypes: types.length > 0 ? nextCompleted : []
+      };
+    });
+
     const updatedPlan = { ...workoutPlan, dailyWorkouts: updatedWorkouts };
     onUpdatePlan(updatedPlan);
+    const refreshedDay = updatedWorkouts.find(w => w.date === workoutDate);
+    if (refreshedDay) setSelectedDay(refreshedDay);
   };
 
   const navigateMonth = (direction: 'prev' | 'next') => {
@@ -302,7 +433,7 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
     window.setTimeout(() => setIsManualDateChange(false), 2000);
   };
 
-  const getWorkoutTypeColor = (type: string) => {
+  const getWorkoutTypeColor = (type: WorkoutType | string | undefined) => {
     switch (type) {
       case 'strength':
         return 'strength';
@@ -319,13 +450,28 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
     }
   };
 
-  const completedWorkouts = workoutPlan.dailyWorkouts.filter(w => w.completed).length;
-  const totalWorkouts = workoutPlan.dailyWorkouts.filter(w => w.type !== 'rest').length;
+  const getWorkoutTypeLabel = (types: WorkoutType[]) => {
+    const formatSingle = (type: WorkoutType) => {
+      switch (type) {
+        case 'strength': return 'Strength';
+        case 'cardio': return 'Cardio';
+        case 'flexibility': return 'Flexibility';
+        case 'rest': return 'Rest';
+        default: return 'Mixed';
+      }
+    };
+    if (!types || types.length === 0) return 'Mixed';
+    if (types.length > 1) return types.map(formatSingle).join(' / ');
+    return formatSingle(types[0]);
+  };
+
+  const completedWorkouts = workoutPlan.dailyWorkouts.filter(w => w.completed && getPrimaryType(w) !== 'rest').length;
+  const totalWorkouts = workoutPlan.dailyWorkouts.filter(w => getPrimaryType(w) !== 'rest').length;
   const progressPercentage = totalWorkouts > 0 ? (completedWorkouts / totalWorkouts) * 100 : 0;
 
   // Calculate total workout time
   const getWorkoutDuration = (workout: DayWorkout): string => {
-    if (workout.type === 'rest') return '0 min';
+    if (getPrimaryType(workout) === 'rest') return '0 min';
     
     let totalMinutes = 0;
     workout.workouts.forEach(exercise => {
@@ -379,6 +525,10 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
     } else {
       targetDate = new Date();
     }
+    if (isDateInPast(targetDate)) {
+      alert('You cannot add or change workouts on past dates.');
+      return;
+    }
     const dateString = format(targetDate, 'yyyy-MM-dd');
     
     // Check if workout already exists for this date
@@ -388,6 +538,7 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
       const updatedWorkout = {
         ...existingWorkout,
         type: 'rest' as const,
+        types: ['rest'],
         workouts: [
           {
             name: 'Rest Day',
@@ -416,7 +567,8 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
       ],
       alternativeWorkouts: [],
       completed: false,
-      type: 'rest'
+      type: 'rest',
+      types: ['rest']
     };
 
     const updatedWorkouts = [...(workoutPlan?.dailyWorkouts || []), restWorkout];
@@ -496,7 +648,7 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
 
   // Batch generate handler for selected dates
   const handleBatchGenerate = async () => {
-    if (!workoutPlan || !userData) return;
+    if (!workoutPlan) return;
     if (selectedForAdd.length === 0) {
       alert('Please select at least one date.');
       return;
@@ -526,7 +678,7 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
         const typeForAI = (batchTypes && batchTypes.length > 0) ? batchTypes.join(',') : 'mixed';
         const savedAnswersWithComments = { ...savedAnswers, batchComments };
         const others = updatedDaily.filter(d => d.date !== dateStr);
-        const newDayRaw = await generateWorkoutForDay(userData, savedAnswersWithComments, savedQuestions, dateStr, typeForAI, others, []);
+        const newDayRaw = await generateWorkoutForDay(effectiveUserData, savedAnswersWithComments, savedQuestions, dateStr, typeForAI, others, []);
 
         // normalize similar to regenerate
         const normalizeDay = (day: any, targetDate: string) : DayWorkout => {
@@ -534,11 +686,15 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
           let dateStrLocal = parsedDate;
           try { if (parsedDate.includes('T')) dateStrLocal = format(new Date(parsedDate), 'yyyy-MM-dd'); } catch (err) { dateStrLocal = targetDate; }
           dateStrLocal = targetDate;
+          const normalizedTypes = Array.isArray(day?.types) && day?.types.length
+            ? day.types.slice(0, 4)
+            : [((day?.type || 'mixed') as WorkoutType)];
           const workoutsArr = Array.isArray(day?.workouts) ? day.workouts : (Array.isArray(day?.exercises) ? day.exercises : []);
           const altArr = Array.isArray(day?.alternativeWorkouts) ? day.alternativeWorkouts : (Array.isArray(day?.alternativeExercises) ? day.alternativeExercises : []);
           return {
             date: dateStrLocal,
-            type: day?.type || 'mixed',
+            type: (normalizedTypes[0] || 'mixed') as WorkoutType,
+            types: normalizedTypes as WorkoutType[],
             workouts: workoutsArr.map((w: any) => ({
               name: w?.name || w?.exercise || 'Exercise',
               description: w?.description || w?.instructions || '',
@@ -582,7 +738,7 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
   setSelectedForAdd([]);
   };
   const handleAddWorkoutDay = async (date?: Date, workoutType?: 'strength' | 'cardio' | 'flexibility' | 'rest' | 'mixed', preferences?: any) => {
-    if (!workoutPlan || !userData) return;
+    if (!workoutPlan) return;
 
     let targetDate: Date;
     let dateString: string;
@@ -591,6 +747,13 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
       // Parse the date as local time and increment by one day to avoid timezone issues
       targetDate = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1);
       dateString = format(targetDate, 'yyyy-MM-dd');
+
+      const today = new Date();
+      today.setHours(0,0,0,0);
+      if (targetDate < today) {
+        alert('You cannot add workouts to a past date.');
+        return;
+      }
 
       const existingWorkout = workoutPlan.dailyWorkouts.find(w => w.date === dateString);
       if (existingWorkout) {
@@ -607,7 +770,7 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
 
     // Convert preferences to an array of strings
     const preferencesArray = [
-      ...(userData.preferences || []),
+      ...(effectiveUserData.preferences || []),
       ...(preferences?.muscleGroups || []),
       ...(preferences?.equipment || []),
       `Workout type: ${workoutType || 'mixed'}`,
@@ -615,7 +778,7 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
     ];
 
     const userDataWithPreferences: UserData = {
-      ...userData,
+      ...effectiveUserData,
       preferences: preferencesArray
     };
 
@@ -624,6 +787,7 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
     const newWorkout: DayWorkout = {
       date: dateString,
       type: (workoutType || 'mixed') as 'strength' | 'cardio' | 'flexibility' | 'rest' | 'mixed',
+      types: [((workoutType || 'mixed') as WorkoutType)],
       workouts: generatedPlan.dailyWorkouts[0]?.workouts || [],
       alternativeWorkouts: [],
       completed: false
@@ -642,9 +806,28 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
   // Update workout function
   const handleUpdateWorkout = (updatedWorkout: DayWorkout) => {
     if (!workoutPlan) return;
+    try {
+      const [y, m, d] = updatedWorkout.date.split('-').map(Number);
+      const target = new Date(y, m - 1, d);
+      if (isDateInPast(target)) {
+        alert('You cannot change workouts on past dates.');
+        return;
+      }
+    } catch {/* ignore parse errors */}
+
+    const normalizedTypes = resolveWorkoutTypes(updatedWorkout);
+    const normalizedCompletedTypes = (updatedWorkout.completedTypes || []).filter(t => normalizedTypes.includes(t));
+    const allComplete = normalizedTypes.length > 0 ? normalizedCompletedTypes.length === normalizedTypes.length : updatedWorkout.completed;
+    const normalizedWorkout: DayWorkout = {
+      ...updatedWorkout,
+      type: (normalizedTypes[0] || updatedWorkout.type || 'mixed') as WorkoutType,
+      types: normalizedTypes,
+      completedTypes: normalizedCompletedTypes,
+      completed: allComplete
+    };
     
     const updatedWorkouts = workoutPlan.dailyWorkouts.map(workout =>
-      workout.date === updatedWorkout.date ? updatedWorkout : workout
+      workout.date === updatedWorkout.date ? normalizedWorkout : workout
     );
     
     const updatedPlan = { ...workoutPlan, dailyWorkouts: updatedWorkouts };
@@ -652,7 +835,13 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
   };
   // Regenerate workout function
   const handleRegenerateWorkout = async (workout: DayWorkout) => {
-    if (!workoutPlan || !userData) return;
+    if (!workoutPlan) return;
+    const [y, m, d] = workout.date.split('-').map(Number);
+    const targetDate = new Date(y, m - 1, d);
+    if (isDateInPast(targetDate)) {
+      alert('You cannot change workouts on past dates.');
+      return;
+    }
     // close modal and set loading state
     setShowWorkoutModal(false);
     setLoadingDate(workout.date);
@@ -661,25 +850,26 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
     const savedAnswers = progress?.answers || {};
     const savedQuestions = progress?.questionsList || [];
     try {
+      const primaryType = getPrimaryType(workout);
       // Build existing workouts array excluding target date
       const others = workoutPlan.dailyWorkouts.filter(d => d.date !== workout.date);
       // Request a single-day workout from Gemini AI
       const currentDayList = [...workout.workouts, ...workout.alternativeWorkouts];
       // eslint-disable-next-line no-console
       console.log('[AI] Sending generateWorkoutForDay request:', {
-        username: userData?.username,
+        username: effectiveUserData?.username,
         date: workout.date,
-        type: workout.type,
+        type: primaryType,
         othersCount: others.length,
         currentDayListLength: currentDayList.length
       });
 
       const newDay = await generateWorkoutForDay(
-        userData,
+        effectiveUserData,
         savedAnswers,
         savedQuestions,
         workout.date,
-        workout.type,
+        primaryType,
         others,
         currentDayList
       );
@@ -706,9 +896,20 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
         const workoutsArr = Array.isArray(day?.workouts) ? day.workouts : (Array.isArray(day?.exercises) ? day.exercises : []);
         const altArr = Array.isArray(day?.alternativeWorkouts) ? day.alternativeWorkouts : (Array.isArray(day?.alternativeExercises) ? day.alternativeExercises : []);
 
+        const normalizedTypes = Array.isArray((day as any)?.types) && (day as any)?.types.length
+          ? (day as any).types.slice(0, 4)
+          : resolveWorkoutTypes(workout);
+
         return {
           date: dateStr,
-          type: day?.type || workout.type || 'mixed',
+          type: (normalizedTypes[0] || day?.type || workout.type || 'mixed') as WorkoutType,
+          types: normalizedTypes as WorkoutType[],
+          completedTypes: Array.isArray(day?.completedTypes)
+            ? (day.completedTypes as WorkoutType[]).filter((t: WorkoutType) => normalizedTypes.includes(t))
+            : [],
+          completed: normalizedTypes.length > 0
+            ? Array.isArray(day?.completedTypes) && (day.completedTypes as WorkoutType[]).filter((t: WorkoutType) => normalizedTypes.includes(t)).length === normalizedTypes.length
+            : !!day?.completed,
           workouts: workoutsArr.map((w: any) => ({
             name: w?.name || w?.exercise || 'Exercise',
             description: w?.description || w?.instructions || '',
@@ -763,9 +964,19 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
   };
 
   const handleGenerateWorkout = async () => {
-    if (!workoutPlan || !userData || !selectedWorkoutDate) return;
+    if (!workoutPlan || !selectedWorkoutDate) return;
 
     setLoadingDate(selectedWorkoutDate);
+
+    // block adding/generating on past dates
+    const selected = new Date(selectedWorkoutDate);
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    if (selected < today) {
+      alert('You cannot add workouts to a past date.');
+      setLoadingDate(null);
+      return;
+    }
 
     const progress = loadQuestionnaireProgress();
     const savedAnswers = progress?.answers || {};
@@ -778,14 +989,14 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
       // Request a single-day workout from Gemini AI
       // eslint-disable-next-line no-console
       console.log('[AI] Sending generateWorkoutForDay request:', {
-        username: userData?.username,
+        username: effectiveUserData?.username,
         date: selectedWorkoutDate,
         type: selectedWorkoutType,
         othersCount: others.length
       });
 
       const newDay = await generateWorkoutForDay(
-        userData,
+        effectiveUserData,
         savedAnswers,
         savedQuestions,
         selectedWorkoutDate,
@@ -794,11 +1005,21 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
         [] // No existing workouts for a new day
       );
 
+      const normalizedTypes = Array.isArray((newDay as any)?.types) && (newDay as any)?.types.length
+        ? (newDay as any).types.slice(0, 4)
+        : [selectedWorkoutType];
+      const normalizedNewDay: DayWorkout = {
+        ...(newDay as any),
+        type: ((normalizedTypes[0] || selectedWorkoutType) as WorkoutType),
+        types: normalizedTypes as WorkoutType[],
+        completedTypes: []
+      };
+
       // eslint-disable-next-line no-console
       console.log('[AI] Received response for generateWorkoutForDay:', newDay);
 
       // Add the new day to the current plan
-      const updatedDaily = [...workoutPlan.dailyWorkouts, newDay];
+      const updatedDaily = [...workoutPlan.dailyWorkouts, normalizedNewDay];
       const updatedPlan = { ...workoutPlan, dailyWorkouts: updatedDaily };
       onUpdatePlan(updatedPlan);
       try { saveWorkoutPlan(updatedPlan); } catch (err) { console.warn('Failed to save generated day locally:', err); }
@@ -825,9 +1046,31 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
     try { e.dataTransfer.effectAllowed = 'move'; } catch {}
   };
 
+  const handleLegendDragStart = (e: React.DragEvent, type: DayWorkout['type']) => {
+    setDraggedLegendType(type);
+    setIsDragging(true);
+    try {
+      e.dataTransfer.effectAllowed = 'copy';
+      e.dataTransfer.setData('text/calendar-type', type);
+    } catch {}
+  };
+
+  const handleLegendDragEnd = () => {
+    setDraggedLegendType(null);
+    setIsDragging(false);
+    setDragOverDate(null);
+  };
+
   const handleDragOver = (e: React.DragEvent, date: Date) => {
+    const isLegend = draggedLegendType || e.dataTransfer.getData('text/calendar-type');
+    // Only allow legend drops on today or future dates
+    if (isLegend && isDateInPast(date)) {
+      setDragOverDate(null);
+      return;
+    }
+
     e.preventDefault();
-    try { e.dataTransfer.dropEffect = 'move'; } catch {}
+    try { e.dataTransfer.dropEffect = isLegend ? 'copy' : 'move'; } catch {}
     setDragOverDate(formatDate(date.toISOString()));
   };
 
@@ -838,19 +1081,129 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
   const handleDragEnd = () => {
     setIsDragging(false);
     setDraggedWorkout(null);
+    setDraggedLegendType(null);
     setDragOverDate(null);
   };
 
-  const handleDrop = (e: React.DragEvent, targetDate: Date) => {
+  const handleDrop = async (e: React.DragEvent, targetDate: Date) => {
     e.preventDefault();
 
-    if (!draggedWorkout || !workoutPlan) {
+    if (!workoutPlan) {
       setIsDragging(false);
+      setDraggedLegendType(null);
       return;
     }
 
     const targetDateString = formatDate(targetDate.toISOString());
-    const sourceDateString = draggedWorkout.date;
+    const legendType = draggedLegendType || e.dataTransfer.getData('text/calendar-type');
+
+    // Block adding brand-new days on past dates
+    if (legendType && isDateInPast(targetDate)) {
+      alert('You can only add workouts to today or a future date.');
+      setIsDragging(false);
+      setDraggedLegendType(null);
+      setDragOverDate(null);
+      return;
+    }
+
+    // Block moving anything into or out of past dates
+    const targetDateObj = new Date(targetDateString + 'T00:00:00');
+    const sourceDateString = draggedWorkout?.date;
+    if (draggedWorkout) {
+      const [sy, sm, sd] = sourceDateString.split('-').map(Number);
+      const sourceDate = new Date(sy, sm - 1, sd);
+      if (isDateInPast(sourceDate) || isDateInPast(targetDateObj)) {
+        alert('You cannot move workouts on past dates.');
+        setIsDragging(false);
+        setDraggedWorkout(null);
+        setDraggedLegendType(null);
+        setDragOverDate(null);
+        return;
+      }
+    }
+
+    // If dragging a legend category, generate a new day for that type
+    if (legendType) {
+      const typeForAI = legendType as DayWorkout['type'];
+      const existingTarget = workoutPlan.dailyWorkouts.find(d => d.date === targetDateString);
+        // If a workout already exists on this date, just append the type (up to 4) instead of replacing the day
+        if (existingTarget) {
+          const mergedTypes = Array.from(new Set([...resolveWorkoutTypes(existingTarget), typeForAI])).slice(0, 4) as WorkoutType[];
+          const mergedCompletedTypes = (existingTarget.completedTypes || []).filter(t => mergedTypes.includes(t));
+          const merged: DayWorkout = {
+            ...existingTarget,
+            types: mergedTypes,
+            type: (mergedTypes[0] || existingTarget.type || typeForAI) as WorkoutType,
+            completedTypes: mergedCompletedTypes,
+            completed: mergedCompletedTypes.length === mergedTypes.length && mergedTypes.length > 0
+          };
+        const mergedDaily = workoutPlan.dailyWorkouts.map(d => d.date === targetDateString ? merged : d);
+        const updatedPlan = { ...workoutPlan, dailyWorkouts: mergedDaily };
+        onUpdatePlan(updatedPlan);
+        try { saveWorkoutPlan(updatedPlan); } catch (err) { console.warn('Failed to save merged multi-type day locally:', err); }
+        setLastUpdatedDate(targetDateString);
+        window.setTimeout(() => setLastUpdatedDate(null), 2000);
+        setDraggedLegendType(null);
+        setIsDragging(false);
+        setDragOverDate(null);
+        return;
+      }
+
+      setLoadingDate(targetDateString);
+      const progress = loadQuestionnaireProgress();
+      const savedAnswers = progress?.answers || {};
+      const savedQuestions = progress?.questionsList || [];
+
+      try {
+        const others = workoutPlan.dailyWorkouts.filter(d => d.date !== targetDateString);
+        const newDayRaw = await generateWorkoutForDay(
+          effectiveUserData,
+          savedAnswers,
+          savedQuestions,
+          targetDateString,
+          typeForAI,
+          others,
+          []
+        );
+
+        const normalizedTypes = Array.isArray((newDayRaw as any)?.types) && (newDayRaw as any)?.types.length
+          ? (newDayRaw as any).types.slice(0, 4)
+          : [typeForAI];
+        const normalizedDay: DayWorkout = {
+          date: targetDateString,
+          type: ((normalizedTypes[0] || (newDayRaw as any)?.type || typeForAI) as WorkoutType),
+          types: normalizedTypes as WorkoutType[],
+          completedTypes: [],
+          completed: !!(newDayRaw as any)?.completed,
+          totalTime: (newDayRaw as any)?.totalTime || '',
+          workouts: Array.isArray((newDayRaw as any)?.workouts) ? (newDayRaw as any).workouts : [],
+          alternativeWorkouts: Array.isArray((newDayRaw as any)?.alternativeWorkouts) ? (newDayRaw as any).alternativeWorkouts : []
+        };
+
+        // replace or add, keep plan ordered
+        const withoutTarget = workoutPlan.dailyWorkouts.filter(d => d.date !== targetDateString);
+        const nextDaily = [...withoutTarget, normalizedDay].sort((a, b) => a.date.localeCompare(b.date));
+        const updatedPlan = { ...workoutPlan, dailyWorkouts: nextDaily, totalDays: nextDaily.length };
+        onUpdatePlan(updatedPlan);
+        try { saveWorkoutPlan(updatedPlan); } catch (err) { console.warn('Failed to save generated day locally:', err); }
+        setLastUpdatedDate(targetDateString);
+        window.setTimeout(() => setLastUpdatedDate(null), 2000);
+      } catch (err) {
+        console.error('Drag-generate error for', targetDateString, err);
+      } finally {
+        setLoadingDate(null);
+        setDraggedLegendType(null);
+        setIsDragging(false);
+        setDragOverDate(null);
+      }
+      return;
+    }
+
+    if (!draggedWorkout) {
+      setIsDragging(false);
+      setDragOverDate(null);
+      return;
+    }
 
     if (targetDateString === sourceDateString) {
       setDraggedWorkout(null);
@@ -879,19 +1232,19 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
       );
     }
 
-  // Mark this as a manual date change BEFORE updating the parent plan so effect hooks
-  // that react to workoutPlan won't override the user's current month selection.
-  setIsManualDateChange(true);
-  // Keep the calendar on the current month the user is viewing
-  setCurrentDate(currentDate);
+    // Mark this as a manual date change BEFORE updating the parent plan so effect hooks
+    // that react to workoutPlan won't override the user's current month selection.
+    setIsManualDateChange(true);
+    // Keep the calendar on the current month the user is viewing
+    setCurrentDate(currentDate);
 
-  const updatedPlan = { ...workoutPlan, dailyWorkouts: updatedWorkouts };
-  onUpdatePlan(updatedPlan);
+    const updatedPlan = { ...workoutPlan, dailyWorkouts: updatedWorkouts };
+    onUpdatePlan(updatedPlan);
 
-  // Reset manual flag shortly after so future plan loads can sync normally
-  window.setTimeout(() => setIsManualDateChange(false), 2000);
+    // Reset manual flag shortly after so future plan loads can sync normally
+    window.setTimeout(() => setIsManualDateChange(false), 2000);
 
-  setDraggedWorkout(null);
+    setDraggedWorkout(null);
     setDragOverDate(null);
     setIsDragging(false);
   };
@@ -967,10 +1320,18 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
   return (
     <div className="calendar-page">
       <div className="calendar-container">
+        {isGuestUser && (
+          <div className="calendar-preview-banner">
+            <div className="banner-text">
+              <strong>Preview mode:</strong> Explore the scheduler now. Complete the questionnaire to let the AI personalize your plan.
+            </div>
+            <a className="calendar-no-plan-btn" href="/questionnaire">Complete questionnaire</a>
+          </div>
+        )}
         {/* Header */}
         <div className="calendar-header">
           <div className="user-info">
-            <h1>Welcome back, {userData?.username?.trim() || 'User'}!</h1>
+            <h1>Welcome back, {displayName}!</h1>
             <p>{workoutPlan.description}</p>
           </div>
           
@@ -1065,6 +1426,17 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
             const isDragOver = dragOverDate === dateString;
             const isLoading = loadingDate === dateString;
             const isJustUpdated = lastUpdatedDate === dateString;
+            const typeList = workout ? resolveWorkoutTypes(workout) : [];
+            const primaryType = workout ? getPrimaryType(workout) : undefined;
+            const isMultiType = typeList.length > 1;
+            const isPastDay = isDateInPast(date);
+            const completedTypes = workout?.completedTypes || [];
+            const completedCount = typeList.length > 0
+              ? (completedTypes.filter(t => typeList.includes(t)).length || (workout?.completed ? typeList.length : 0))
+              : (workout?.completed ? 1 : 0);
+            const completionPercent = typeList.length > 0
+              ? Math.min(100, (completedCount / typeList.length) * 100)
+              : (workout?.completed ? 100 : 0);
             // render logging removed to reduce noise
             
             return (
@@ -1086,11 +1458,24 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
                   <span className="day-number">{format(date, 'd')}</span>
                   {workout ? (
                     <div
-                      className={`workout-indicator ${getWorkoutTypeColor(workout.type)} ${workout.completed ? 'completed' : ''}`}
-                      draggable={!showEditMenu}
+                      className={`workout-indicator ${isMultiType ? 'multi' : getWorkoutTypeColor(primaryType)} ${workout.completed ? 'completed' : ''}`}
+                      draggable={!showEditMenu && !isPastDay}
                       onDragStart={(e) => handleDragStart(e, workout)}
                       onDragEnd={handleDragEnd}
                     >
+                      <div className="workout-progress-bar" aria-label="Workout progress">
+                        <div
+                          className="progress-fill"
+                          style={{ width: `${completionPercent}%` }}
+                        ></div>
+                      </div>
+                      {typeList.length > 0 && (
+                        <div className="workout-segments" data-count={typeList.length}>
+                          {typeList.map((t) => (
+                            <span key={t} className={`segment ${getWorkoutTypeColor(t)}`}></span>
+                          ))}
+                        </div>
+                      )}
                       {(isLoading || loadingDates.includes(dateString)) && (
                         <div className="loader-overlay inside-indicator">
                           <div className="loading-dumbbell small">
@@ -1100,10 +1485,7 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
                       )}
                       <div className="workout-content">
                       <span className="workout-type">
-                        {workout.type === 'rest' ? 'Rest' : 
-                         workout.type === 'strength' ? 'Strength' :
-                         workout.type === 'cardio' ? 'Cardio' :
-                         workout.type === 'flexibility' ? 'Flexibility' : 'Mixed'}
+                        {getWorkoutTypeLabel(typeList as WorkoutType[])}
                       </span>
                       <span className="workout-duration">
                         {workout.totalTime
@@ -1111,10 +1493,15 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
                           : `⏱️ ${getWorkoutDuration(workout)}`
                         }
                       </span>
+                      {isPastDay && (
+                        <span className="workout-locked">
+                          {completionPercent === 100 ? 'Done (locked)' : 'Incomplete (locked)'}
+                        </span>
+                      )}
                       {workout.completed && (
                         <Check size={14} className="check-icon" />
                       )}
-                        {!workout.completed && workout.type !== 'rest' && (
+                        {!workout.completed && primaryType !== 'rest' && (
                           <Play size={14} className="play-icon" />
                         )}
                       </div>
@@ -1142,23 +1529,53 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
         <div className="calendar-legend">
           <h3>Workout Types</h3>
           <div className="legend-items">
-            <div className="legend-item">
+            <div
+              className="legend-item"
+              draggable
+              onDragStart={(e) => handleLegendDragStart(e, 'strength')}
+              onDragEnd={handleLegendDragEnd}
+              title="Drag onto a date to generate a strength workout"
+            >
               <div className="legend-color strength"></div>
               <span>Strength Training</span>
             </div>
-            <div className="legend-item">
+            <div
+              className="legend-item"
+              draggable
+              onDragStart={(e) => handleLegendDragStart(e, 'cardio')}
+              onDragEnd={handleLegendDragEnd}
+              title="Drag onto a date to generate a cardio workout"
+            >
               <div className="legend-color cardio"></div>
               <span>Cardio</span>
             </div>
-            <div className="legend-item">
+            <div
+              className="legend-item"
+              draggable
+              onDragStart={(e) => handleLegendDragStart(e, 'flexibility')}
+              onDragEnd={handleLegendDragEnd}
+              title="Drag onto a date to generate a flexibility workout"
+            >
               <div className="legend-color flexibility"></div>
               <span>Flexibility</span>
             </div>
-            <div className="legend-item">
+            <div
+              className="legend-item"
+              draggable
+              onDragStart={(e) => handleLegendDragStart(e, 'mixed')}
+              onDragEnd={handleLegendDragEnd}
+              title="Drag onto a date to generate a mixed workout"
+            >
               <div className="legend-color mixed"></div>
               <span>Mixed</span>
             </div>
-            <div className="legend-item">
+            <div
+              className="legend-item"
+              draggable
+              onDragStart={(e) => handleLegendDragStart(e, 'rest')}
+              onDragEnd={handleLegendDragEnd}
+              title="Drag onto a date to add a rest day"
+            >
               <div className="legend-color rest"></div>
               <span>Rest Day</span>
             </div>
@@ -1169,7 +1586,7 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
         <WorkoutModal
           workout={selectedDay}
           onClose={() => setShowWorkoutModal(false)}
-          onComplete={() => handleCompleteWorkout(selectedDay.date)}
+          onComplete={(type) => handleCompleteWorkout(selectedDay.date, type)}
           onRegenerateWorkout={() => handleRegenerateWorkout(selectedDay)}
           isRegenerating={isRegenerating}
           onUpdateWorkout={handleUpdateWorkout}

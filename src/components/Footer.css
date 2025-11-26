@@ -1,4 +1,9 @@
-.fb-footer{background:linear-gradient(135deg,#f0fbf6 0%,#e8f5ff 100%);border-top:1px solid rgba(0,0,0,0.04);padding:28px 12px;color:var(--text-medium)}
+.fb-footer{
+  background: linear-gradient(135deg, var(--background-white, #f0fbf6) 0%, var(--background-light, #e8f5ff) 100%);
+  border-top: 1px solid var(--border-light, rgba(0,0,0,0.04));
+  padding:28px 12px;
+  color:var(--text-medium);
+}
 /* Footer participates in normal document flow so pages can control layout (sticky behavior handled by page containers) */
 .fb-footer{position:relative;padding-left:12px;padding-right:12px}
 .fb-footer-inner{max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
@@ -20,7 +25,7 @@
 .fb-brand .muted{color:var(--text-medium);margin:0}
 .fb-links{display:flex;gap:28px;margin-top:6px}
 .fb-col h5{margin:0 0 8px 0}
-.fb-col a{display:block;color:var(--text-medium);text-decoration:none;margin-bottom:6px}
+.fb-col a{display:block;color:var(--text-medium);text-decoration:none;margin-bottom:6px;transition:color 0.2s ease}
 .fb-col a:hover{color:var(--color-primary)}
 .fb-bottom{display:flex;justify-content:space-between;align-items:center;padding-top:8px;border-top:1px solid rgba(0,0,0,0.03);font-size:0.95rem}
 .muted{color:var(--text-medium)}
@@ -31,19 +36,25 @@
 }
 
 /* Dark mode */
+.theme-dark .fb-footer,
 body.theme-dark .fb-footer {
   background: linear-gradient(135deg, #0f1828 0%, #0b111b 100%);
   border-top: 1px solid rgba(255,255,255,0.06);
   color: var(--text-dark);
 }
+.theme-dark .fb-bottom,
 body.theme-dark .fb-bottom {
   border-top: 1px solid rgba(255,255,255,0.08);
 }
+.theme-dark .fb-col a,
+.theme-dark .fb-brand .muted,
+.theme-dark .fb-footer .muted,
 body.theme-dark .fb-col a,
 body.theme-dark .fb-brand .muted,
 body.theme-dark .fb-footer .muted {
   color: var(--text-medium);
 }
+.theme-dark .fb-col a:hover,
 body.theme-dark .fb-col a:hover {
   color: var(--primary-green);
 }
