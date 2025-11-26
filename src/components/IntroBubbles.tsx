@@ -99,13 +99,12 @@ const IntroBubbles: React.FC<{ onFinish: () => void }> = ({ onFinish }) => {
       setPhase('fadeout');
       console.log('[IntroBubbles] Phase changed: fadeout');
     }, totalFlyIn + 4000));
-    // Call onFinish as soon as fadeout starts, and hide the overlay at the same time
-    // so the main content (including the footer) is visible in all browsers.
+    // Finish after fade-out to avoid flashing content underneath
     timers.push(setTimeout(() => {
-      console.log('[IntroBubbles] onFinish called. Hiding overlay.');
+      console.log('[IntroBubbles] onFinish called after fadeout. Hiding overlay.');
       setHide(true);
       onFinishRef.current();
-    }, totalFlyIn));
+    }, totalFlyIn + 4800));
     return () => {
       timers.forEach(clearTimeout);
       console.log('[IntroBubbles] Cleaned up timers.');
