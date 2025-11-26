@@ -32,7 +32,6 @@ import TermsPage from './components/TermsPage';
 import PrivacyPage from './components/PrivacyPage';
 import HelpCenter from './components/HelpCenter';
 import SettingsPage from './components/SettingsPage';
-import BackgroundDots from './components/BackgroundDots';
 
 function App() {
   const [userData, setUserData] = useState<any | null>(null);
@@ -40,44 +39,90 @@ function App() {
   const [planVersion, setPlanVersion] = useState(0);
   const navigate = useNavigate();
   const [profileVersion, setProfileVersion] = useState(0);
-  const [theme, setTheme] = useState<'theme-light' | 'theme-dark'>(() => {
-    if (typeof window === 'undefined') return 'theme-light';
-    const saved = localStorage.getItem('fitbuddy_theme');
-    return saved === 'theme-dark' ? 'theme-dark' : 'theme-light';
+  // themeMode: 'auto' | 'light' | 'dark'
+  const [themeMode, setThemeMode] = useState<'auto' | 'light' | 'dark'>(() => {
+    if (typeof window === 'undefined') return 'auto';
+    // Prefer explicit saved mode, but fall back to legacy fitbuddy_theme value
+    const savedMode = localStorage.getItem('fitbuddy_theme_mode');
+    if (savedMode === 'light' || savedMode === 'dark' || savedMode === 'auto') return savedMode as any;
+    const legacy = localStorage.getItem('fitbuddy_theme');
+    if (legacy === 'theme-dark') return 'dark';
+    if (legacy === 'theme-light') return 'light';
+    return 'auto';
   });
 
   // Cloud backup/restore integration
   useCloudBackup();
+  // Apply effective theme to document based on themeMode and OS preference
   useEffect(() => {
-    const isDark = theme === 'theme-dark';
-    document.documentElement.classList.toggle('theme-dark', isDark);
-    document.body.classList.toggle('theme-dark', isDark);
-    localStorage.setItem('fitbuddy_theme', theme);
-  }, [theme]);
+    const applyEffective = (mode: 'auto' | 'light' | 'dark') => {
+      let effective = 'theme-light';
+      if (mode === 'auto') {
+        try {
+          const mq = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
+          if (mq && mq.matches) effective = 'theme-dark';
+        } catch {}
+      } else if (mode === 'dark') {
+        effective = 'theme-dark';
+      }
+      const isDark = effective === 'theme-dark';
+      document.documentElement.classList.toggle('theme-dark', isDark);
+      document.body.classList.toggle('theme-dark', isDark);
+      // keep legacy key for backward compatibility
+      try { localStorage.setItem('fitbuddy_theme', effective); } catch {}
+    };
+
+    applyEffective(themeMode);
+
+    // If auto mode, listen for OS preference changes
+    let mq: MediaQueryList | null = null;
+    const onChange = () => {
+      if (themeMode !== 'auto') return;
+      applyEffective('auto');
+    };
+    try {
+      mq = window.matchMedia('(prefers-color-scheme: dark)');
+      if (mq && mq.addEventListener) mq.addEventListener('change', onChange as any);
+      else if (mq && (mq as any).addListener) (mq as any).addListener(onChange);
+    } catch {}
+    return () => {
+      try {
+        if (mq && mq.removeEventListener) mq.removeEventListener('change', onChange as any);
+        else if (mq && (mq as any).removeListener) (mq as any).removeListener(onChange);
+      } catch {}
+    };
+  }, [themeMode]);
 
   // Apply persisted user theme when profile loads
   useEffect(() => {
     const storedTheme = (userData as any)?.data?.theme || (userData as any)?.theme;
-    if (storedTheme && storedTheme !== theme) {
-      setTheme(storedTheme === 'theme-dark' ? 'theme-dark' : 'theme-light');
+    if (storedTheme) {
+      if (storedTheme === 'theme-dark') setThemeMode('dark');
+      else if (storedTheme === 'theme-light') setThemeMode('light');
     }
-  }, [userData, theme]);
+  }, [userData]);
 
-  const applyTheme = (nextTheme: 'theme-light' | 'theme-dark') => {
-    setTheme(nextTheme);
-    const current = userData as any;
-    const merged: any = current ? { ...current } : { data: {} };
-    merged.data = { ...(current?.data ?? current ?? {}), theme: nextTheme };
-    setUserData(merged);
-    try {
-      saveUserData(merged, { skipBackup: false });
-    } catch (e) {
-      console.warn('Failed to persist theme to user profile:', e);
+  const setThemeModeHandler = (mode: 'auto' | 'light' | 'dark') => {
+    setThemeMode(mode);
+    try { localStorage.setItem('fitbuddy_theme_mode', mode); } catch {}
+    // If user explicitly selected light/dark, persist that preference to user profile
+    if (mode === 'light' || mode === 'dark') {
+      const themeStr = mode === 'dark' ? 'theme-dark' : 'theme-light';
+      const current = userData as any;
+      const merged: any = current ? { ...current } : { data: {} };
+      merged.data = { ...(current?.data ?? current ?? {}), theme: themeStr };
+      setUserData(merged);
+      try {
+        saveUserData(merged, { skipBackup: false });
+      } catch (e) {
+        console.warn('Failed to persist theme to user profile:', e);
+      }
     }
   };
 
   const toggleTheme = () => {
-    applyTheme(theme === 'theme-dark' ? 'theme-light' : 'theme-dark');
+    // convenience: toggle between light and dark explicit modes
+    setThemeModeHandler(themeMode === 'dark' ? 'light' : 'dark');
   };
 
   // Poll user from server periodically if logged in. Throttle to reduce load and
@@ -221,15 +266,27 @@ function App() {
     // Optionally: show a toast or animation
   };
 
+  // compute effective theme class for passing to components
+  const effectiveThemeClass = ((): 'theme-light' | 'theme-dark' => {
+    try {
+      if (themeMode === 'auto') {
+        const mq = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
+        return mq && mq.matches ? 'theme-dark' : 'theme-light';
+      }
+      return themeMode === 'dark' ? 'theme-dark' : 'theme-light';
+    } catch {
+      return 'theme-light';
+    }
+  })();
+
   return (
-    <div className={`App ${theme}`}>
-      <BackgroundDots />
-      <Header userData={userData} profileVersion={profileVersion} theme={theme} onToggleTheme={toggleTheme} />
+    <div className={`App ${effectiveThemeClass}`}>
+      <Header userData={userData} profileVersion={profileVersion} theme={effectiveThemeClass} />
       <AgreementBanner userData={userData} />
       <Routes>
-        <Route path="/" element={<WelcomePage />} />
+        <Route path="/" element={<WelcomePage themeMode={themeMode} onChangeThemeMode={setThemeModeHandler} />} />
         <Route path="/profile" element={<ProfilePage userData={userData} onProfileUpdate={(user) => { setUserData(user); setProfileVersion(v => v + 1); }} profileVersion={profileVersion} />} />
-        <Route path="/profile/settings" element={<SettingsPage theme={theme} onToggleTheme={toggleTheme} />} />
+        <Route path="/profile/settings" element={<SettingsPage theme={effectiveThemeClass} onToggleTheme={toggleTheme} />} />
         <Route path="/loading" element={<LoadingPage />} />
         <Route 
           path="/questionnaire" 

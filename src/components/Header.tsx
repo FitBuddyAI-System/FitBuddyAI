@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Calendar, User, Flame, Sparkles, Home, ShoppingBag, Moon, Sun } from 'lucide-react';
+import { Calendar, User, Flame, Sparkles, Home, ShoppingBag } from 'lucide-react';
 import { loadQuestionnaireProgress, clearUserData, clearQuestionnaireProgress, clearWorkoutPlan } from '../services/localStorage';
 import './Header.css';
 import { backupAndDeleteSensitive } from '../services/cloudBackupService';
@@ -9,10 +9,9 @@ interface HeaderProps {
   profileVersion: number;
   userData?: any;
   theme: 'theme-light' | 'theme-dark';
-  onToggleTheme: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ profileVersion, userData, theme, onToggleTheme }) => {
+const Header: React.FC<HeaderProps> = ({ profileVersion, userData }) => {
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -195,18 +194,11 @@ const Header: React.FC<HeaderProps> = ({ profileVersion, userData, theme, onTogg
             onClick={() => navigate('/shop')}
             aria-label="Shop"
           >
-            <ShoppingBag size={20} />
+            <span className="shop-mobile-only"><ShoppingBag size={20} /></span>
             <span>Shop</span>
           </button>
 
-          <button
-            className="nav-button theme-toggle"
-            onClick={onToggleTheme}
-            aria-label="Toggle theme"
-          >
-            {theme === 'theme-dark' ? <Sun size={20} /> : <Moon size={20} />}
-            <span>{theme === 'theme-dark' ? 'Light' : 'Dark'}</span>
-          </button>
+          {/* theme toggle removed: theme controlled in footer via selector */}
 
           {isAdmin && (
             <button

@@ -53,30 +53,39 @@
 
 /* Brand Section */
 /* Page Title Section */
+/* Page title sits to the left in the header (new layout) */
 .page-title {
-  flex: 1;
-  text-align: center;
+  flex: 0 0 auto; /* don't grow to push nav */
+  margin-right: auto; /* keep nav right-aligned */
+  text-align: left;
   color: white;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
+  gap: 2px;
+  padding-left: 8px;
 }
 
 .centered-title h2 {
-  font-size: 16px;
-  font-weight: 700;
+  font-size: 18px;
+  font-weight: 800;
   margin: 0;
-  opacity: 0.95;
+  opacity: 0.98;
   letter-spacing: 0.2px;
+  color: white;
 }
 
 .user-greeting {
-  font-size: 14px;
-  margin: 4px 0 0 0;
+  font-size: 13px;
+  margin: 2px 0 0 0;
   opacity: 0.9;
   font-weight: 600;
+  color: rgba(255,255,255,0.9);
 }
+
+/* Small visual tweak: subtle subtitle color on dark themes */
+body.theme-dark .user-greeting { color: rgba(255,255,255,0.85); }
 
 /* Navigation Section */
 .header-nav {
@@ -91,9 +100,9 @@
   align-items: center;
   gap: 0px;
   padding: 8px 16px;
-  border: 1px solid rgba(230, 236, 241, 0.9);
-  background: #ffffff;
-  color: var(--text-dark, #1a1f2a);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+  color: rgba(255, 255, 255, 0.9);
   border-radius: 20px;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -114,7 +123,7 @@
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.06), transparent);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
   transition: left 0.5s;
 }
 
@@ -123,18 +132,18 @@
 }
 
 .nav-button:hover:not(:disabled) {
-  background: #f3f6f9;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%);
   transform: translateY(-1px) scale(1.02);
-  box-shadow: 0 8px 20px rgba(17, 24, 39, 0.12);
-  border-color: rgba(210, 222, 230, 0.95);
-  color: var(--text-dark, #0f172a);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: white;
 }
 
 .nav-button.active {
-  background: #e9f1f9;
-  border-color: rgba(187, 209, 223, 0.95);
-  box-shadow: 0 10px 24px rgba(17, 24, 39, 0.14);
-  color: var(--text-dark, #0f172a);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 100%);
+  border-color: rgba(255, 255, 255, 0.4);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  color: white;
   transform: scale(1.05);
 }
 
@@ -177,6 +186,9 @@ body.theme-dark .nav-button.active {
 .sparkles-mobile-only { display: none; }
 /* Flame icon for audit tab: same mobile-only behavior */
 .flame-mobile-only { display: none; }
+
+/* Shop icon emoji for mobile only (desktop shows Lucide icon) */
+.shop-mobile-only { display: none; }
 
 /* Home icon hidden by default; revealed on very small screens where labels are hidden */
 .home-icon { display: none; }
@@ -300,9 +312,13 @@ body.theme-dark .nav-button.active {
     font-size: 11px;
   }
   
-  .nav-button span {
+    .nav-button span {
     font-size: 10px;
   }
+
+    /* Show shop emoji only on small screens and hide the desktop SVG icon */
+    .nav-button .shop-icon { display: none; }
+    .shop-mobile-only { display: inline-flex; align-items: center; justify-content: center; }
 
   /* Home icon follows same visibility rules as other tab icons */
 }
