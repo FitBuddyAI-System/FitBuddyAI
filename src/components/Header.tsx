@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Calendar, User, Dumbbell, Flame, Sparkles, Home } from 'lucide-react';
+import { Calendar, User, Dumbbell, Flame, Sparkles, Home, ShoppingBag, Moon, Sun } from 'lucide-react';
 import { loadQuestionnaireProgress, clearUserData, clearQuestionnaireProgress, clearWorkoutPlan } from '../services/localStorage';
 import './Header.css';
 import { backupAndDeleteSensitive } from '../services/cloudBackupService';
@@ -8,9 +8,11 @@ import { backupAndDeleteSensitive } from '../services/cloudBackupService';
 interface HeaderProps {
   profileVersion: number;
   userData?: any;
+  theme: 'theme-light' | 'theme-dark';
+  onToggleTheme: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ profileVersion, userData }) => {
+const Header: React.FC<HeaderProps> = ({ profileVersion, userData, theme, onToggleTheme }) => {
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -128,19 +130,8 @@ const Header: React.FC<HeaderProps> = ({ profileVersion, userData }) => {
   return (
     <header className="app-header">
       <div className="header-container">
-        {/* Logo and Title */}
-        <div className="header-brand" onClick={() => navigate('/?intro=0')}> 
-          <div className="logo">
-            <Dumbbell size={48} />
-          </div>
-          <div className="brand-text">
-            <h1 className="brand-title">FitBuddyAI</h1>
-            <p className="brand-subtitle">Your AI Fitness Companion</p>
-          </div>
-        </div>
-
         {/* Page Title */}
-        <div className="page-title">
+        <div className="page-title centered-title">
           <h2>{getPageTitle()}</h2>
           {currentUser && (
             (() => {
@@ -197,6 +188,24 @@ const Header: React.FC<HeaderProps> = ({ profileVersion, userData }) => {
           >
             <span className="sparkles-mobile-only"><Sparkles size={20} /></span>
             <span>Chat</span>
+          </button>
+
+          <button
+            className={`nav-button ${isActive('/shop') ? 'active' : ''}`}
+            onClick={() => navigate('/shop')}
+            aria-label="Shop"
+          >
+            <ShoppingBag size={20} />
+            <span>Shop</span>
+          </button>
+
+          <button
+            className="nav-button theme-toggle"
+            onClick={onToggleTheme}
+            aria-label="Toggle theme"
+          >
+            {theme === 'theme-dark' ? <Sun size={20} /> : <Moon size={20} />}
+            <span>{theme === 'theme-dark' ? 'Light' : 'Dark'}</span>
           </button>
 
           {isAdmin && (

@@ -30,6 +30,26 @@
   animation: dumbbellSpin 1.2s linear infinite;
 }
 
+.loading-icons {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 10px auto 6px;
+}
+
+.loading-icon-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  background: rgba(30, 203, 123, 0.08);
+  border: 1px solid rgba(30, 144, 203, 0.12);
+  border-radius: 12px;
+  color: var(--text-dark, #222);
+  font-weight: 600;
+  justify-content: center;
+}
+
 @keyframes dumbbellSpin {
   0% { transform: rotate(0deg) scale(1); }
   80% { transform: rotate(320deg) scale(1.08); }

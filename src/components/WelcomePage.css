@@ -2,7 +2,10 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: linear-gradient(135deg, #f7f7f7 0%, #e8f5e8 100%);
+  background: transparent;
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
 }
 
 .welcome-main {
@@ -11,6 +14,8 @@
   transform: translateY(10px);
   transition: opacity 0.45s ease, filter 0.55s ease, transform 0.55s ease;
   pointer-events: none;
+  position: relative;
+  z-index: 1;
 }
 
 .welcome-main.is-visible {
@@ -29,6 +34,7 @@
   padding: 40px 20px;
   position: relative;
   overflow: hidden;
+  z-index: 1;
 }
 
 .hero-content {
@@ -38,16 +44,22 @@
   }
 .logo-section {
   display: flex;
-  margin-bottom: 40px;
   flex-direction: column;
+  gap: 8px;
+  margin-bottom: 40px;
   align-items: center;
   justify-content: center;
 }
 
 .logo-centered {
   display: inline-flex;
-  padding: 0;
-  width: 100%;
+  padding: 10px;
+  width: 72px;
+  height: 72px;
+  border-radius: 20px;
+  box-shadow: 0 8px 24px rgba(88, 204, 2, 0.2);
+  background: var(--gradient-primary);
+  color: #fff;
 }
 
 .app-title {
@@ -143,6 +155,12 @@
   animation-delay: 4s;
 }
 
+.card-4 {
+  bottom: 18%;
+  right: 22%;
+  animation-delay: 1s;
+}
+
 @keyframes float {
   0%, 100% {
     transform: translateY(0px);
@@ -152,10 +170,11 @@
   }
 }
 
+
 /* Features Section */
 .features-section {
   padding: 80px 20px;
-  background: white;
+  background: var(--background-white);
 }
 
 .container {

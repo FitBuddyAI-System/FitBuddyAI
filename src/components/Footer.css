@@ -29,3 +29,21 @@
   .fb-links{flex-direction:column}
   .fb-bottom{flex-direction:column;gap:8px}
 }
+
+/* Dark mode */
+body.theme-dark .fb-footer {
+  background: linear-gradient(135deg, #0f1828 0%, #0b111b 100%);
+  border-top: 1px solid rgba(255,255,255,0.06);
+  color: var(--text-dark);
+}
+body.theme-dark .fb-bottom {
+  border-top: 1px solid rgba(255,255,255,0.08);
+}
+body.theme-dark .fb-col a,
+body.theme-dark .fb-brand .muted,
+body.theme-dark .fb-footer .muted {
+  color: var(--text-medium);
+}
+body.theme-dark .fb-col a:hover {
+  color: var(--primary-green);
+}

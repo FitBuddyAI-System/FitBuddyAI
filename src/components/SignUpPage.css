@@ -3,7 +3,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--color-bg, #e6f4ea);
+  background: transparent;
+  position: relative;
+  z-index: 1;
 }
 
 .signup-form {
