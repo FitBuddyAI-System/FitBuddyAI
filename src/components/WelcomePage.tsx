@@ -28,11 +28,15 @@ const WelcomePage: React.FC = () => {
   // When intro=0 we still render the main content but avoid entrance animations
   const shouldAnimateLogo = introParam !== '0';
   const hideIntroTimer = useRef<number | null>(null);
+  const failSafeTimer = useRef<number | null>(null);
 
   useEffect(() => {
     return () => {
       if (hideIntroTimer.current) {
         clearTimeout(hideIntroTimer.current);
+      }
+      if (failSafeTimer.current) {
+        clearTimeout(failSafeTimer.current);
       }
     };
   }, []);
@@ -45,6 +49,22 @@ const WelcomePage: React.FC = () => {
       navigate('/', { replace: true });
     }
   };
+
+  // Fail-safe: always reveal the main content after a short delay
+  // so the page can't get stuck showing only the background if the intro fails.
+  useEffect(() => {
+    if (!showIntro) return;
+    failSafeTimer.current = window.setTimeout(() => {
+      setMainVisible(true);
+      setShowIntro(false);
+    }, 6000);
+    return () => {
+      if (failSafeTimer.current) {
+        clearTimeout(failSafeTimer.current);
+        failSafeTimer.current = null;
+      }
+    };
+  }, [showIntro]);
   return (
     <div className="welcome-page">
       {showIntro && <IntroBubbles onFinish={handleIntroFinish} />}
