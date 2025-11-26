@@ -10,6 +10,12 @@ const userId = process.argv[2];
 if (!userId) usage();
 
 const usersFile = path.join(process.cwd(), 'src', 'server', 'users.json');
+// Prevent local user data mutation when Supabase is configured for the project
+if (process.env.SUPABASE_URL) {
+  console.error('[restorePlan] Supabase is configured; restorePlan will not modify local users.json.');
+  console.error('Migrate your local data to Supabase first or run this script in an environment without SUPABASE_URL set.');
+  process.exit(2);
+}
 if (!fs.existsSync(usersFile)) {
   console.error('users.json not found at expected location:', usersFile);
   process.exit(2);

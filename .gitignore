@@ -2,3 +2,4 @@
 .env
 node_modules
 migrated_auth_users.json
+Run_Dev_Server_Command.txt

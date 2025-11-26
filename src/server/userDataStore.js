@@ -3,69 +3,158 @@
 import fs from 'fs';
 import path from 'path';
 import express from 'express';
+import { createClient } from '@supabase/supabase-js';
 
 const router = express.Router();
-const DATA_DIR = path.join(process.cwd(), 'server', 'user_data');
+// Local filesystem persistence is disabled; do not create local user_data directory.
 
-if (!fs.existsSync(DATA_DIR)) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
+// Prefer server/service key for server-side operations in dev
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY;
+let supabase = null;
+if (SUPABASE_URL && SUPABASE_KEY) {
+  try {
+    supabase = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
+    console.log('[userDataStore] Supabase client initialized for local dev user data storage.');
+  } catch (e) {
+    console.warn('[userDataStore] Failed to initialize Supabase client:', e);
+    supabase = null;
+  }
 }
 
-// Helper to get file path for a user
-function getUserFilePath(userId) {
-  return path.join(DATA_DIR, `${userId}.json`);
+if (!SUPABASE_URL || !SUPABASE_KEY) {
+  console.warn('[userDataStore] SUPABASE not configured for local dev. User-data endpoints will return errors; local filesystem writes are disabled by policy.');
+  console.warn('[userDataStore] To enable Supabase-backed storage locally, set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (or SUPABASE_KEY) in your environment.');
 }
+
+// Local filesystem persistence disabled: no file helper provided.
 
 // Save user data (questionnaire progress and workout plan)
 
-router.post('/api/userdata/save', (req, res) => {
-  const { userId, fitbuddyai_questionnaire_progress, fitbuddyai_workout_plan, fitbuddyai_assessment_data } = req.body;
+router.post('/api/userdata/save', async (req, res) => {
+  const { userId } = req.body || {};
+  const { questionnaire_progress, workout_plan, assessment_data, fitbuddyai_questionnaire_progress, fitbuddyai_workout_plan, fitbuddyai_assessment_data, accepted_terms, accepted_privacy, chat_history } = req.body || {};
   if (!userId) return res.status(400).json({ error: 'Missing userId' });
-  const filePath = getUserFilePath(userId);
 
-  // If the POST contains only userId (no keys to save), treat it as a fetch/restore request and return stored payload
-  const hasKeysToSave = (fitbuddyai_questionnaire_progress !== undefined) || (fitbuddyai_workout_plan !== undefined) || (fitbuddyai_assessment_data !== undefined);
-  if (!hasKeysToSave) {
-    if (!fs.existsSync(filePath)) {
-      return res.json({ fitbuddyai_questionnaire_progress: null, fitbuddyai_workout_plan: null, fitbuddyai_assessment_data: null });
-    }
+  // No compatibility helpers: select and upsert explicit columns only.
+  if (!supabase) {
+    console.error('[userDataStore] Supabase not configured; refusing to read or write user data for userId:', userId);
+    return res.status(500).json({ error: 'Supabase not configured; user data storage disabled in local server.' });
+  }
+
+  // Consider this a fetch only when the request contains no other keys besides userId.
+  const bodyKeys = Object.keys(req.body || {}).filter(k => k !== 'userId' && k !== 'user_id');
+  const isFetch = bodyKeys.length === 0;
+
+  // Map known TOS acceptance helper key into explicit accepted_terms/accepted_privacy when present
+  let tosAcceptedFlag = false;
+  let privacyAcceptedFlag = false;
+  if (req.body && Object.prototype.hasOwnProperty.call(req.body, 'fitbuddyai_tos_accepted_v1')) {
     try {
-      const content = fs.readFileSync(filePath, 'utf8');
-      const data = JSON.parse(content);
-      return res.json({ stored: data });
+      const tosObj = req.body.fitbuddyai_tos_accepted_v1 || {};
+      const entry = tosObj[Object.keys(tosObj)[0]] || {};
+      if (entry && entry.tos) tosAcceptedFlag = true;
+      if (entry && entry.privacy) privacyAcceptedFlag = true;
+    } catch (e) {}
+  }
+
+  if (isFetch) {
+    try {
+      // Query explicit columns only; fail fast if schema is missing them.
+      const { data, error } = await supabase.from('fitbuddyai_userdata').select('questionnaire_progress, workout_plan, assessment_data, chat_history, accepted_terms, accepted_privacy').eq('user_id', userId).limit(1).maybeSingle();
+      if (error) {
+        console.error('[userDataStore] Supabase fetch error for userId', userId, error);
+        // If column missing, return a clear, fail-fast error message requested by user
+        if (error?.message && error.message.includes('assessment_data')) {
+          return res.status(500).json({ error: "Could not find the 'assessment_data' column of 'fitbuddyai_userdata' in the schema cache" });
+        }
+        return res.status(500).json({ error: error.message || 'Supabase fetch failed' });
+      }
+      if (data) {
+        // Return canonical keys only (no legacy compatibility fields)
+        return res.json({ stored: { questionnaire_progress: data.questionnaire_progress ?? null, workout_plan: data.workout_plan ?? null, assessment_data: data.assessment_data ?? null, accepted_terms: data.accepted_terms ?? null, accepted_privacy: data.accepted_privacy ?? null, chat_history: data.chat_history ?? null } });
+      }
+      return res.json({ stored: { questionnaire_progress: null, workout_plan: null, assessment_data: null } });
     } catch (e) {
-      return res.status(500).json({ error: 'Failed to read stored user data' });
+      console.error('[userDataStore] Supabase fetch exception for userId', userId, e);
+      if (String(e?.message || '').includes('assessment_data')) {
+        return res.status(500).json({ error: "Could not find the 'assessment_data' column of 'fitbuddyai_userdata' in the schema cache" });
+      }
+      return res.status(500).json({ error: e?.message || 'Supabase fetch exception' });
     }
   }
 
-  // Otherwise, perform save/update
-  const data = {
-    fitbuddyai_questionnaire_progress: fitbuddyai_questionnaire_progress || null,
-    fitbuddyai_workout_plan: fitbuddyai_workout_plan || null,
-    fitbuddyai_assessment_data: fitbuddyai_assessment_data || null,
-    updated: new Date().toISOString()
-  };
-  fs.writeFile(filePath, JSON.stringify(data, null, 2), err => {
-    if (err) return res.status(500).json({ error: 'Failed to save user data' });
-    res.json({ success: true });
-  });
+  // Save/update: map legacy request keys to canonical column values, but write explicit columns only.
+  try {
+    const upsertRow = { user_id: userId };
+    if (accepted_terms !== undefined) upsertRow.accepted_terms = accepted_terms;
+    else if (tosAcceptedFlag) upsertRow.accepted_terms = true;
+    if (accepted_privacy !== undefined) upsertRow.accepted_privacy = accepted_privacy;
+    else if (privacyAcceptedFlag) upsertRow.accepted_privacy = true;
+    if (chat_history !== undefined) upsertRow.chat_history = typeof chat_history === 'string' ? (() => { try { return JSON.parse(chat_history); } catch { return chat_history; } })() : chat_history;
+
+    // Use canonical column fields where possible. Only include columns if they were provided in the request.
+    if (questionnaire_progress !== undefined) upsertRow.questionnaire_progress = questionnaire_progress;
+    if (workout_plan !== undefined) upsertRow.workout_plan = workout_plan;
+    if (assessment_data !== undefined) upsertRow.assessment_data = assessment_data;
+    if (fitbuddyai_questionnaire_progress !== undefined) upsertRow.questionnaire_progress = fitbuddyai_questionnaire_progress;
+    if (fitbuddyai_workout_plan !== undefined) upsertRow.workout_plan = fitbuddyai_workout_plan;
+    if (fitbuddyai_assessment_data !== undefined) upsertRow.assessment_data = fitbuddyai_assessment_data;
+
+    const { error } = await supabase.from('fitbuddyai_userdata').upsert(upsertRow, { onConflict: 'user_id' });
+    if (error) {
+      console.error('[userDataStore] Supabase upsert error for userId', userId, error);
+      if (error?.message && error.message.includes('assessment_data')) {
+        return res.status(500).json({ error: "Could not find the 'assessment_data' column of 'fitbuddyai_userdata' in the schema cache" });
+      }
+      return res.status(500).json({ error: error.message || 'Supabase upsert failed' });
+    }
+
+    // Return canonical stored object only
+    return res.json({ success: true, stored: { questionnaire_progress: upsertRow.questionnaire_progress ?? null, workout_plan: upsertRow.workout_plan ?? null, assessment_data: upsertRow.assessment_data ?? null, accepted_terms: upsertRow.accepted_terms ?? null, accepted_privacy: upsertRow.accepted_privacy ?? null, chat_history: upsertRow.chat_history ?? null } });
+  } catch (e) {
+    console.error('[userDataStore] supabase upsert exception', e);
+    if (String(e?.message || '').includes('assessment_data')) {
+      return res.status(500).json({ error: "Could not find the 'assessment_data' column of 'fitbuddyai_userdata' in the schema cache" });
+    }
+    return res.status(500).json({ error: e?.message || 'Supabase upsert exception' });
+  }
 });
 
 // Compatibility route for dev: accept POST /api/userdata/load to fetch stored payloads
-router.post('/api/userdata/load', (req, res) => {
+router.post('/api/userdata/load', async (req, res) => {
   const { userId } = req.body || {};
   if (!userId) return res.status(400).json({ error: 'Missing userId' });
-  const filePath = getUserFilePath(userId);
-
-  if (!fs.existsSync(filePath)) {
-    return res.json({ fitbuddyai_questionnaire_progress: null, fitbuddyai_workout_plan: null, fitbuddyai_assessment_data: null });
+  if (!supabase) {
+    console.error('[userDataStore] Supabase not configured; refusing to load user data for userId:', userId);
+    return res.status(500).json({ error: 'Supabase not configured; user data storage disabled in local server.' });
   }
-  try {
-    const content = fs.readFileSync(filePath, 'utf8');
-    const data = JSON.parse(content);
-    return res.json({ stored: data });
+    try {
+      // Select only `payload` for compatibility with older schemas.
+      const { data, error } = await supabase.from('fitbuddyai_userdata').select('payload').eq('user_id', userId).limit(1).maybeSingle();
+    if (error) {
+      console.error('[userDataStore] Supabase fetch error for userId', userId, error);
+      return res.status(500).json({ error: error.message || 'Supabase fetch failed' });
+    }
+    if (data) {
+      const storedPayload = data.payload || {};
+      const wp = storedPayload.workout_plan ?? storedPayload.fitbuddyai_workout_plan ?? null;
+      const qp = storedPayload.questionnaire_progress ?? storedPayload.fitbuddyai_questionnaire_progress ?? null;
+      const ad = storedPayload.assessment_data ?? storedPayload.fitbuddyai_assessment_data ?? null;
+      const stored = {
+        fitbuddyai_workout_plan: wp,
+        fitbuddyai_questionnaire_progress: qp,
+        fitbuddyai_assessment_data: ad,
+        accepted_terms: storedPayload.accepted_terms ?? null,
+        accepted_privacy: storedPayload.accepted_privacy ?? null,
+        chat_history: storedPayload.chat_history ?? null
+      };
+      return res.json({ stored });
+    }
+    return res.json({ stored: { fitbuddyai_questionnaire_progress: null, fitbuddyai_workout_plan: null, fitbuddyai_assessment_data: null } });
   } catch (e) {
-    return res.status(500).json({ error: 'Failed to read stored user data' });
+    console.error('[userDataStore] Supabase fetch exception for userId', userId, e);
+    return res.status(500).json({ error: e?.message || 'Supabase fetch exception' });
   }
 });
 

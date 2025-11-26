@@ -8,6 +8,21 @@ const bodyParser = require('body-parser');
 const { v4: uuidv4 } = require('uuid');
 const fs = require('fs');
 const path = require('path');
+const { createClient } = require('@supabase/supabase-js');
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY;
+let supabase = null;
+if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
+  try {
+    supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+    console.log('[authServer.cjs] Supabase client initialized. Local file writes for user data are disabled.');
+  } catch (e) {
+    console.warn('[authServer.cjs] Failed to initialize Supabase client:', e);
+    supabase = null;
+  }
+} else {
+  console.warn('[authServer.cjs] Supabase not configured; runtime will avoid writing user data to local files.');
+}
 // __filename and __dirname are available in CommonJS by default
 
 const bannedUsernamesFile = path.join(__dirname, 'bannedUsernames.json');
@@ -66,17 +81,40 @@ app.post('/api/user/update', (req, res) => {
 
 // Helper to read users from file
 function readUsers() {
-  try {
-    const data = fs.readFileSync(usersFile, 'utf-8');
-    return JSON.parse(data);
-  } catch (err) {
+  // Prefer Supabase when available. Do not read local users.json by policy.
+  if (supabase) {
+    // Best-effort: fetch a small projection for admin/development uses.
+    try {
+      supabase.from('fitbuddyai_userdata').select('user_id, email, username, payload, chat_history, role, banned').limit(1000).then(({ data, error }) => {
+        if (error) console.error('[authServer.cjs] readUsers supabase fetch error', error);
+      });
+    } catch (e) {
+      console.error('[authServer.cjs] readUsers supabase fetch exception', e);
+    }
+    // Return empty array synchronously to avoid breaking callers; callers should use Supabase APIs directly for authoritative reads.
     return [];
   }
+  console.error('[authServer.cjs] readUsers attempted but Supabase is not configured; local reads are disabled.');
+  return [];
 }
 
 // Helper to write users to file
 function writeUsers(users) {
-  fs.writeFileSync(usersFile, JSON.stringify(users, null, 2));
+  // Do NOT write to local users.json. If Supabase is configured, upsert rows; otherwise refuse.
+  if (!supabase) {
+    console.error('[authServer.cjs] writeUsers attempted but Supabase is not configured; refusing to write local users file.');
+    throw new Error('Supabase not configured; cannot persist users.');
+  }
+  try {
+    const rows = users.map(u => ({ user_id: u.id, email: u.email, username: u.username, avatar_url: u.avatar || '', payload: u.payload || {}, chat_history: u.chat_history || [], role: u.role || null, banned: u.banned || false, updated_at: new Date().toISOString() }));
+    supabase.from('fitbuddyai_userdata').upsert(rows, { onConflict: 'user_id' }).then(({ error }) => {
+      if (error) console.error('[authServer.cjs] writeUsers: Supabase upsert error', error);
+      else console.info('[authServer.cjs] writeUsers: upserted', rows.length, 'users to Supabase');
+    }).catch(e => console.error('[authServer.cjs] writeUsers: upsert exception', e));
+  } catch (e) {
+    console.error('[authServer.cjs] writeUsers unexpected error', e);
+    throw e;
+  }
 }
 
 app.post('/api/auth/signup', (req, res) => {

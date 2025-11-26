@@ -163,6 +163,34 @@ If automation is failing or you prefer manual control, change the preview link y
    - **Development**: `http://localhost:5173`
    - **Admin Panel**: `http://localhost:5173/admin` (requires admin privileges)
 
+Local dev note: Supabase is required for user-data persistence
+---------------------------------------------------------
+
+- The local server has been updated to NEVER persist user progress to local files. All runtime user-data read/write operations now require Supabase. If `SUPABASE_URL` and a valid key (preferably `SUPABASE_SERVICE_ROLE_KEY`) are not configured, user-data endpoints will return HTTP 500 and log a clear error message. This protects sensitive data from being stored on disk inadvertently.
+
+- Required environment variables for local dev user-data (server):
+   - `SUPABASE_URL` — your Supabase project URL
+   - `SUPABASE_SERVICE_ROLE_KEY` or `SUPABASE_KEY` — server key (service role key recommended for local dev)
+
+- Quick PowerShell example to set env and run dev server:
+```powershell
+$env:SUPABASE_URL = "https://your-project.supabase.co"
+$env:SUPABASE_SERVICE_ROLE_KEY = "your-service-role-key"
+npm run dev
+```
+
+- Migration: If you have existing local JSON under `server/user_data/*.json` you can migrate them into Supabase using the included script:
+   - `scripts/migrate_app_users_to_supabase.js` — review and run in a controlled environment; it writes output files only when explicitly invoked and is intended as a migration helper (not used by the running server).
+
+- Key runtime files changed (enforced Supabase-only behavior):
+   - `api/userdata/index.ts` — removed filesystem fallbacks; uses `fitbuddyai_userdata` table and returns errors when Supabase is missing.
+   - `src/server/userDataStore.js` — removed local `server/user_data` persistence; endpoints now upsert/select from `fitbuddyai_userdata`.
+   - `src/server/authServer.js` and `src/server/authServer.cjs` — local `users.json` reads/writes disabled; these modules now prefer Supabase for user lookups/updates and refuse to write local files when Supabase is not configured.
+
+- Note on tools & scripts: Admin/migration scripts that are explicitly invoked (in `/scripts` and `.github/scripts`) may still write files by design — they are one-off tools. Runtime server endpoints and dev server code will not write user data to disk.
+
+If you want a temporary developer fallback (opt-in) instead of failing when Supabase is missing, tell me and I can add a guarded flag (e.g. `ALLOW_LOCAL_USERDATA_FALLBACK=true`) that enables the old filesystem fallback only when explicitly set.
+
 ### Getting Required API Keys
 
 #### Google Gemini API Key
