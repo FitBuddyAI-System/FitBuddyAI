@@ -85,13 +85,34 @@ function App() {
   }, []);
 
   // Listen for localStorage changes to fitbuddyai_user_data and update userData state
+  // Use no external dependencies to avoid re-registering the listeners on every
+  // userData change which can cause update loops. Use a functional state
+  // update and a shallow/deep compare to avoid unnecessary setState calls.
   useEffect(() => {
     const syncUser = () => {
-      const updated = loadUserData();
-      if (updated && (!userData || updated.id === userData.id)) {
-        setUserData(updated);
+      try {
+        const updated = loadUserData();
+        if (!updated) return;
+        setUserData((prev: any | null) => {
+          // Only update when the stored user either belongs to the same id
+          // or there is no previous user, and when the objects differ.
+          try {
+            if (!prev || updated.id === prev.id) {
+              const prevJson = JSON.stringify(prev || {});
+              const updJson = JSON.stringify(updated || {});
+              if (prevJson !== updJson) return updated;
+            }
+          } catch (e) {
+            // If stringify fails for any reason, fall back to assigning when id matches
+            if (!prev || updated.id === prev.id) return updated;
+          }
+          return prev;
+        });
+      } catch (e) {
+        // ignore
       }
     };
+
     // Listen for legacy storage events (keeps backward compat) and BroadcastChannel messages
     window.addEventListener('storage', syncUser);
     let bc: BroadcastChannel | null = null;
@@ -105,7 +126,7 @@ function App() {
       window.removeEventListener('storage', syncUser);
       try { if (bc) { bc.close(); } } catch (e) {}
     };
-  }, [userData]);
+  }, []);
 
 
   // Load saved data on startup and always fetch user from server if logged in

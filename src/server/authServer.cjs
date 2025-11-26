@@ -85,7 +85,8 @@ function readUsers() {
   if (supabase) {
     // Best-effort: fetch a small projection for admin/development uses.
     try {
-      supabase.from('fitbuddyai_userdata').select('user_id, email, username, payload, chat_history, role, banned').limit(1000).then(({ data, error }) => {
+      // Do not select legacy `payload` column (may not exist); fetch only a minimal projection
+      supabase.from('fitbuddyai_userdata').select('user_id, email, username, chat_history, role, banned').limit(1000).then(({ data, error }) => {
         if (error) console.error('[authServer.cjs] readUsers supabase fetch error', error);
       });
     } catch (e) {
@@ -105,8 +106,8 @@ function writeUsers(users) {
     console.error('[authServer.cjs] writeUsers attempted but Supabase is not configured; refusing to write local users file.');
     throw new Error('Supabase not configured; cannot persist users.');
   }
-  try {
-    const rows = users.map(u => ({ user_id: u.id, email: u.email, username: u.username, avatar_url: u.avatar || '', payload: u.payload || {}, chat_history: u.chat_history || [], role: u.role || null, banned: u.banned || false, updated_at: new Date().toISOString() }));
+    try {
+    const rows = users.map(u => ({ user_id: u.id, email: u.email, username: u.username, avatar_url: u.avatar || '', chat_history: u.chat_history || [], role: u.role || null, banned: u.banned || false, updated_at: new Date().toISOString() }));
     supabase.from('fitbuddyai_userdata').upsert(rows, { onConflict: 'user_id' }).then(({ error }) => {
       if (error) console.error('[authServer.cjs] writeUsers: Supabase upsert error', error);
       else console.info('[authServer.cjs] writeUsers: upserted', rows.length, 'users to Supabase');

@@ -115,8 +115,8 @@ const SignInPage: React.FC = () => {
             const payload = body?.stored ?? body?.payload ?? body;
             if (payload) {
               try {
-                const assessRaw = payload.fitbuddyai_assessment_data;
-                const planRaw = payload.fitbuddyai_workout_plan;
+                const assessRaw = payload.assessment_data ?? payload.fitbuddyai_assessment_data;
+                const planRaw = payload.workout_plan ?? payload.fitbuddyai_workout_plan;
                 // Unwrap if the server returned a wrapper { data, timestamp }
                 const assessmentVal = assessRaw?.data ?? assessRaw ?? null;
                 const planVal = planRaw?.data ?? planRaw ?? null;

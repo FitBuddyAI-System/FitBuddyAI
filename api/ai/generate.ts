@@ -21,8 +21,172 @@ const GEMINI_URL = GEMINI_API_KEY
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') return res.status(405).json({ message: 'Method not allowed' });
   try {
-    const { prompt, userId, meta } = req.body;
-    if (!prompt) return res.status(400).json({ message: 'Missing prompt' });
+    // Accept either { prompt: string, userId, meta } or the Google-style
+    // { contents: [{ parts: [{ text: '...' }] }] } payload. This makes the
+    // endpoint more forgiving for direct testing tools that post the
+    // generative API shaped object.
+    // Be forgiving about the incoming body shape. Sometimes dev servers
+    // provide the raw body as a string, or callers post slightly different
+    // shapes (prompt, contents, inputs, messages). Normalize to an object
+    // and extract the most-likely prompt field.
+    let body: any = req.body || {};
+    if (typeof body === 'string') {
+      try {
+        body = JSON.parse(body);
+      } catch (e) {
+        // leave as string — we'll try other fallbacks below
+      }
+    }
+
+    let prompt: string | undefined = undefined;
+
+    // Helper: join text from parts array
+    const joinPartsText = (parts: any) => {
+      try {
+        if (!Array.isArray(parts)) return '';
+        return parts
+          .map((p: any) => {
+            if (typeof p === 'string') return p;
+            if (p == null) return '';
+            return p.text ?? p.content ?? '';
+          })
+          .filter(Boolean)
+          .join('\n');
+      } catch (e) {
+        return '';
+      }
+    };
+
+    // 1) direct prompt field
+    if (typeof body.prompt === 'string' && body.prompt.trim().length > 0) {
+      prompt = body.prompt.trim();
+    }
+
+    // 2) Google-style contents -> parts -> text (join all parts)
+    if (!prompt && Array.isArray(body.contents)) {
+      for (const c of body.contents) {
+        if (!c) continue;
+        if (typeof c === 'string') {
+          if (c.trim()) {
+            prompt = c.trim();
+            break;
+          }
+        }
+        const joined = joinPartsText(c.parts ?? c);
+        if (joined) {
+          prompt = joined;
+          break;
+        }
+      }
+    }
+
+    // 3) inputs array (some clients)
+    if (!prompt && Array.isArray(body.inputs) && body.inputs.length > 0) {
+      const inp = body.inputs[0];
+      if (typeof inp === 'string') prompt = inp;
+      else if (typeof inp.content === 'string') prompt = inp.content;
+      else {
+        const j = joinPartsText(inp.parts ?? inp);
+        if (j) prompt = j;
+      }
+    }
+
+    // 4) chat-like messages (use last message)
+    if (!prompt && Array.isArray(body.messages) && body.messages.length > 0) {
+      const last = body.messages[body.messages.length - 1];
+      if (last) {
+        if (typeof last === 'string') prompt = last;
+        else if (typeof last.content === 'string') prompt = last.content;
+        else if (last.content && typeof last.content.text === 'string') prompt = last.content.text;
+        else {
+          const j = joinPartsText(last.parts ?? last.content ?? last);
+          if (j) prompt = j;
+        }
+      }
+    }
+
+    // 5) If contents[0].parts[0].text is a JSON-stringified payload, try parsing/joining
+    if (!prompt && Array.isArray(body.contents) && body.contents[0]) {
+      const maybeParts = body.contents[0].parts ?? body.contents[0];
+      const firstText = Array.isArray(maybeParts) && maybeParts[0] ? maybeParts[0].text ?? maybeParts[0] : undefined;
+      if (typeof firstText === 'string') {
+        try {
+          const parsed = JSON.parse(firstText);
+          if (typeof parsed === 'string' && parsed.trim()) prompt = parsed.trim();
+        } catch (_) {
+          // not JSON — ignore
+        }
+      }
+    }
+
+    // 6) Fallback: shallow DFS search for a 'text' or 'prompt' string anywhere in body
+    if (!prompt) {
+      const stack = [body];
+      const visited = new Set();
+      while (stack.length) {
+        const node = stack.shift();
+        if (!node || visited.has(node)) continue;
+        visited.add(node);
+        if (typeof node === 'string') {
+          if (node.trim().length > 0) {
+            prompt = node.trim();
+            break;
+          }
+        } else if (typeof node === 'object') {
+          if (typeof node.text === 'string' && node.text.trim()) { prompt = node.text.trim(); break; }
+          if (typeof node.prompt === 'string' && node.prompt.trim()) { prompt = node.prompt.trim(); break; }
+          for (const k of Object.keys(node)) {
+            try { stack.push((node as any)[k]); } catch (e) { /* ignore */ }
+          }
+        }
+      }
+    }
+
+    // 7) Aggressive raw-text fallback: search the full serialized body for any
+    // occurrences of "text":"..." and join them. This helps when parts are
+    // double-serialized or the client sent a stringified JSON blob.
+    if (!prompt) {
+      try {
+        const raw = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
+        const re = /"text"\s*:\s*"((?:\\\\.|[^"\\\\])*)"/g;
+        const found: string[] = [];
+        let m: RegExpExecArray | null = null;
+        while ((m = re.exec(raw)) !== null) {
+          try {
+            // unescape using JSON parser
+            const un = JSON.parse('"' + m[1] + '"');
+            if (typeof un === 'string' && un.trim()) found.push(un.trim());
+          } catch (_) {
+            if (m[1].trim()) found.push(m[1].trim());
+          }
+        }
+        if (found.length) prompt = found.join('\n\n');
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    const userId = body.userId;
+    const meta = body.meta;
+    if (!prompt) {
+      // DEBUG: Always return diagnostics for missing prompt so we can see
+      // exactly what the client sent. Remove or guard this in production.
+      const sample = (() => {
+        try {
+          if (typeof body === 'string') return body.slice(0, 2000);
+          return JSON.stringify(body, null, 2).slice(0, 2000);
+        } catch (e) {
+          return String(body).slice(0, 2000);
+        }
+      })();
+      const diag: any = {
+        message: 'Missing prompt',
+        bodyType: typeof body,
+        bodySample: sample,
+        headers: { 'content-type': req.headers['content-type'] || req.headers['Content-Type'] || null }
+      };
+      return res.status(400).json(diag);
+    }
 
     // Call Gemini (or use a local mock when key is missing and we're in dev)
     let generatedText = '';

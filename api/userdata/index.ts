@@ -46,10 +46,9 @@ export default async function handler(req: any, res: any) {
       const body = req.body || {};
       const userId = body.userId;
       const payload = body.payload ?? {
-        // Accept either legacy keys (fitbuddyai_*) or the new keys (questionnaire_progress, workout_plan, assessment_data)
-        questionnaire_progress: body.questionnaire_progress ?? body.fitbuddyai_questionnaire_progress ?? null,
-        workout_plan: body.workout_plan ?? body.fitbuddyai_workout_plan ?? null,
-        assessment_data: body.assessment_data ?? body.fitbuddyai_assessment_data ?? null,
+        // Accept the new canonical keys
+        questionnaire_progress: body.questionnaire_progress ?? null,
+        workout_plan: body.workout_plan ?? null,
         // Optional new fields: terms acceptance and chat history
         accepted_terms: body.accepted_terms ?? null,
         accepted_privacy: body.accepted_privacy ?? null,
@@ -58,17 +57,13 @@ export default async function handler(req: any, res: any) {
       if (!userId) return res.status(400).json({ error: 'userId required' });
       const safePayload = typeof payload === 'string' ? JSON.parse(payload) : payload || {};
       const sanitizedPayload = sanitizePayload(safePayload) || {};
-      // Normalize legacy keys inside the payload to new canonical keys for storage
+      // Normalize incoming payload to canonical keys
       const normalizedPayload: any = {};
       if (Object.prototype.hasOwnProperty.call(sanitizedPayload, 'questionnaire_progress')) normalizedPayload.questionnaire_progress = sanitizedPayload.questionnaire_progress;
-      if (Object.prototype.hasOwnProperty.call(sanitizedPayload, 'fitbuddyai_questionnaire_progress')) normalizedPayload.questionnaire_progress = sanitizedPayload.fitbuddyai_questionnaire_progress;
       if (Object.prototype.hasOwnProperty.call(sanitizedPayload, 'workout_plan')) normalizedPayload.workout_plan = sanitizedPayload.workout_plan;
-      if (Object.prototype.hasOwnProperty.call(sanitizedPayload, 'fitbuddyai_workout_plan')) normalizedPayload.workout_plan = sanitizedPayload.fitbuddyai_workout_plan;
-      if (Object.prototype.hasOwnProperty.call(sanitizedPayload, 'assessment_data')) normalizedPayload.assessment_data = sanitizedPayload.assessment_data;
-      if (Object.prototype.hasOwnProperty.call(sanitizedPayload, 'fitbuddyai_assessment_data')) normalizedPayload.assessment_data = sanitizedPayload.fitbuddyai_assessment_data;
-      // keep any other arbitrary keys in payload as-is
+      // keep any other arbitrary keys in payload as-is (they will not be stored to explicit DB columns)
       for (const [k, v] of Object.entries(sanitizedPayload)) {
-        if (!['questionnaire_progress', 'fitbuddyai_questionnaire_progress', 'workout_plan', 'fitbuddyai_workout_plan', 'assessment_data', 'fitbuddyai_assessment_data', 'accepted_terms', 'accepted_privacy', 'chat_history'].includes(k)) {
+        if (!['questionnaire_progress', 'workout_plan', 'accepted_terms', 'accepted_privacy', 'chat_history'].includes(k)) {
           normalizedPayload[k] = v;
         }
       }
@@ -104,26 +99,28 @@ export default async function handler(req: any, res: any) {
         // Only include columns that were actually provided to avoid touching missing columns in the schema.
         if (payloadToWrite && Object.prototype.hasOwnProperty.call(payloadToWrite, 'questionnaire_progress')) upsertRow.questionnaire_progress = payloadToWrite.questionnaire_progress;
         if (payloadToWrite && Object.prototype.hasOwnProperty.call(payloadToWrite, 'workout_plan')) upsertRow.workout_plan = payloadToWrite.workout_plan;
-        if (payloadToWrite && Object.prototype.hasOwnProperty.call(payloadToWrite, 'assessment_data')) upsertRow.assessment_data = payloadToWrite.assessment_data;
+        // Do not attempt to write an 'assessment_data' column (not present in current schema)
         // Warn if there are other arbitrary payload keys (we are intentionally not storing them)
-        const allowedKeys = new Set(['questionnaire_progress','workout_plan','assessment_data','accepted_terms','accepted_privacy','chat_history']);
+        const allowedKeys = new Set(['questionnaire_progress','workout_plan','accepted_terms','accepted_privacy','chat_history']);
         const extraKeys = Object.keys(payloadToWrite || {}).filter(k => !allowedKeys.has(k));
         if (extraKeys.length) console.warn('[api/userdata] ignoring extra payload keys (not stored to DB):', extraKeys);
+        console.log('[api/userdata] upsertRow keys:', Object.keys(upsertRow));
+        console.log('[api/userdata] upsertRow preview:', JSON.stringify(upsertRow, null, 2));
+        // Debug shortcut: if caller sets x-debug-userdata header, return the computed upsertRow without writing
+        if (String(req.headers['x-debug-userdata'] || '') === '1') {
+          try { res.setHeader('x-userdata-source', 'debug'); } catch (e) {}
+          return res.status(200).json({ ok: true, debugUpsertRow: upsertRow });
+        }
         const { error } = await supabase.from('fitbuddyai_userdata').upsert(upsertRow, { onConflict: 'user_id' });
         if (error) {
           console.error('[api/userdata] supabase upsert error:', error);
           return res.status(500).json({ error: error.message || 'Upsert failed' });
         }
           try { res.setHeader('x-userdata-source', 'supabase'); } catch (e) {}
-        // Return a client-friendly payload that retains legacy keys for compatibility
-        // Build response from explicit columns (and keep legacy keys for client compatibility)
+        // Return a client-friendly payload using canonical keys only
         const clientPayload: any = {};
         clientPayload.questionnaire_progress = upsertRow.questionnaire_progress;
         clientPayload.workout_plan = upsertRow.workout_plan;
-        clientPayload.assessment_data = upsertRow.assessment_data;
-        clientPayload.fitbuddyai_questionnaire_progress = upsertRow.questionnaire_progress;
-        clientPayload.fitbuddyai_workout_plan = upsertRow.workout_plan;
-        clientPayload.fitbuddyai_assessment_data = upsertRow.assessment_data;
         return res.status(200).json({ ok: true, stored: clientPayload, chat_history: upsertRow.chat_history ?? null });
       } catch (e: any) {
         console.error('[api/userdata] supabase upsert threw exception:', e);
@@ -277,10 +274,8 @@ export default async function handler(req: any, res: any) {
       const hasFitbuddyFields = (body && (
         body.workout_plan !== undefined ||
         body.questionnaire_progress !== undefined ||
-        body.assessment_data !== undefined ||
         body.fitbuddyai_workout_plan !== undefined ||
         body.fitbuddyai_questionnaire_progress !== undefined ||
-        body.fitbuddyai_assessment_data !== undefined ||
         body.accepted_terms !== undefined ||
         body.accepted_privacy !== undefined ||
         body.chat_history !== undefined
@@ -290,8 +285,7 @@ export default async function handler(req: any, res: any) {
         : (hasFitbuddyFields
           ? {
               questionnaire_progress: body.questionnaire_progress ?? body.fitbuddyai_questionnaire_progress ?? null,
-              workout_plan: body.workout_plan ?? body.fitbuddyai_workout_plan ?? null,
-              assessment_data: body.assessment_data ?? body.fitbuddyai_assessment_data ?? null
+              workout_plan: body.workout_plan ?? body.fitbuddyai_workout_plan ?? null
             }
           : null);
 
@@ -305,10 +299,9 @@ export default async function handler(req: any, res: any) {
           if (Object.prototype.hasOwnProperty.call(sanitized, 'fitbuddyai_questionnaire_progress')) payloadToWriteAdmin.questionnaire_progress = sanitized.fitbuddyai_questionnaire_progress;
           if (Object.prototype.hasOwnProperty.call(sanitized, 'workout_plan')) payloadToWriteAdmin.workout_plan = sanitized.workout_plan;
           if (Object.prototype.hasOwnProperty.call(sanitized, 'fitbuddyai_workout_plan')) payloadToWriteAdmin.workout_plan = sanitized.fitbuddyai_workout_plan;
-          if (Object.prototype.hasOwnProperty.call(sanitized, 'assessment_data')) payloadToWriteAdmin.assessment_data = sanitized.assessment_data;
-          if (Object.prototype.hasOwnProperty.call(sanitized, 'fitbuddyai_assessment_data')) payloadToWriteAdmin.assessment_data = sanitized.fitbuddyai_assessment_data;
+          // Keep assessment_data inside payload (if present) but do not map it to an explicit DB column
           for (const [k, v] of Object.entries(sanitized)) {
-            if (!['questionnaire_progress', 'fitbuddyai_questionnaire_progress', 'workout_plan', 'fitbuddyai_workout_plan', 'assessment_data', 'fitbuddyai_assessment_data', 'accepted_terms', 'accepted_privacy', 'chat_history'].includes(k)) {
+            if (!['questionnaire_progress', 'fitbuddyai_questionnaire_progress', 'workout_plan', 'fitbuddyai_workout_plan', 'accepted_terms', 'accepted_privacy', 'chat_history'].includes(k)) {
               payloadToWriteAdmin[k] = v;
             }
           }
@@ -328,8 +321,8 @@ export default async function handler(req: any, res: any) {
           // Store explicit fields rather than writing a payload column
           if (payloadToWriteAdmin && Object.prototype.hasOwnProperty.call(payloadToWriteAdmin, 'questionnaire_progress')) upsertRow.questionnaire_progress = payloadToWriteAdmin.questionnaire_progress;
           if (payloadToWriteAdmin && Object.prototype.hasOwnProperty.call(payloadToWriteAdmin, 'workout_plan')) upsertRow.workout_plan = payloadToWriteAdmin.workout_plan;
-          if (payloadToWriteAdmin && Object.prototype.hasOwnProperty.call(payloadToWriteAdmin, 'assessment_data')) upsertRow.assessment_data = payloadToWriteAdmin.assessment_data;
-          const allowedKeysAdmin = new Set(['questionnaire_progress','workout_plan','assessment_data','accepted_terms','accepted_privacy','chat_history']);
+          // Do not attempt to write an 'assessment_data' column (not present in current schema)
+          const allowedKeysAdmin = new Set(['questionnaire_progress','workout_plan','accepted_terms','accepted_privacy','chat_history']);
           const extrasAdmin = Object.keys(payloadToWriteAdmin || {}).filter(k => !allowedKeysAdmin.has(k));
           if (extrasAdmin.length) console.warn('[api/userdata/admin] ignoring extra payload keys (not stored to DB):', extrasAdmin);
           const { error } = await dbClient.from('fitbuddyai_userdata').upsert(upsertRow, { onConflict: 'user_id' });
@@ -339,10 +332,8 @@ export default async function handler(req: any, res: any) {
           const clientOut: any = {
             questionnaire_progress: upsertRow.questionnaire_progress,
             workout_plan: upsertRow.workout_plan,
-            assessment_data: upsertRow.assessment_data,
             fitbuddyai_questionnaire_progress: upsertRow.questionnaire_progress,
-            fitbuddyai_workout_plan: upsertRow.workout_plan,
-            fitbuddyai_assessment_data: upsertRow.assessment_data
+            fitbuddyai_workout_plan: upsertRow.workout_plan
           };
           return res.status(200).json({ ok: true, stored: clientOut, chat_history: upsertRow.chat_history ?? null });
         } else {
@@ -355,25 +346,17 @@ export default async function handler(req: any, res: any) {
       if (dbClient) {
         try {
           // request explicit columns if available
-          const { data, error } = await dbClient.from('fitbuddyai_userdata').select('payload, accepted_terms, accepted_privacy, chat_history').eq('user_id', userId).limit(1).maybeSingle();
+          const { data, error } = await dbClient.from('fitbuddyai_userdata').select('accepted_terms, accepted_privacy, chat_history').eq('user_id', userId).limit(1).maybeSingle();
           if (error) {
             console.error('[api/userdata] admin fetch error:', error);
           } else {
-            try { console.log('[api/userdata] admin fetch result payload keys:', data && data.payload ? Object.keys(data.payload) : data); } catch (e) {}
-            // If explicit columns exist, merge them into the returned payload shape
-            const payloadFromDb = data?.payload ?? null;
+            try { console.log('[api/userdata] admin fetch result (cols):', data); } catch (e) {}
+            // No `payload` column selected here — prefer explicit columns only
             const cols = { accepted_terms: data?.accepted_terms ?? null, accepted_privacy: data?.accepted_privacy ?? null, chat_history: data?.chat_history ?? null };
-            if (payloadFromDb && typeof payloadFromDb === 'object') {
-              // prefer explicit columns when present
-              const merged: any = { ...payloadFromDb };
-              if (cols.accepted_terms !== null && cols.accepted_terms !== undefined) merged.accepted_terms = cols.accepted_terms;
-              if (cols.accepted_privacy !== null && cols.accepted_privacy !== undefined) merged.accepted_privacy = cols.accepted_privacy;
-              if (cols.chat_history !== null && cols.chat_history !== undefined) merged.chat_history = cols.chat_history;
-              resultPayload = merged;
-            } else if (cols.accepted_terms !== null || cols.accepted_privacy !== null || cols.chat_history !== null) {
+            if (cols.accepted_terms !== null || cols.accepted_privacy !== null || cols.chat_history !== null) {
               resultPayload = sanitizePayload(cols) || null;
             } else {
-              resultPayload = payloadFromDb;
+              resultPayload = null;
             }
           }
         } catch (e) {
@@ -433,23 +416,16 @@ export default async function handler(req: any, res: any) {
         // Fetch stored payload from user_data table
         let payload: any = null;
         try {
-          const { data, error } = await supabase.from('fitbuddyai_userdata').select('payload, accepted_terms, accepted_privacy, chat_history').eq('user_id', uid).limit(1).maybeSingle();
+          const { data, error } = await supabase.from('fitbuddyai_userdata').select('accepted_terms, accepted_privacy, chat_history').eq('user_id', uid).limit(1).maybeSingle();
           if (error) {
             console.error('[api/userdata] payload fetch error:', error);
           } else {
-            const payloadFromDb = data?.payload ?? null;
+            // No `payload` column selected — prefer explicit columns only
             const cols = { accepted_terms: data?.accepted_terms ?? null, accepted_privacy: data?.accepted_privacy ?? null, chat_history: data?.chat_history ?? null };
-            if (payloadFromDb && typeof payloadFromDb === 'object') {
-              // prefer explicit columns when present
-              payload = { ...payloadFromDb };
-              if (cols.accepted_terms !== null && cols.accepted_terms !== undefined) payload.accepted_terms = cols.accepted_terms;
-              if (cols.accepted_privacy !== null && cols.accepted_privacy !== undefined) payload.accepted_privacy = cols.accepted_privacy;
-              if (cols.chat_history !== null && cols.chat_history !== undefined) payload.chat_history = cols.chat_history;
-            } else if (cols.accepted_terms !== null || cols.accepted_privacy !== null || cols.chat_history !== null) {
-              // no payload but explicit columns present
+            if (cols.accepted_terms !== null || cols.accepted_privacy !== null || cols.chat_history !== null) {
               payload = sanitizePayload(cols) || null;
             } else {
-              payload = payloadFromDb;
+              payload = null;
             }
           }
         } catch (e) {
@@ -516,15 +492,16 @@ export default async function handler(req: any, res: any) {
       if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
 
       try {
-        // Read explicit canonical columns (preferred) and legacy `payload` if present.
-        const { data, error } = await supabase.from('fitbuddyai_userdata').select('payload, questionnaire_progress, workout_plan, assessment_data, accepted_terms, accepted_privacy, chat_history').eq('user_id', String(userId)).limit(1).maybeSingle();
+        // Read explicit canonical columns (preferred). Do not select legacy `payload` column (not present in current schema).
+        const { data, error } = await supabase.from('fitbuddyai_userdata').select('questionnaire_progress, workout_plan, accepted_terms, accepted_privacy, chat_history').eq('user_id', String(userId)).limit(1).maybeSingle();
         if (error) {
           console.error('[api/userdata] load fetch error:', error);
           return res.status(500).json({ error: error.message || 'Fetch failed' });
         }
         try { res.setHeader('x-userdata-source', 'supabase'); } catch (e) {}
-        const storedPayload = data?.payload ?? null;
-        const storedCols: any = { questionnaire_progress: data?.questionnaire_progress ?? null, workout_plan: data?.workout_plan ?? null, assessment_data: data?.assessment_data ?? null, accepted_terms: data?.accepted_terms ?? null, accepted_privacy: data?.accepted_privacy ?? null, chat_history: data?.chat_history ?? null };
+        // No payload column selected here — use explicit columns only
+        const storedPayload = null;
+        const storedCols: any = { questionnaire_progress: data?.questionnaire_progress ?? null, workout_plan: data?.workout_plan ?? null, accepted_terms: data?.accepted_terms ?? null, accepted_privacy: data?.accepted_privacy ?? null, chat_history: data?.chat_history ?? null };
         const normalizeVal = (v: any) => {
           if (v === null || v === undefined) return null;
           if (typeof v === 'string') {
@@ -535,28 +512,18 @@ export default async function handler(req: any, res: any) {
         };
         let storedNorm: any = null;
         // Prefer explicit columns if present (new schema). Fall back to payload only when explicit columns are absent.
-        const explicitPresent = (storedCols.questionnaire_progress !== null && storedCols.questionnaire_progress !== undefined) || (storedCols.workout_plan !== null && storedCols.workout_plan !== undefined) || (storedCols.assessment_data !== null && storedCols.assessment_data !== undefined);
+        const explicitPresent = (storedCols.questionnaire_progress !== null && storedCols.questionnaire_progress !== undefined) || (storedCols.workout_plan !== null && storedCols.workout_plan !== undefined);
         if (explicitPresent) {
           const qp = normalizeVal(storedCols.questionnaire_progress);
           const wp = normalizeVal(storedCols.workout_plan);
-          const ad = normalizeVal(storedCols.assessment_data);
           const chRaw = storedCols.chat_history !== null && storedCols.chat_history !== undefined ? storedCols.chat_history : null;
           let ch = chRaw;
           if (ch && typeof ch === 'string') {
             try { ch = JSON.parse(ch); } catch (e) {}
           }
-          storedNorm = sanitizePayload({ questionnaire_progress: qp, workout_plan: wp, assessment_data: ad, accepted_terms: storedCols.accepted_terms ?? null, accepted_privacy: storedCols.accepted_privacy ?? null, chat_history: Array.isArray(ch) ? ch : (ch ? [ch] : null) }) || null;
-        } else if (storedPayload && typeof storedPayload === 'object') {
-          // legacy payload with keys inside JSON
-          const wp = normalizeVal(storedPayload.workout_plan ?? storedPayload.fitbuddyai_workout_plan);
-          const qp = normalizeVal(storedPayload.questionnaire_progress ?? storedPayload.fitbuddyai_questionnaire_progress);
-          const ad = normalizeVal(storedPayload.assessment_data ?? storedPayload.fitbuddyai_assessment_data);
-          let ch = normalizeVal(storedPayload.chat_history);
-          if (ch && typeof ch === 'string') {
-            try { ch = JSON.parse(ch); } catch (e) {}
-          }
-          storedNorm = sanitizePayload({ questionnaire_progress: qp, workout_plan: wp, assessment_data: ad, accepted_terms: normalizeVal(storedPayload.accepted_terms) ?? null, accepted_privacy: normalizeVal(storedPayload.accepted_privacy) ?? null, chat_history: Array.isArray(ch) ? ch : (ch ? [ch] : null) }) || null;
+          storedNorm = sanitizePayload({ questionnaire_progress: qp, workout_plan: wp, accepted_terms: storedCols.accepted_terms ?? null, accepted_privacy: storedCols.accepted_privacy ?? null, chat_history: Array.isArray(ch) ? ch : (ch ? [ch] : null) }) || null;
         } else {
+          // No legacy payload column available; if explicit columns absent, nothing to return
           storedNorm = null;
         }
         return res.status(200).json({ ok: true, stored: storedNorm });
@@ -571,25 +538,15 @@ export default async function handler(req: any, res: any) {
       const userId = req.query.userId || req.query?.[0];
       if (!userId) return res.status(400).json({ error: 'userId required' });
       if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
-      const { data, error } = await supabase.from('fitbuddyai_userdata').select('payload, accepted_terms, accepted_privacy, chat_history').eq('user_id', userId).single();
+      const { data, error } = await supabase.from('fitbuddyai_userdata').select('accepted_terms, accepted_privacy, chat_history').eq('user_id', userId).single();
       if (error && error.code !== 'PGRST116') return res.status(500).json({ error: error.message || 'Fetch failed' });
-      const payloadFromDb = data?.payload || null;
+      // No legacy `payload` column selected here
+      const payloadFromDb = null;
       const cols = { accepted_terms: data?.accepted_terms ?? null, accepted_privacy: data?.accepted_privacy ?? null, chat_history: data?.chat_history ?? null };
-      if (payloadFromDb && typeof payloadFromDb === 'object') {
-        const merged = { ...payloadFromDb };
-        if (cols.accepted_terms !== null && cols.accepted_terms !== undefined) merged.accepted_terms = cols.accepted_terms;
-        if (cols.accepted_privacy !== null && cols.accepted_privacy !== undefined) merged.accepted_privacy = cols.accepted_privacy;
-        if (cols.chat_history !== null && cols.chat_history !== undefined) merged.chat_history = cols.chat_history;
-        // also expose legacy keys for compatibility
-        if (merged.workout_plan !== undefined) merged.fitbuddyai_workout_plan = merged.workout_plan;
-        if (merged.questionnaire_progress !== undefined) merged.fitbuddyai_questionnaire_progress = merged.questionnaire_progress;
-        if (merged.assessment_data !== undefined) merged.fitbuddyai_assessment_data = merged.assessment_data;
-        return res.status(200).json({ payload: merged });
-      }
       if (cols.accepted_terms !== null || cols.accepted_privacy !== null || cols.chat_history !== null) {
         return res.status(200).json({ payload: sanitizePayload(cols) || null });
       }
-      return res.status(200).json({ payload: payloadFromDb });
+      return res.status(200).json({ payload: null });
     }
 
     return res.status(404).json({ error: 'Not found' });

@@ -17,7 +17,6 @@
 
     What Dakota needs to do:
     - Fix all of the .json data for the workouts (add videos, make the descriptions better, fill in the blanks, etc.)
-    - Have ChatGPT make systems more efficent
     - Generate some images for the shop
     
 
