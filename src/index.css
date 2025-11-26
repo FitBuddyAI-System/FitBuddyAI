@@ -26,6 +26,106 @@
   --gradient-accent: linear-gradient(135deg, var(--accent-orange), var(--accent-red));
 }
 
+:root.theme-dark, body.theme-dark {
+  --background-light: #0f1621;
+  --background-white: #111a27;
+  --text-dark: #e9eef5;
+  --text-medium: #c0c7d4;
+  --text-light: #8892a2;
+  --border-light: #1f2a36;
+  --shadow-light: rgba(0, 0, 0, 0.45);
+  --shadow-medium: rgba(0, 0, 0, 0.6);
+  --gradient-primary: linear-gradient(135deg, #0fb77a, #1b9fe0);
+  --gradient-accent: linear-gradient(135deg, #ffb347, #ff6464);
+}
+
+body.theme-dark {
+  background: var(--background-light);
+  color: var(--text-dark);
+}
+
+/* Shared surface overrides */
+body.theme-dark .card,
+body.theme-dark .feature-card,
+body.theme-dark .floating-card,
+body.theme-dark .questionnaire-container,
+body.theme-dark .question-card,
+body.theme-dark .menu-container,
+body.theme-dark .menu-container--hero,
+body.theme-dark .menu-screen,
+body.theme-dark .questionnaire-page,
+body.theme-dark .question-container,
+body.theme-dark .gemini-page,
+body.theme-dark .gemini-container,
+body.theme-dark .gemini-chat,
+body.theme-dark .gemini-input,
+body.theme-dark .help-card,
+body.theme-dark .accordion-item,
+body.theme-dark .terms-card,
+body.theme-dark .terms-full-inner,
+body.theme-dark .agreement-guard-modal,
+body.theme-dark .acm-modal,
+body.theme-dark .hc-modal,
+body.theme-dark .shop-page,
+body.theme-dark .shop-header,
+body.theme-dark .shop-featured,
+body.theme-dark .shop-card,
+body.theme-dark .search-wrap,
+body.theme-dark .sort-wrap,
+body.theme-dark .shop-tabs {
+  background: #0f1624 !important;
+  color: var(--text-dark) !important;
+  border-color: #1f2a36 !important;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+}
+body.theme-dark .profile-card,
+body.theme-dark .profile-stats,
+body.theme-dark .not-logged-in,
+body.theme-dark .dropdown-menu {
+  background: #0f1624 !important;
+  color: var(--text-dark) !important;
+  border-color: #1f2a36 !important;
+}
+
+body.theme-dark .shop-tabs button {
+  color: var(--text-dark);
+}
+
+body.theme-dark .shop-tabs button.active,
+body.theme-dark .shop-tabs button[aria-pressed="true"] {
+  color: #0b111b;
+}
+
+/* Inputs & controls */
+body.theme-dark input,
+body.theme-dark textarea,
+body.theme-dark select {
+  background: #0b1320;
+  color: var(--text-dark);
+  border: 1px solid #1f2a36;
+  opacity: 1;
+}
+
+body.theme-dark .input,
+body.theme-dark .back-button,
+body.theme-dark .progress-container,
+body.theme-dark .search-wrap input,
+body.theme-dark .sort-wrap select {
+  background: #0b1320;
+  color: var(--text-dark);
+  border-color: #1f2a36;
+}
+
+/* Page-level backgrounds */
+body.theme-dark .questionnaire-page {
+  background: linear-gradient(135deg, #0b111b 0%, #0d1b2a 100%);
+}
+
+body.theme-dark .gemini-page,
+body.theme-dark .shop-page {
+  background: linear-gradient(135deg, #0b111b 0%, #0f1828 100%);
+}
+
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
@@ -128,6 +228,13 @@ body {
 .input:focus {
   border-color: var(--primary-green);
   box-shadow: 0 0 0 3px rgba(88, 204, 2, 0.1);
+}
+
+/* Keep form fields opaque across themes */
+input, textarea, select {
+  background-color: var(--background-white);
+  color: var(--text-dark);
+  opacity: 1;
 }
 
 /* Progress bar */

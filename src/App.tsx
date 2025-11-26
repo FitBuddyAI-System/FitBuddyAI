@@ -31,8 +31,8 @@ import AgreementBanner from './components/AgreementBanner';
 import TermsPage from './components/TermsPage';
 import PrivacyPage from './components/PrivacyPage';
 import HelpCenter from './components/HelpCenter';
-
-
+import SettingsPage from './components/SettingsPage';
+import BackgroundDots from './components/BackgroundDots';
 
 function App() {
   const [userData, setUserData] = useState<any | null>(null);
@@ -40,9 +40,45 @@ function App() {
   const [planVersion, setPlanVersion] = useState(0);
   const navigate = useNavigate();
   const [profileVersion, setProfileVersion] = useState(0);
+  const [theme, setTheme] = useState<'theme-light' | 'theme-dark'>(() => {
+    if (typeof window === 'undefined') return 'theme-light';
+    const saved = localStorage.getItem('fitbuddy_theme');
+    return saved === 'theme-dark' ? 'theme-dark' : 'theme-light';
+  });
 
   // Cloud backup/restore integration
   useCloudBackup();
+  useEffect(() => {
+    const isDark = theme === 'theme-dark';
+    document.documentElement.classList.toggle('theme-dark', isDark);
+    document.body.classList.toggle('theme-dark', isDark);
+    localStorage.setItem('fitbuddy_theme', theme);
+  }, [theme]);
+
+  // Apply persisted user theme when profile loads
+  useEffect(() => {
+    const storedTheme = (userData as any)?.data?.theme || (userData as any)?.theme;
+    if (storedTheme && storedTheme !== theme) {
+      setTheme(storedTheme === 'theme-dark' ? 'theme-dark' : 'theme-light');
+    }
+  }, [userData, theme]);
+
+  const applyTheme = (nextTheme: 'theme-light' | 'theme-dark') => {
+    setTheme(nextTheme);
+    const current = userData as any;
+    const merged: any = current ? { ...current } : { data: {} };
+    merged.data = { ...(current?.data ?? current ?? {}), theme: nextTheme };
+    setUserData(merged);
+    try {
+      saveUserData(merged, { skipBackup: false });
+    } catch (e) {
+      console.warn('Failed to persist theme to user profile:', e);
+    }
+  };
+
+  const toggleTheme = () => {
+    applyTheme(theme === 'theme-dark' ? 'theme-light' : 'theme-dark');
+  };
 
   // Poll user from server periodically if logged in. Throttle to reduce load and
   // avoid polling when the page is hidden (background tab).
@@ -186,12 +222,14 @@ function App() {
   };
 
   return (
-    <div className="App">
-      <Header userData={userData} profileVersion={profileVersion} />
+    <div className={`App ${theme}`}>
+      <BackgroundDots />
+      <Header userData={userData} profileVersion={profileVersion} theme={theme} onToggleTheme={toggleTheme} />
       <AgreementBanner userData={userData} />
       <Routes>
         <Route path="/" element={<WelcomePage />} />
         <Route path="/profile" element={<ProfilePage userData={userData} onProfileUpdate={(user) => { setUserData(user); setProfileVersion(v => v + 1); }} profileVersion={profileVersion} />} />
+        <Route path="/profile/settings" element={<SettingsPage theme={theme} onToggleTheme={toggleTheme} />} />
         <Route path="/loading" element={<LoadingPage />} />
         <Route 
           path="/questionnaire" 

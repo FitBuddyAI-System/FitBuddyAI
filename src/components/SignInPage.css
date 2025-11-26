@@ -3,11 +3,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--color-bg, #e6f4ea);
+  background: transparent;
+  position: relative;
+  z-index: 1;
 }
 
 .signin-form {
-  background: #fff;
+  background: var(--background-white);
   border-radius: 1.5rem;
   box-shadow: 0 4px 24px rgba(0,0,0,0.08);
   padding: 2.5rem 2rem;
@@ -28,14 +30,14 @@
 
 .signin-form label {
   font-weight: 500;
-  color: var(--color-text, #222);
+  color: var(--text-dark, #222);
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
 }
 
 .signin-form input {
-  border: 1px solid #cce5d6;
+  border: 1px solid var(--border-light, #cce5d6);
   border-radius: 0.5rem;
   padding: 0.7rem;
   font-size: 1rem;
@@ -66,15 +68,15 @@
 
 .oauth-divider {
   text-align: center;
-  color: #888;
+  color: var(--text-medium, #888);
   margin: 8px 0;
   font-size: 0.9rem;
 }
 
 .btn-google {
-  background: #fff;
-  color: #3c4043;
-  border: 1px solid #dadce0;
+  background: var(--background-white);
+  color: var(--text-dark, #3c4043);
+  border: 1px solid var(--border-light, #dadce0);
   display: inline-flex;
   align-items: center;
   width: 100%;
@@ -85,9 +87,12 @@
   font-weight: 600;
   font-size: 14px;
   box-sizing: border-box;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+  transition: background 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
 }
 
-.btn-google:hover { background: #f7f8f9; }
+.btn-google:hover { background: rgba(255,255,255,0.92); transform: translateY(-1px); box-shadow: 0 6px 16px rgba(0,0,0,0.08); }
+.btn-google:active { transform: translateY(0); box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
 
 .btn-google .google-icon { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; }
 .btn-google .google-icon svg { display: block; width: 18px; height: 18px; }
@@ -97,11 +102,12 @@
 
 .error {
   color: var(--color-error, #e74c3c);
-  background: #ffeaea;
+  background: rgba(231,76,60,0.08);
   border-radius: 0.5rem;
   padding: 0.5rem 0.7rem;
   font-size: 0.95rem;
   margin-bottom: 0.5rem;
+  border: 1px solid rgba(231,76,60,0.3);
 }
 
 .signup-link {

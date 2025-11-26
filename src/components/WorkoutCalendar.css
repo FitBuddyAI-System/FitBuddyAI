@@ -73,6 +73,8 @@
   min-height: calc(100vh - 60px);
   background: linear-gradient(135deg, #f7f7f7 0%, #e8f5e8 100%);
   padding: 20px;
+  position: relative;
+  z-index: 0;
 }
 
 /* Ensure calendar content starts below the sticky header on small screens */

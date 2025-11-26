@@ -21,7 +21,7 @@
 .menu-container--hero {
   max-width: 720px;
   padding: 40px 36px;
-  background: linear-gradient(180deg, rgba(255,255,255,0.9), rgba(255,255,255,0.85));
+  background: var(--background-white);
   border-radius: 28px;
   display: grid;
   grid-template-columns: 1fr;
@@ -145,11 +145,13 @@ button.btn.btn-outline.menu-btn.menu-btn--alt:hover,
 }
 .questionnaire-page {
   min-height: calc(100vh - 60px);
-  background: linear-gradient(135deg, #f7f7f7 0%, #e8f5e8 100%);
+  background: transparent;
   padding: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
+  z-index: 1;
 }
 
 .questionnaire-container {
@@ -158,6 +160,13 @@ button.btn.btn-outline.menu-btn.menu-btn--alt:hover,
   min-height: 80vh;
   display: flex;
   flex-direction: column;
+  background: var(--background-white);
+  border-radius: 20px;
+  box-shadow: 0 8px 28px var(--shadow-light);
+  padding: 24px;
+  opacity: 1;
+  position: relative;
+  z-index: 0;
 }
 
 .questionnaire-header {
@@ -209,6 +218,17 @@ button.btn.btn-outline.menu-btn.menu-btn--alt:hover,
   text-align: center;
   padding: 40px;
   margin-bottom: 40px;
+  background: var(--background-white);
+  border-radius: 24px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--border-light);
+  opacity: 1 !important;
+  position: relative;
+  z-index: 0;
+}
+
+.question-container.card:hover {
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.12);
 }
 
 .question-icon {
@@ -242,6 +262,14 @@ button.btn.btn-outline.menu-btn.menu-btn--alt:hover,
 .question-input-container {
   width: 100%;
   max-width: 500px;
+  background: var(--background-white);
+  border-radius: 12px;
+  padding: 12px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--border-light);
+  opacity: 1 !important;
+  position: relative;
+  z-index: 0;
 }
 
 .question-input {
@@ -298,7 +326,7 @@ button.btn.btn-outline.menu-btn.menu-btn--alt:hover,
   font-size: 24px;
   font-weight: 700;
   color: var(--primary-green);
-  background: white;
+  background: var(--background-white);
   padding: 12px 24px;
   border-radius: 12px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
@@ -314,7 +342,7 @@ button.btn.btn-outline.menu-btn.menu-btn--alt:hover,
 
 .option-button {
   padding: 20px;
-  background: white;
+  background: var(--background-white);
   border: 2px solid var(--border-light);
   border-radius: 16px;
   cursor: pointer;
@@ -425,7 +453,7 @@ button.btn.btn-outline.menu-btn.menu-btn--alt:hover,
 .rating-button {
   width: 60px;
   height: 60px;
-  background: white;
+  background: var(--background-white);
   border: 2px solid var(--border-light);
   border-radius: 16px;
   cursor: pointer;
@@ -468,7 +496,7 @@ button.btn.btn-outline.menu-btn.menu-btn--alt:hover,
   font-size: 20px;
   font-weight: 700;
   color: var(--primary-green);
-  background: white;
+  background: var(--background-white);
   padding: 8px 16px;
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);

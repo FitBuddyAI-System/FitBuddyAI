@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Target, Calendar, Zap } from 'lucide-react';
+import { Target, Calendar, Zap, Dumbbell } from 'lucide-react';
 import './WelcomePage.css';
 import Footer from './Footer';
 import IntroBubbles from './IntroBubbles';
@@ -28,11 +28,15 @@ const WelcomePage: React.FC = () => {
   // When intro=0 we still render the main content but avoid entrance animations
   const shouldAnimateLogo = introParam !== '0';
   const hideIntroTimer = useRef<number | null>(null);
+  const failSafeTimer = useRef<number | null>(null);
 
   useEffect(() => {
     return () => {
       if (hideIntroTimer.current) {
         clearTimeout(hideIntroTimer.current);
+      }
+      if (failSafeTimer.current) {
+        clearTimeout(failSafeTimer.current);
       }
     };
   }, []);
@@ -45,6 +49,22 @@ const WelcomePage: React.FC = () => {
       navigate('/', { replace: true });
     }
   };
+
+  // Fail-safe: always reveal the main content after a short delay
+  // so the page can't get stuck showing only the background if the intro fails.
+  useEffect(() => {
+    if (!showIntro) return;
+    failSafeTimer.current = window.setTimeout(() => {
+      setMainVisible(true);
+      setShowIntro(false);
+    }, 6000);
+    return () => {
+      if (failSafeTimer.current) {
+        clearTimeout(failSafeTimer.current);
+        failSafeTimer.current = null;
+      }
+    };
+  }, [showIntro]);
   return (
     <div className="welcome-page">
       {showIntro && <IntroBubbles onFinish={handleIntroFinish} />}
@@ -53,13 +73,12 @@ const WelcomePage: React.FC = () => {
         <div className="hero-section">
           <div className="hero-content">
               <div className={"logo-section" + (shouldAnimateLogo ? " bounce-in" : "") }>
-              {/* Centered logo above the title */}
-              <div className="logo logo-centered">
-                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-dumbbell"><path d="m6.5 6.5 11 11"></path><path d="m21 21-1-1"></path><path d="m3 3 1 1"></path><path d="m18 22 4-4"></path><path d="m2 6 4-4"></path><path d="m3 10 7-7"></path><path d="m14 21 7-7"></path></svg>
+                <div className="logo logo-centered">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-dumbbell"><path d="m6.5 6.5 11 11"></path><path d="m21 21-1-1"></path><path d="m3 3 1 1"></path><path d="m18 22 4-4"></path><path d="m2 6 4-4"></path><path d="m3 10 7-7"></path><path d="m14 21 7-7"></path></svg>
+                </div>
+                <h1 className="app-title">FitBuddyAI</h1>
+                <p className="app-subtitle">Your AI-Powered Fitness Companion</p>
               </div>
-              <h1 className="app-title">FitBuddyAI</h1>
-              <p className="app-subtitle">Your AI-Powered Fitness Companion</p>
-            </div>
             <div className="hero-text fade-in-up">
               <h2>Transform Your Fitness Journey</h2>
               <p>Get personalized workout plans powered by AI, track your progress, and achieve your fitness goals with fun, gamified experience.</p>
@@ -83,6 +102,10 @@ const WelcomePage: React.FC = () => {
             <div className="floating-card card-3">
               <Zap size={24} />
               <span>{features[random[2]]}</span>
+            </div>
+            <div className="floating-card card-4">
+              <Dumbbell size={24} />
+              <span>Strength Training</span>
             </div>
           </div>
         </div>
