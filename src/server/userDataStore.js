@@ -33,7 +33,7 @@ if (!SUPABASE_URL || !SUPABASE_KEY) {
 
 router.post('/api/userdata/save', async (req, res) => {
   const { userId } = req.body || {};
-  const { questionnaire_progress, workout_plan, assessment_data, fitbuddyai_questionnaire_progress, fitbuddyai_workout_plan, fitbuddyai_assessment_data, accepted_terms, accepted_privacy, chat_history } = req.body || {};
+  const { questionnaire_progress, workout_plan, fitbuddyai_questionnaire_progress, fitbuddyai_workout_plan, accepted_terms, accepted_privacy, chat_history } = req.body || {};
   if (!userId) return res.status(400).json({ error: 'Missing userId' });
 
   // No compatibility helpers: select and upsert explicit columns only.
@@ -61,25 +61,20 @@ router.post('/api/userdata/save', async (req, res) => {
   if (isFetch) {
     try {
       // Query explicit columns only; fail fast if schema is missing them.
-      const { data, error } = await supabase.from('fitbuddyai_userdata').select('questionnaire_progress, workout_plan, assessment_data, chat_history, accepted_terms, accepted_privacy').eq('user_id', userId).limit(1).maybeSingle();
+      const { data, error } = await supabase.from('fitbuddyai_userdata').select('questionnaire_progress, workout_plan, chat_history, accepted_terms, accepted_privacy').eq('user_id', userId).limit(1).maybeSingle();
       if (error) {
         console.error('[userDataStore] Supabase fetch error for userId', userId, error);
         // If column missing, return a clear, fail-fast error message requested by user
-        if (error?.message && error.message.includes('assessment_data')) {
-          return res.status(500).json({ error: "Could not find the 'assessment_data' column of 'fitbuddyai_userdata' in the schema cache" });
-        }
         return res.status(500).json({ error: error.message || 'Supabase fetch failed' });
       }
       if (data) {
         // Return canonical keys only (no legacy compatibility fields)
-        return res.json({ stored: { questionnaire_progress: data.questionnaire_progress ?? null, workout_plan: data.workout_plan ?? null, assessment_data: data.assessment_data ?? null, accepted_terms: data.accepted_terms ?? null, accepted_privacy: data.accepted_privacy ?? null, chat_history: data.chat_history ?? null } });
+        return res.json({ stored: { questionnaire_progress: data.questionnaire_progress ?? null, workout_plan: data.workout_plan ?? null, accepted_terms: data.accepted_terms ?? null, accepted_privacy: data.accepted_privacy ?? null, chat_history: data.chat_history ?? null } });
       }
-      return res.json({ stored: { questionnaire_progress: null, workout_plan: null, assessment_data: null } });
+      return res.json({ stored: { questionnaire_progress: null, workout_plan: null } });
     } catch (e) {
       console.error('[userDataStore] Supabase fetch exception for userId', userId, e);
-      if (String(e?.message || '').includes('assessment_data')) {
-        return res.status(500).json({ error: "Could not find the 'assessment_data' column of 'fitbuddyai_userdata' in the schema cache" });
-      }
+      // Avoid leaking old column names; return the exception message
       return res.status(500).json({ error: e?.message || 'Supabase fetch exception' });
     }
   }
@@ -96,27 +91,19 @@ router.post('/api/userdata/save', async (req, res) => {
     // Use canonical column fields where possible. Only include columns if they were provided in the request.
     if (questionnaire_progress !== undefined) upsertRow.questionnaire_progress = questionnaire_progress;
     if (workout_plan !== undefined) upsertRow.workout_plan = workout_plan;
-    if (assessment_data !== undefined) upsertRow.assessment_data = assessment_data;
     if (fitbuddyai_questionnaire_progress !== undefined) upsertRow.questionnaire_progress = fitbuddyai_questionnaire_progress;
     if (fitbuddyai_workout_plan !== undefined) upsertRow.workout_plan = fitbuddyai_workout_plan;
-    if (fitbuddyai_assessment_data !== undefined) upsertRow.assessment_data = fitbuddyai_assessment_data;
 
     const { error } = await supabase.from('fitbuddyai_userdata').upsert(upsertRow, { onConflict: 'user_id' });
     if (error) {
       console.error('[userDataStore] Supabase upsert error for userId', userId, error);
-      if (error?.message && error.message.includes('assessment_data')) {
-        return res.status(500).json({ error: "Could not find the 'assessment_data' column of 'fitbuddyai_userdata' in the schema cache" });
-      }
       return res.status(500).json({ error: error.message || 'Supabase upsert failed' });
     }
 
     // Return canonical stored object only
-    return res.json({ success: true, stored: { questionnaire_progress: upsertRow.questionnaire_progress ?? null, workout_plan: upsertRow.workout_plan ?? null, assessment_data: upsertRow.assessment_data ?? null, accepted_terms: upsertRow.accepted_terms ?? null, accepted_privacy: upsertRow.accepted_privacy ?? null, chat_history: upsertRow.chat_history ?? null } });
+    return res.json({ success: true, stored: { questionnaire_progress: upsertRow.questionnaire_progress ?? null, workout_plan: upsertRow.workout_plan ?? null, accepted_terms: upsertRow.accepted_terms ?? null, accepted_privacy: upsertRow.accepted_privacy ?? null, chat_history: upsertRow.chat_history ?? null } });
   } catch (e) {
     console.error('[userDataStore] supabase upsert exception', e);
-    if (String(e?.message || '').includes('assessment_data')) {
-      return res.status(500).json({ error: "Could not find the 'assessment_data' column of 'fitbuddyai_userdata' in the schema cache" });
-    }
     return res.status(500).json({ error: e?.message || 'Supabase upsert exception' });
   }
 });
@@ -130,28 +117,27 @@ router.post('/api/userdata/load', async (req, res) => {
     return res.status(500).json({ error: 'Supabase not configured; user data storage disabled in local server.' });
   }
     try {
-      // Select only `payload` for compatibility with older schemas.
-      const { data, error } = await supabase.from('fitbuddyai_userdata').select('payload').eq('user_id', userId).limit(1).maybeSingle();
+      // Select explicit canonical columns (no legacy `payload` column in current schema).
+      const { data, error } = await supabase.from('fitbuddyai_userdata').select('questionnaire_progress, workout_plan, chat_history, accepted_terms, accepted_privacy').eq('user_id', userId).limit(1).maybeSingle();
     if (error) {
       console.error('[userDataStore] Supabase fetch error for userId', userId, error);
       return res.status(500).json({ error: error.message || 'Supabase fetch failed' });
     }
-    if (data) {
-      const storedPayload = data.payload || {};
-      const wp = storedPayload.workout_plan ?? storedPayload.fitbuddyai_workout_plan ?? null;
-      const qp = storedPayload.questionnaire_progress ?? storedPayload.fitbuddyai_questionnaire_progress ?? null;
-      const ad = storedPayload.assessment_data ?? storedPayload.fitbuddyai_assessment_data ?? null;
-      const stored = {
-        fitbuddyai_workout_plan: wp,
-        fitbuddyai_questionnaire_progress: qp,
-        fitbuddyai_assessment_data: ad,
-        accepted_terms: storedPayload.accepted_terms ?? null,
-        accepted_privacy: storedPayload.accepted_privacy ?? null,
-        chat_history: storedPayload.chat_history ?? null
-      };
-      return res.json({ stored });
-    }
-    return res.json({ stored: { fitbuddyai_questionnaire_progress: null, fitbuddyai_workout_plan: null, fitbuddyai_assessment_data: null } });
+      if (data) {
+        // Build stored result from explicit columns
+        const wp = data.workout_plan ?? null;
+        const qp = data.questionnaire_progress ?? null;
+        const ch = data.chat_history ?? null;
+        const stored = {
+          fitbuddyai_workout_plan: wp,
+          fitbuddyai_questionnaire_progress: qp,
+          accepted_terms: data.accepted_terms ?? null,
+          accepted_privacy: data.accepted_privacy ?? null,
+          chat_history: ch
+        };
+        return res.json({ stored });
+      }
+      return res.json({ stored: { fitbuddyai_questionnaire_progress: null, fitbuddyai_workout_plan: null } });
   } catch (e) {
     console.error('[userDataStore] Supabase fetch exception for userId', userId, e);
     return res.status(500).json({ error: e?.message || 'Supabase fetch exception' });

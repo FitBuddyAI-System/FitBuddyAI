@@ -2,7 +2,13 @@ import { Link } from 'react-router-dom';
 import './Footer.css';
 import { Dumbbell } from 'lucide-react';
 
-export default function Footer() {
+interface FooterProps {
+  themeMode?: 'auto' | 'light' | 'dark';
+  onChangeThemeMode?: (mode: 'auto' | 'light' | 'dark') => void;
+}
+
+export default function Footer({ themeMode = 'auto', onChangeThemeMode }: FooterProps) {
+  const cur = themeMode || 'auto';
   return (
     <footer className="fb-footer">
       <div className="fb-footer-inner">
@@ -36,6 +42,14 @@ export default function Footer() {
         <div className="fb-bottom">
           <div>© {new Date().getFullYear()} FitBuddyAI, LLC. All rights reserved.</div>
           <div className="socials muted">Made with ❤️ for a healthier life</div>
+          <div className="fb-theme">
+            <label className="fb-theme-label">Theme</label>
+            <div className="fb-theme-selector" role="tablist" aria-label="Theme selector">
+              <button className={`fb-theme-btn ${cur === 'auto' ? 'active' : ''}`} onClick={() => onChangeThemeMode?.('auto')}>Auto</button>
+              <button className={`fb-theme-btn ${cur === 'light' ? 'active' : ''}`} onClick={() => onChangeThemeMode?.('light')}>Light</button>
+              <button className={`fb-theme-btn ${cur === 'dark' ? 'active' : ''}`} onClick={() => onChangeThemeMode?.('dark')}>Dark</button>
+            </div>
+          </div>
         </div>
       </div>
     </footer>

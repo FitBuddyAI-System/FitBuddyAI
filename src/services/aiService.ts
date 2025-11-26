@@ -432,25 +432,44 @@ export async function getAIResponse(payload: any): Promise<any> {
   });
   const data = await response.json();
   console.log('Raw AI response:', data);
-  // Log the content.parts[0].text to inspect the exact text block
+  // Accept several possible server/provider response shapes.
   const candidate = data.candidates?.[0];
-  console.log('Candidate content:', candidate?.content);
-  console.log('Candidate content.parts:', candidate?.content?.parts);
-  console.log('Candidate content.parts[0].text:', candidate?.content?.parts?.[0]?.text);
-  // Extract generated text from candidates
-  const rawText: string = candidate?.content?.parts?.[0]?.text || '';
-  // Attempt to extract JSON between code fences
-  let cleaned = rawText;
-  const match = rawText.match(/```(?:json)?\n([\s\S]*?)```/);
-  if (match && match[1]) {
-    cleaned = match[1].trim();
+  const providerText = typeof data?.text === 'string' ? data.text : undefined;
+  const candidateText = candidate?.content?.parts?.[0]?.text;
+  const generated_text = (data as any)?.generated_text;
+  let rawText: string = '';
+  if (typeof providerText === 'string' && providerText.trim()) rawText = providerText;
+  else if (typeof candidateText === 'string' && candidateText.trim()) rawText = candidateText;
+  else if (typeof generated_text === 'string' && generated_text.trim()) rawText = generated_text;
+  else if (typeof data === 'string') rawText = data;
+
+  console.log('Raw AI text extracted for parsing (trim 2000):', String(rawText).slice(0, 2000));
+
+  // Robust extraction of JSON payloads: prefer fenced ```json``` blocks, then
+  // any {...} or [...] top-level block. Fall back to the whole rawText.
+  let cleaned = '';
+  try {
+    const fenceMatch = rawText.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+    if (fenceMatch && fenceMatch[1]) cleaned = fenceMatch[1].trim();
+    if (!cleaned) {
+      // try to find a JSON array or object block
+      const arrayMatch = rawText.match(/\[[\s\S]*\]/);
+      const objMatch = rawText.match(/\{[\s\S]*\}/);
+      if (arrayMatch) cleaned = arrayMatch[0];
+      else if (objMatch) cleaned = objMatch[0];
+    }
+    if (!cleaned) cleaned = rawText.trim();
+  } catch (e) {
+    cleaned = rawText.trim();
   }
-  console.log('Cleaned AI JSON or text:', cleaned);
+
+  console.log('Cleaned AI JSON or text (trim 2000):', String(cleaned).slice(0, 2000));
+
   // Try to parse as JSON; if it fails, return the cleaned text as a fallback
   try {
     return JSON.parse(cleaned);
   } catch (e) {
-    console.warn('AI response is not valid JSON, returning raw text instead.');
+    console.warn('AI response is not valid JSON; returning cleaned text instead.', e);
     return cleaned;
   }
 }
@@ -482,7 +501,22 @@ export async function getAITextResponse(payload: { prompt: string; workoutPlan?:
   });
   const data = await response.json();
   const candidate = data.candidates?.[0];
-  const rawText: string = candidate?.content?.parts?.[0]?.text || '';
+  // Accept several possible server response shapes:
+  // - { text: '...' } (our local server)
+  // - Gemini REST shape with candidates -> content -> parts -> text
+  // - other providers may use generated_text or similar fields
+  let rawText: string = '';
+  if (typeof data?.text === 'string' && data.text.trim()) {
+    rawText = data.text;
+  } else if (candidate && candidate.content && Array.isArray(candidate.content.parts) && candidate.content.parts[0] && typeof candidate.content.parts[0].text === 'string') {
+    rawText = candidate.content.parts[0].text;
+  } else if (typeof data?.generated_text === 'string') {
+    rawText = data.generated_text;
+  } else if (typeof data === 'string') {
+    rawText = data;
+  } else {
+    rawText = '';
+  }
   // Strip code fences if present for display, but also return raw
   const fenceMatch = rawText.match(/```(?:json)?\n([\s\S]*?)```/);
   const cleaned = fenceMatch && fenceMatch[1] ? fenceMatch[1].trim() : rawText.trim();

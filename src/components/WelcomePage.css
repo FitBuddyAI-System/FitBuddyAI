@@ -15,7 +15,7 @@
   transition: opacity 0.45s ease, filter 0.55s ease, transform 0.55s ease;
   pointer-events: none;
   position: relative;
-  z-index: 1;
+  z-index: 2; /* ensure main content sits above background canvas */
 }
 
 .welcome-main.is-visible {
@@ -26,22 +26,39 @@
 }
 
 .hero-section {
-  /* allow the hero to grow but don't forcibly consume full viewport - footer sits after content */
-  flex: 0 0 auto;
+  /* Center hero content both vertically and horizontally so it sits
+     visually centered inside the dotted background. The canvas is
+     absolutely positioned inside this container and will not affect
+     the flex layout. */
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 40px 20px;
+  padding: 60px 20px;
   position: relative;
   overflow: hidden;
-  z-index: 1;
+  z-index: 2;
+  min-height: 56vh; /* give the hero area room for the dots/background */
 }
 
 .hero-content {
   text-align: center;
-  max-width: 600px;
-  z-index: 2;
-  }
+  max-width: 720px; /* content width */
+  width: 100%;
+  padding: 20px; /* breathing room */
+  z-index: 4; /* sit above illustration and canvas */
+  position: relative;
+  left: 50%;
+  transform: translateX(-50%); /* force exact horizontal centering */
+  box-sizing: border-box;
+}
+/* Force the main hero content into the visual center of the hero area.
+   This ensures it doesn't get pushed out of view by overlays. */
+.hero-content.centered-absolute {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
 .logo-section {
   display: flex;
   flex-direction: column;
@@ -117,9 +134,11 @@
 
 .hero-illustration {
   position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   pointer-events: none;
+  z-index: 1; /* illustration floats above background but below hero content */
 }
 
 .floating-card {
@@ -135,6 +154,7 @@
   font-weight: 600;
   font-size: 14px;
   animation: float 6s ease-in-out infinite;
+  z-index: 3; /* cards should sit above hero content and over the canvas */
 }
 
 .card-1 {

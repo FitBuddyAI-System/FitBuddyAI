@@ -2,8 +2,9 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Target, Calendar, Zap, Dumbbell } from 'lucide-react';
 import './WelcomePage.css';
-import Footer from './Footer';
+// Footer is now rendered site-wide in `App.tsx`
 import IntroBubbles from './IntroBubbles';
+import BackgroundDots from './BackgroundDots';
 
 
 // Only generate random features once per page load
@@ -71,7 +72,8 @@ const WelcomePage: React.FC = () => {
       <div className={`welcome-main ${mainVisible ? 'is-visible' : ''}`}>
         {/* Hero Section */}
         <div className="hero-section">
-          <div className="hero-content">
+          <BackgroundDots />
+          <div className="hero-content centered-absolute">
               <div className={"logo-section" + (shouldAnimateLogo ? " bounce-in" : "") }>
                 <div className="logo logo-centered">
                   <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-dumbbell"><path d="m6.5 6.5 11 11"></path><path d="m21 21-1-1"></path><path d="m3 3 1 1"></path><path d="m18 22 4-4"></path><path d="m2 6 4-4"></path><path d="m3 10 7-7"></path><path d="m14 21 7-7"></path></svg>
@@ -180,9 +182,7 @@ const WelcomePage: React.FC = () => {
           </div>
         </div>
       </div>
-      <div className="welcome-footer-spacer">
-        <Footer />
-      </div>
+      {/* Footer is rendered site-wide in App.tsx to ensure visibility on all routes */}
     </div>
   );
 };

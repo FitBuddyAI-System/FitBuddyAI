@@ -36,6 +36,11 @@ function isAdminRequest(req) {
 
 app.get('/api/admin/users', async (req, res) => {
   try {
+    console.log('[authServer] /api/ai/generate request headers:', {
+      ct: req.headers['content-type'] || req.headers['Content-Type'] || null,
+      length: req.headers['content-length'] || null
+    });
+    try { console.log('[authServer] /api/ai/generate raw body type:', typeof req.body); } catch(e) {}
   if (!isAdminRequest(req)) return res.status(403).json({ message: 'Forbidden' });
 
     if (supabase) {
@@ -178,7 +183,7 @@ function writeUsers(users) {
   }
   try {
     // Upsert users into fitbuddyai_userdata (best-effort). Map only core fields to avoid leaking passwords.
-    const rows = users.map(u => ({ user_id: u.id, email: u.email, username: u.username, avatar_url: u.avatar || '', payload: u.payload || {}, chat_history: u.chat_history || [], role: u.role || null, banned: u.banned || false, updated_at: new Date().toISOString() }));
+    const rows = users.map(u => ({ user_id: u.id, email: u.email, username: u.username, avatar_url: u.avatar || '', chat_history: u.chat_history || [], role: u.role || null, banned: u.banned || false, updated_at: new Date().toISOString() }));
     supabase.from('fitbuddyai_userdata').upsert(rows, { onConflict: 'user_id' }).then(({ error }) => {
       if (error) console.error('[authServer] writeUsers: Supabase upsert error', error);
       else console.info('[authServer] writeUsers: upserted', rows.length, 'users to Supabase');
@@ -378,8 +383,60 @@ app.post('/api/rickroll', async (req, res) => {
 // Local AI generation endpoint for dev server
 app.post('/api/ai/generate', async (req, res) => {
   try {
-    const { prompt, userId, meta } = req.body || {};
-    if (!prompt) return res.status(400).json({ message: 'Missing prompt' });
+    // Be forgiving about incoming body shapes (prompt, contents, inputs, messages)
+    let body = req.body || {};
+    if (typeof body === 'string') {
+      try { body = JSON.parse(body); } catch (e) { /* leave as string */ }
+    }
+
+    const joinPartsText = (parts) => {
+      try {
+        if (!Array.isArray(parts)) return '';
+        return parts.map(p => {
+          if (!p) return '';
+          if (typeof p === 'string') return p;
+          return p.text || p.content || '';
+        }).filter(Boolean).join('\n');
+      } catch (e) { return ''; }
+    };
+
+    let prompt = undefined;
+    if (typeof body.prompt === 'string' && body.prompt.trim()) prompt = body.prompt.trim();
+    // contents -> parts -> text
+    if (!prompt && Array.isArray(body.contents)) {
+      for (const c of body.contents) {
+        if (!c) continue;
+        if (typeof c === 'string' && c.trim()) { prompt = c.trim(); break; }
+        const j = joinPartsText(c.parts ?? c);
+        if (j) { prompt = j; break; }
+      }
+    }
+    // inputs
+    if (!prompt && Array.isArray(body.inputs) && body.inputs.length) {
+      const inp = body.inputs[0];
+      if (typeof inp === 'string') prompt = inp;
+      else if (typeof inp.content === 'string') prompt = inp.content;
+      else {
+        const j = joinPartsText(inp.parts ?? inp);
+        if (j) prompt = j;
+      }
+    }
+    // messages
+    if (!prompt && Array.isArray(body.messages) && body.messages.length) {
+      const last = body.messages[body.messages.length - 1];
+      if (typeof last === 'string') prompt = last;
+      else if (typeof last.content === 'string') prompt = last.content;
+      else if (last && typeof last.content === 'object') prompt = last.content.text || joinPartsText(last.content.parts ?? last);
+    }
+
+    const userId = body.userId || body.user_id || null;
+    const meta = body.meta || null;
+    if (!prompt) {
+      // return minimal diagnostic so callers can see what's arriving
+      let sample = '';
+      try { sample = (typeof req.body === 'string') ? req.body.slice(0,2000) : JSON.stringify(req.body, null, 2).slice(0,2000); } catch(e) { sample = String(req.body).slice(0,2000); }
+      return res.status(400).json({ message: 'Missing prompt', bodyType: typeof req.body, bodySample: sample });
+    }
 
     const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
     const GEMINI_URL = GEMINI_API_KEY
@@ -702,8 +759,8 @@ app.post('/api/auth/signup', (req, res) => {
     // Try to upsert into Supabase if configured (best-effort)
     (async () => {
       try {
-        if (supabase) {
-          await supabase.from('fitbuddyai_userdata').upsert({ user_id: user.id, email: user.email, username: user.username, avatar_url: '', energy: 100, streak: 0, inventory: [], payload: {}, chat_history: [], accepted_privacy: false, accepted_terms: false, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
+          if (supabase) {
+          await supabase.from('fitbuddyai_userdata').upsert({ user_id: user.id, email: user.email, username: user.username, avatar_url: '', energy: 100, streak: 0, inventory: [], chat_history: [], accepted_privacy: false, accepted_terms: false, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
         }
       } catch (sErr) {
         console.warn('[authServer] supabase upsert during signup failed', sErr);
