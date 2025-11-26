@@ -75,7 +75,7 @@ const AdminPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [showRestore, setShowRestore] = useState(false);
   const [showBanned, setShowBanned] = useState(false);
-  const [deletedPlans, setDeletedPlans] = useState<any[]>([]);
+  const [deletedPlans, setDeletedPlans] = useState<{ id: string; name?: string }[]>([]);
   const [restoringPlanId, setRestoringPlanId] = useState<string | null>(null);
   const [bannedUsernames, setBannedUsernames] = useState<string[]>([]);
   const [newBannedUsername, setNewBannedUsername] = useState('');
