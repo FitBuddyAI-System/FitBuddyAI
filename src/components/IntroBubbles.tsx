@@ -159,10 +159,14 @@ const IntroBubbles: React.FC<{ onFinish: () => void }> = ({ onFinish }) => {
               <div
                 key={i}
                 className={bubbleClass}
-                data-offscreen-x={offX}
-                data-offscreen-y={offY}
-                data-angle={angle}
-                data-distance={distance}
+                style={
+                  {
+                    '--offscreen-x': `${offX}px`,
+                    '--offscreen-y': `${offY}px`,
+                    '--angle': `${angle}deg`,
+                    '--distance': `${distance}px`,
+                  } as React.CSSProperties
+                }
               >
                 <span className="bubble-icon">{bubble.icon}</span>
                 {bubble.text}

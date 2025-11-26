@@ -116,25 +116,22 @@
 @keyframes bubbleFlyIn {
   0% {
     opacity: 0;
-    /* Use data attributes for offscreen position */
-    transform: translate(calc(attr(data-offscreen-x px, 0)), calc(attr(data-offscreen-y px, 0))) scale(0.7);
+    transform: translate(var(--offscreen-x, 0px), var(--offscreen-y, 0px)) scale(0.7);
   }
   60% {
     opacity: 1;
-    /* Use data attributes for angle and distance */
-    transform: translate(-50%, -50%) rotate(calc(attr(data-angle deg, 0))) translateX(calc(attr(data-distance px, 0))) scale(1.08);
+    transform: translate(-50%, -50%) rotate(var(--angle, 0deg)) translateX(var(--distance, 0px)) scale(1.08);
   }
   100% {
     opacity: 1;
-    transform: translate(-50%, -50%) rotate(calc(attr(data-angle deg, 0))) translateX(calc(attr(data-distance px, 0))) scale(1);
+    transform: translate(-50%, -50%) rotate(var(--angle, 0deg)) translateX(var(--distance, 0px)) scale(1);
   }
 }
 .bubble-orbit, .bubble-meet {
   position: absolute;
   top: 50%;
   left: 50%;
-  /* Use data attributes for angle and distance */
-  transform: translate(-50%, -50%) rotate(calc(attr(data-angle deg, 0))) translateX(calc(attr(data-distance px, 0)));
+  transform: translate(-50%, -50%) rotate(var(--angle, 0deg)) translateX(var(--distance, 0px));
   opacity: 1;
   transition: transform 0.5s cubic-bezier(.22,1.2,.36,1), opacity 0.5s;
 }

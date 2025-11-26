@@ -14,3 +14,11 @@
     - update readme.md for all the new features and how to use them
     - add a button for the shop on the homescreen
     
+
+    What Dakota needs to do:
+    - Fix all of the .json data for the workouts (add videos, make the descriptions better, fill in the blanks, etc.)
+    - Have ChatGPT make systems more efficent
+    - Generate some images for the shop
+    
+
+    What William needs to do: 
