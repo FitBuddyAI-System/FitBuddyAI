@@ -16,7 +16,8 @@ const AVATARS = [
   { id: 'avatar9', name: 'Astronaut', image: 'https://api.dicebear.com/7.x/bottts/svg?seed=Astronaut', price: 260, type: 'avatar', description: 'Reach for the stars.' },
   { id: 'avatar10', name: 'Vintage Robot', image: 'https://api.dicebear.com/7.x/bottts/svg?seed=VintageBot', price: 110, type: 'avatar', description: 'Retro charm.' },
   { id: 'avatar11', name: 'Neon Ninja', image: 'https://api.dicebear.com/7.x/bottts/svg?seed=NeonNinja', price: 210, type: 'avatar', description: 'Stealthy and bright.' },
-  { id: 'avatar12', name: 'Forest Sprite', image: 'https://api.dicebear.com/7.x/bottts/svg?seed=ForestSprite', price: 130, type: 'avatar', description: 'Whimsical woodland friend.' }
+  { id: 'avatar12', name: 'Forest Sprite', image: 'https://api.dicebear.com/7.x/bottts/svg?seed=ForestSprite', price: 130, type: 'avatar', description: 'Whimsical woodland friend.' },
+  { id: 'avatar12', name: 'Forest Sprite', image: '/public/images/ChatGPT_Image_Clan_Of_27_Fire.png', price: 130, type: 'avatar', description: 'Whimsical woodland friend.' }
 ];
 
 const POWERUPS = [
