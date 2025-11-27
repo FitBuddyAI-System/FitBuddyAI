@@ -37,7 +37,7 @@
   position: relative;
   overflow: hidden;
   z-index: 2;
-  min-height: 56vh; /* give the hero area room for the dots/background */
+  min-height: 100vh; /* give the hero area room for the dots/background */
 }
 
 .hero-content {

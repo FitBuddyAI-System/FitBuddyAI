@@ -260,7 +260,16 @@ body.theme-dark .nav-button.active {
   display: block;
 }
 
-.dropdown-content button {
+/* Nav dropdown for Explore */
+.nav-dropdown { position: relative; }
+.nav-dropdown .dropdown-content { right: auto; left: 0; top: calc(100% + 6px); background: var(--background-white); color: var(--text-dark); padding: 6px; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.12); display: none; min-width: 180px }
+.nav-dropdown:hover .dropdown-content { display: block }
+.nav-dropdown .dropdown-content button { display:block; width:100%; padding:8px 12px; background:none; border:none; text-align:left; cursor:pointer }
+.nav-dropdown .dropdown-content button:hover { background: rgba(0,0,0,0.03) }
+/* Dark-mode tweak for dropdown hover to keep subtle contrast */
+body.theme-dark .nav-dropdown .dropdown-content button:hover { background: rgba(255,255,255,0.02) }
+
+.dropdown .dropdown-content button {
   background: none;
   border: none;
   color: white;
@@ -272,9 +281,19 @@ body.theme-dark .nav-button.active {
   transition: background 0.3s ease;
 }
 
-.dropdown-content button:hover {
+.dropdown .dropdown-content button:hover {
   background: rgba(255, 255, 255, 0.1);
 }
+
+/* Explore dropdown buttons should use dark text on light background */
+.nav-dropdown .dropdown-content button {
+  color: var(--text-dark);
+}
+
+.nav-dropdown .dropdown-content button:hover { background: rgba(0,0,0,0.04); }
+
+/* Slight style for shop entry so it stands out */
+.nav-dropdown .dropdown-content button.dropdown-shop { font-weight: 400; color: var(--text-dark); }
 
 /* Mobile Responsive */
 @media (max-width: 768px) {  .header-container {
