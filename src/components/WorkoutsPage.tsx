@@ -52,7 +52,7 @@ const WorkoutsPage: React.FC = () => {
           <div className="search-wrap">
             <input
               className="search-input"
-              placeholder="Search workouts, muscles, or equipment..."
+              placeholder="Search workouts, muscles, etc."
               value={query}
               onChange={e => setQuery(e.target.value)}
               aria-label="Search workouts"
