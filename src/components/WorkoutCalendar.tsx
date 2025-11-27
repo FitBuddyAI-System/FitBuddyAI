@@ -20,7 +20,20 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
   const lastDragNav = useRef<number>(0);
   // Ref to debounce the select-to-add toggle to avoid double-invocation
   const lastSelectToggleRef = useRef<number>(0);
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const initialStoredDate = (() => {
+    try {
+      const raw = sessionStorage.getItem('fitbuddyai_calendar_last_date');
+      if (raw) {
+        const parsed = new Date(raw);
+        if (!Number.isNaN(parsed.getTime())) return parsed;
+      }
+    } catch {}
+    return new Date();
+  })();
+  const initialStoredPlanId = (() => {
+    try { return sessionStorage.getItem('fitbuddyai_last_plan_id'); } catch { return null; }
+  })();
+  const [currentDate, setCurrentDate] = useState(initialStoredDate);
   const [selectedDay, setSelectedDay] = useState<DayWorkout | null>(null);
   const [showWorkoutModal, setShowWorkoutModal] = useState(false);
   const [loadingDate, setLoadingDate] = useState<string | null>(null);
@@ -56,6 +69,7 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
   const [deleteMode, setDeleteMode] = useState(false);
   const [selectedForDeletion, setSelectedForDeletion] = useState<string[]>([]);
   const previewPlanSeededRef = useRef(false);
+  const lastPlanIdRef = useRef<string | null>(initialStoredPlanId);
   const guestUserData: UserData = {
     username: 'Guest',
     age: 28,
@@ -137,32 +151,50 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
   }, [workoutPlan, onUpdatePlan]);
 
   useEffect(() => {
-    if (workoutPlan && workoutPlan.dailyWorkouts.length > 0 && !isManualDateChange) {
-      // Parse the start date as local date instead of UTC, but guard against missing/malformed startDate
-      try {
-        if (workoutPlan.startDate && typeof workoutPlan.startDate === 'string' && workoutPlan.startDate.includes('-')) {
-          const parts = workoutPlan.startDate.split('-').map(Number);
-          if (parts.length === 3 && !parts.some(p => Number.isNaN(p))) {
-            const [year, month, day] = parts;
-            setCurrentDate(new Date(year, month - 1, day));
-            return;
-          }
-        }
-        // Fallback: use the first day in the plan if available
-        const first = workoutPlan.dailyWorkouts[0];
-        if (first && first.date && typeof first.date === 'string' && first.date.includes('-')) {
-          const p = first.date.split('-').map(Number);
-          if (p.length === 3 && !p.some(x => Number.isNaN(x))) {
-            setCurrentDate(new Date(p[0], p[1] - 1, p[2]));
-            return;
-          }
-        }
-        // Last resort: keep today's date (already set by useState)
-      } catch (err) {
-        console.warn('Failed to parse workoutPlan start date, using current date:', err);
-      }
+    if (!workoutPlan || workoutPlan.dailyWorkouts.length === 0) return;
+    const planId = workoutPlan.id || 'plan';
+    const isNewPlan = lastPlanIdRef.current !== planId;
+    // Only auto-jump on first load of a new plan; keep user's month when editing
+    if (isManualDateChange || !isNewPlan) {
+      lastPlanIdRef.current = planId;
+      try { sessionStorage.setItem('fitbuddyai_last_plan_id', planId); } catch {}
+      return;
     }
-  }, [workoutPlan]);
+    // Parse the start date as local date instead of UTC, but guard against missing/malformed startDate
+    try {
+      if (workoutPlan.startDate && typeof workoutPlan.startDate === 'string' && workoutPlan.startDate.includes('-')) {
+        const parts = workoutPlan.startDate.split('-').map(Number);
+        if (parts.length === 3 && !parts.some(p => Number.isNaN(p))) {
+          const [year, month, day] = parts;
+          setCurrentDate(new Date(year, month - 1, day));
+          lastPlanIdRef.current = planId;
+          try { sessionStorage.setItem('fitbuddyai_last_plan_id', planId); } catch {}
+          return;
+        }
+      }
+      // Fallback: use the first day in the plan if available
+      const first = workoutPlan.dailyWorkouts[0];
+      if (first && first.date && typeof first.date === 'string' && first.date.includes('-')) {
+        const p = first.date.split('-').map(Number);
+        if (p.length === 3 && !p.some(x => Number.isNaN(x))) {
+          setCurrentDate(new Date(p[0], p[1] - 1, p[2]));
+          lastPlanIdRef.current = planId;
+          try { sessionStorage.setItem('fitbuddyai_last_plan_id', planId); } catch {}
+          return;
+        }
+      }
+      // Last resort: keep today's date (already set by useState)
+    } catch (err) {
+      console.warn('Failed to parse workoutPlan start date, using current date:', err);
+    }
+    lastPlanIdRef.current = planId;
+    try { sessionStorage.setItem('fitbuddyai_last_plan_id', planId); } catch {}
+  }, [workoutPlan, isManualDateChange]);
+
+  // Persist the last viewed calendar month so remounts don't reset the view
+  useEffect(() => {
+    try { sessionStorage.setItem('fitbuddyai_calendar_last_date', currentDate.toISOString()); } catch {}
+  }, [currentDate]);
 
   // On mount: if user signed-in, attempt to restore server-saved workout/assessment data
   useEffect(() => {

@@ -344,18 +344,25 @@ body.theme-dark .batch-add-panel textarea {
   justify-content: center;
   width: 48px;
   height: 48px;
-  background: white;
+  background: #ffffff;
   border: 2px solid var(--border-light);
   border-radius: 12px;
   cursor: pointer;
   transition: all 0.2s ease;
-  color: var(--text-medium);
+  color: var(--text-dark);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.08);
 }
 
 .nav-button:hover {
   border-color: var(--primary-green);
   color: var(--primary-green);
   transform: scale(1.05);
+}
+
+.nav-button svg {
+  stroke-width: 2.4px;
+  color: var(--text-dark); /* force dark arrow in light mode */
+  stroke: currentColor;
 }
 
 .month-year {
