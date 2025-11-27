@@ -23,7 +23,7 @@ const IntroMobile: React.FC<{ onFinish?: () => void }> = ({ onFinish }) => {
         </div>
         <div className="intro-title-wrap">
           <h1 className="intro-title">FitBuddyAI</h1>
-          <p className="intro-sub">Your AI fitness companion</p>
+          <p className="intro-sub">Your AI fitness compaion</p>
         </div>
         <div className="intro-bubbles" aria-hidden>
           <span className="bubble b1"></span>
