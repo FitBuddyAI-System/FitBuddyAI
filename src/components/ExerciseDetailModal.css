@@ -131,3 +131,67 @@
   .video-embed { order: 2; }
   .exercise-detail-modal { max-width: 92%; max-height: calc(100vh - 40px); }
 }
+
+/* Dark mode overrides: follow global `body.theme-dark` class used in App */
+body.theme-dark .exercise-modal-overlay {
+  background: rgba(3,6,12,0.65);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+
+body.theme-dark .exercise-detail-modal {
+  background: linear-gradient(135deg, #071017 0%, #0b1117 100%);
+  border: 1px solid rgba(255,255,255,0.04);
+  box-shadow: 0 30px 90px rgba(0,0,0,0.7);
+  color: var(--text-dark);
+}
+
+body.theme-dark .exercise-detail-header {
+  background: linear-gradient(90deg, rgba(15,183,122,0.08), rgba(27,159,224,0.04));
+  color: var(--text-dark);
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+
+body.theme-dark .title-block h3,
+body.theme-dark .title-block .tag-row,
+body.theme-dark .meta-value,
+body.theme-dark .desc-text,
+body.theme-dark .resource-title {
+  color: var(--text-dark);
+}
+
+body.theme-dark .meta-item {
+  background: #07101a;
+  border: 1px solid rgba(255,255,255,0.03);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+}
+
+body.theme-dark .meta-icon { color: var(--text-dark); }
+
+body.theme-dark .meta-pill { background: rgba(255,255,255,0.02); color: var(--text-dark); box-shadow: none; }
+body.theme-dark .meta-pill.duration { background: linear-gradient(180deg, rgba(27,159,224,0.06), rgba(27,159,224,0.03)); color: var(--secondary-blue); }
+body.theme-dark .meta-pill.target { background: linear-gradient(180deg, rgba(15,183,122,0.06), rgba(15,183,122,0.03)); color: var(--primary-green); }
+body.theme-dark .meta-pill.reps { background: linear-gradient(180deg, rgba(255,185,71,0.03), rgba(255,185,71,0.02)); color: var(--accent-orange); }
+
+body.theme-dark .tag-difficulty.tag-beginner { background: linear-gradient(180deg, rgba(46,182,106,0.06), rgba(46,182,106,0.03)); color: var(--primary-green); }
+body.theme-dark .tag-difficulty.tag-intermediate { background: linear-gradient(180deg, rgba(255,185,71,0.05), rgba(255,185,71,0.03)); color: #e38900; }
+body.theme-dark .tag-difficulty.tag-advanced { background: linear-gradient(180deg, rgba(255,75,75,0.06), rgba(255,75,75,0.03)); color: var(--accent-red); }
+
+body.theme-dark .close-btn { background: rgba(255,255,255,0.03); color: var(--text-dark); box-shadow: 0 8px 20px rgba(0,0,0,0.5); }
+
+body.theme-dark .resource-card { background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border: 1px solid rgba(255,255,255,0.03); }
+body.theme-dark .resource-icon { color: var(--primary-green); }
+
+/* Ensure forms and text inputs are visible in dark mode */
+body.theme-dark .hc-form input,
+body.theme-dark .hc-form textarea,
+body.theme-dark .exercise-detail-modal input,
+body.theme-dark .exercise-detail-modal textarea {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.04);
+  color: var(--text-dark);
+}
+
+/* subtle transition for theme switch */
+.exercise-detail-modal,
+.exercise-modal-overlay { transition: background 180ms ease, box-shadow 220ms ease, color 140ms ease; }

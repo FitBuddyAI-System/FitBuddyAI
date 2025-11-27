@@ -1,12 +1,22 @@
 import { Dumbbell, Search } from 'lucide-react';
 import './HelpCenter.css';
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 
 export default function HelpCenter() {
   const [query, setQuery] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
 
-  const openModal = () => setModalOpen(true);
+  const [prefillSubject, setPrefillSubject] = useState<string | undefined>(undefined);
+  const [prefillMessage, setPrefillMessage] = useState<string | undefined>(undefined);
+
+  const openModal = (subject?: string, message?: string) => {
+    setPrefillSubject(subject);
+    setPrefillMessage(message);
+    setModalOpen(true);
+  };
+
+  const openModalWithSubject = (subject: string) => openModal(subject);
 
   const categories = [
     { id: 'start', title: 'Getting Started', desc: 'Create your profile and generate a plan.', icon: (<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 8v4l3 3"></path></svg>) },
@@ -57,7 +67,7 @@ export default function HelpCenter() {
             <ul className="hc-popular">
               {popular.map((p, i) => (
                 <li key={i}>
-                  <button className="link-like" onClick={openModal}>{p.title}</button>
+                  <button className="link-like" onClick={() => openModalWithSubject(p.title)}>{p.title}</button>
                   <p className="muted">{p.desc}</p>
                 </li>
               ))}
@@ -67,7 +77,7 @@ export default function HelpCenter() {
           <div className="hc-card compact">
             <h3>Contact</h3>
             <p className="muted">Need help from a human? Our support responds within 24 hours.</p>
-            <button className="btn btn-primary" onClick={openModal}>Contact Support</button>
+            <button className="btn btn-primary" onClick={() => openModal()}>Contact Support</button>
           </div>
         </aside>
 
@@ -96,35 +106,47 @@ export default function HelpCenter() {
             <h4>Optimize Your 30-Day Plan</h4>
             <p className="muted">Tips on balancing strength, cardio, and recovery to hit your goals.</p>
             <div className="guide-actions">
-              <button className="btn btn-secondary">Read Guide</button>
-              <button className="btn btn-accent" onClick={openModal}>Ask Support</button>
+              <button className="btn btn-secondary" onClick={() => openModalWithSubject('Guide: Optimize Your 30-Day Plan')}>Read Guide</button>
+              <button className="btn btn-accent" onClick={() => openModalWithSubject('Question about Optimize Your 30-Day Plan')}>Ask Support</button>
             </div>
           </div>
 
           <div className="hc-card">
             <h3>Resources</h3>
             <ul className="hc-links">
-              <li><a href="/help/privacy">Privacy Policy</a></li>
-              <li><a href="/help/changelog">Changelog</a></li>
-              <li><a href="/help/api">Developer API</a></li>
+              <li><Link to="/privacy">Privacy Policy</Link></li>
+              <li><button className="link-like" onClick={() => openModalWithSubject('Request: Changelog')}>Changelog</button></li>
+              <li><button className="link-like" onClick={() => openModalWithSubject('Request: Developer API documentation')}>Developer API</button></li>
             </ul>
           </div>
         </aside>
       </main>
 
-      <SupportModal open={modalOpen} onClose={() => setModalOpen(false)} onSubmitted={() => { setModalOpen(false); console.log('support form submitted'); }} />
+      <SupportModal
+        open={modalOpen}
+        initialSubject={prefillSubject}
+        initialMessage={prefillMessage}
+        onClose={() => { setModalOpen(false); setPrefillSubject(undefined); setPrefillMessage(undefined); }}
+        onSubmitted={() => { setModalOpen(false); setPrefillSubject(undefined); setPrefillMessage(undefined); console.log('support form submitted'); }}
+      />
     </div>
   );
 }
 
 // Modal component inside the same file for simplicity
-function SupportModal({ open, onClose, onSubmitted }: { open: boolean; onClose: () => void; onSubmitted?: () => void }) {
+function SupportModal({ open, onClose, onSubmitted, initialSubject, initialMessage }: { open: boolean; onClose: () => void; onSubmitted?: () => void; initialSubject?: string; initialMessage?: string }) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [subject, setSubject] = useState('');
-  const [message, setMessage] = useState('');
+  const [subject, setSubject] = useState(initialSubject || '');
+  const [message, setMessage] = useState(initialMessage || '');
 
+  // Keep initial values in sync when modal opens with new prefill
+  // (use effect is omitted to keep code simple; update when open changes)
   if (!open) return null;
+
+  // If a new initial subject/message was passed, ensure the fields reflect it
+  if (initialSubject && subject !== initialSubject) setSubject(initialSubject);
+  if (initialMessage && message !== initialMessage) setMessage(initialMessage);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -137,9 +159,14 @@ function SupportModal({ open, onClose, onSubmitted }: { open: boolean; onClose: 
     }
   };
 
+  const onBackdropClick = (e: React.MouseEvent) => {
+    // close when clicking the backdrop (but not when clicking inside the modal)
+    if ((e.target as HTMLElement).classList.contains('hc-modal-backdrop')) onClose();
+  };
+
   return (
-    <div className="hc-modal-backdrop" role="dialog" aria-modal="true">
-      <div className="hc-modal">
+    <div className="hc-modal-backdrop" role="dialog" aria-modal="true" onClick={onBackdropClick}>
+      <div className="hc-modal" onClick={(e) => e.stopPropagation()}>
         <header className="hc-modal-header">
           <h3>Contact Support</h3>
           <button className="hc-close" onClick={onClose} aria-label="Close">×</button>

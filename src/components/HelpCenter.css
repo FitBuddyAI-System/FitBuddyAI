@@ -46,12 +46,16 @@
 /* FAQ */
 .hc-faq h2 { margin: 0 0 12px 0; }
 .accordion { display:flex; flex-direction:column; gap:10px; }
-.accordion-item { overflow:hidden; border-radius: 12px; border: 1px solid var(--border-light); background: var(--background-white); }
-.accordion-button { width:100%; text-align:left; padding:14px 16px; background:transparent; border:0; display:flex; align-items:center; gap:12px; font-weight:700; cursor:pointer; }
-.accordion-button .chev { margin-left:auto; transition: transform 220ms cubic-bezier(.2,.9,.25,1); color:var(--text-light); }
-.accordion-item .accordion-panel { padding:0 16px 14px 16px; color:var(--text-medium); font-size:14px; line-height:1.6; max-height:0; transition: max-height 260ms ease; }
-.accordion-item.open .chev { transform: rotate(-180deg); }
-.accordion-item.open .accordion-panel { max-height: 220px; }
+.accordion-item { overflow: hidden; border-radius: 12px; border: 1px solid var(--border-light); background: var(--background-white); }
+.accordion-button { width: 100%; text-align: left; padding: 14px 16px; background: transparent; border: 0; display: flex; align-items: center; gap: 12px; font-weight: 700; cursor: pointer; }
+.accordion-button:focus { outline: none; box-shadow: 0 0 0 3px rgba(30,203,123,0.15); border-radius: 8px; }
+.accordion-button .chev { margin-left: auto; transition: transform 220ms cubic-bezier(.2,.9,.25,1), color 160ms ease; color: var(--text-medium); }
+.accordion-item .accordion-panel { padding: 0 16px; color: var(--text-medium); font-size: 14px; line-height: 1.6; max-height: 0; overflow: hidden; transition: max-height 260ms ease, opacity 200ms ease, padding 200ms ease; opacity: 0; }
+.accordion-item.open .accordion-button .chev { transform: rotate(-180deg); }
+.accordion-item.open .accordion-panel { max-height: 420px; padding: 12px 16px 14px 16px; opacity: 1; }
+
+/* Ensure chevron rotates smoothly and is visually prominent when open */
+.accordion-item .chev { transform-origin: center; }
 
 .guide-actions { display:flex; gap:8px; margin-top:12px; }
 .hc-links { list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:8px; }
