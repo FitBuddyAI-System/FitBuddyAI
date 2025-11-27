@@ -104,7 +104,7 @@
   background: linear-gradient(135deg, #f7f7f7 0%, #e8f5e8 100%);
   padding: 20px;
   position: relative;
-  z-index: 0;
+  z-index: 2; /* keep calendar content above global footer */
 }
 
 body.theme-dark .calendar-page {

@@ -5,7 +5,7 @@
   color:var(--text-medium);
 }
 /* Footer participates in normal document flow so pages can control layout (sticky behavior handled by page containers) */
-.fb-footer{position:relative;padding-left:12px;padding-right:12px}
+.fb-footer{position:relative;padding-left:12px;padding-right:12px;z-index:0}
 .fb-footer-inner{max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
 
 /* Avoid reserving global space for the footer; instead apply padding on pages that include it. */
