@@ -80,6 +80,7 @@ export interface User {
   streak?: number;
   points?: number;
   energy?: number;
+  inventory?: any[];
   workouts?: any[];
 }
 

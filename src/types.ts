@@ -4,6 +4,12 @@ export interface User {
   username: string;
   password?: string;
   avatar?: string;
+  // Optional shop/profile fields
+  energy?: number;
+  maxEnergy?: number;
+  streak?: number;
+  token?: string;
+  inventory?: any[];
 }
 
 export type WorkoutType = 'strength' | 'cardio' | 'flexibility' | 'rest' | 'mixed';
