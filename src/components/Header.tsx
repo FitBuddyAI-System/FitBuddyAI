@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Calendar, User, Flame, Sparkles, Home, ShoppingBag } from 'lucide-react';
+import { Calendar, User, Flame, Sparkles, Home } from 'lucide-react';
 import { loadQuestionnaireProgress, clearUserData, clearQuestionnaireProgress, clearWorkoutPlan } from '../services/localStorage';
 import './Header.css';
 import { backupAndDeleteSensitive } from '../services/cloudBackupService';
@@ -189,14 +189,17 @@ const Header: React.FC<HeaderProps> = ({ profileVersion, userData }) => {
             <span>Chat</span>
           </button>
 
-          <button
-            className={`nav-button ${isActive('/shop') ? 'active' : ''}`}
-            onClick={() => navigate('/shop')}
-            aria-label="Shop"
-          >
-            <span className="shop-mobile-only"><ShoppingBag size={20} /></span>
-            <span>Shop</span>
-          </button>
+          <div className="nav-dropdown">
+            <button className="nav-button" aria-label="Explore">Explore ▾</button>
+            <div className="dropdown-content">
+              <button onClick={() => navigate('/dashboard')}>Dashboard</button>
+              <button onClick={() => navigate('/workouts')}>Workouts</button>
+              <button onClick={() => navigate('/nutrition')}>Nutrition</button>
+              <button onClick={() => navigate('/blog')}>Blog</button>
+              <button onClick={() => navigate('/pricing')}>Pricing</button>
+              <button onClick={() => navigate('/shop')} className="dropdown-shop">Shop</button>
+            </div>
+          </div>
 
           {/* theme toggle removed: theme controlled in footer via selector */}
 
