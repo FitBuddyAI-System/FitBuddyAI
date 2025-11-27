@@ -125,9 +125,29 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
 
   useEffect(() => {
     if (workoutPlan && workoutPlan.dailyWorkouts.length > 0 && !isManualDateChange) {
-      // Parse the start date as local date instead of UTC
-      const [year, month, day] = workoutPlan.startDate.split('-').map(Number);
-      setCurrentDate(new Date(year, month - 1, day));
+      // Parse the start date as local date instead of UTC, but guard against missing/malformed startDate
+      try {
+        if (workoutPlan.startDate && typeof workoutPlan.startDate === 'string' && workoutPlan.startDate.includes('-')) {
+          const parts = workoutPlan.startDate.split('-').map(Number);
+          if (parts.length === 3 && !parts.some(p => Number.isNaN(p))) {
+            const [year, month, day] = parts;
+            setCurrentDate(new Date(year, month - 1, day));
+            return;
+          }
+        }
+        // Fallback: use the first day in the plan if available
+        const first = workoutPlan.dailyWorkouts[0];
+        if (first && first.date && typeof first.date === 'string' && first.date.includes('-')) {
+          const p = first.date.split('-').map(Number);
+          if (p.length === 3 && !p.some(x => Number.isNaN(x))) {
+            setCurrentDate(new Date(p[0], p[1] - 1, p[2]));
+            return;
+          }
+        }
+        // Last resort: keep today's date (already set by useState)
+      } catch (err) {
+        console.warn('Failed to parse workoutPlan start date, using current date:', err);
+      }
     }
   }, [workoutPlan]);
 
@@ -270,9 +290,8 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
   const monthEnd = endOfMonth(currentDate);
   const monthDays = eachDayOfInterval({ start: monthStart, end: monthEnd });
 
-  // Calculate empty cells to align the first and last days of the month
-  const leadingEmptyCells = Array(monthStart.getDay()).fill(null);
-  const trailingEmptyCells = Array((7 - ((monthStart.getDay() + monthDays.length) % 7)) % 7).fill(null);
+  // Determine the weekday index for the first day of the month (0 = Sun .. 6 = Sat)
+  const monthStartIndex = monthStart.getDay();
 
   const formatDate = (dateInput: string | Date) => {
     let date;
@@ -1414,12 +1433,8 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
               {day}
             </div>
           ))}
-          {/* Leading empty cells */}
-          {leadingEmptyCells.map((_, idx) => (
-            <div key={`empty-start-${idx}`} className="calendar-day empty"></div>
-          ))}
-          {/* Calendar days */}
-          {monthDays.map(date => {
+          {/* Calendar days (first day is positioned via start-N class, no placeholder cells needed) */}
+          {monthDays.map((date, idx) => {
             const workout = getWorkoutForDate(date);
             const dateString = format(date, 'yyyy-MM-dd');
             const isToday = isSameDay(date, new Date());
@@ -1439,10 +1454,12 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
               : (workout?.completed ? 100 : 0);
             // render logging removed to reduce noise
             
+            const firstStartClass = idx === 0 ? ` start-${monthStartIndex + 1}` : '';
+
             return (
               <div
                 key={date.toISOString()}
-                className={`calendar-day ${isToday ? 'today' : ''} ${workout ? 'has-workout' : ''} ${isDragOver ? 'drag-over' : ''}` +
+                className={`calendar-day${firstStartClass} ${isToday ? ' today' : ''} ${workout ? ' has-workout' : ''} ${isDragOver ? ' drag-over' : ''}` +
                   (deleteMode ? ' delete-active' : '') +
                   (addMode ? ' add-active' : '') +
                   (isLoading ? ' loading' : '') +
@@ -1519,10 +1536,7 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
               </div>
             );
           })}
-          {/* Trailing empty cells */}
-          {trailingEmptyCells.map((_, idx) => (
-            <div key={`empty-end-${idx}`} className="calendar-day empty"></div>
-          ))}
+          {/* trailing empty cells are no longer necessary because grid placement uses start-N classes */}
         </div>
 
         {/* Legend */}

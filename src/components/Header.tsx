@@ -171,7 +171,7 @@ const Header: React.FC<HeaderProps> = ({ profileVersion, userData }) => {
             className={`nav-button ${isActive('/calendar') ? 'active' : ''}`}
             onClick={() => navigate('/calendar')}
             aria-label="Workout Calendar"
-            disabled={!isSignedIn}
+            title={!isSignedIn ? 'Sign in to save and sync your calendar' : 'Open calendar'}
           >
             <Calendar size={20} />
             <span>Calendar</span>
