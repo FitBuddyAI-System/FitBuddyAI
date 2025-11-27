@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Calendar, User, Flame, Sparkles, Home } from 'lucide-react';
-import { loadQuestionnaireProgress, clearUserData, clearQuestionnaireProgress, clearWorkoutPlan } from '../services/localStorage';
+import { Calendar, User, Flame, Sparkles, Home, Dumbbell } from 'lucide-react';
+import { loadQuestionnaireProgress, clearUserData, clearQuestionnaireProgress, clearWorkoutPlan, loadAssessmentData } from '../services/localStorage';
 import './Header.css';
 import { backupAndDeleteSensitive } from '../services/cloudBackupService';
 
@@ -16,6 +16,9 @@ const Header: React.FC<HeaderProps> = ({ profileVersion, userData }) => {
   const location = useLocation();
 
   const [currentUser, setCurrentUser] = React.useState<any | null>(null);
+  const [exploreOpen, setExploreOpen] = React.useState(false);
+  const exploreRef = React.useRef<HTMLDivElement | null>(null);
+  const [motivationMessage, setMotivationMessage] = React.useState<string | null>(null);
   // Try-on preview state (temporary avatar shown when user tries an avatar)
   const [tryOnAvatar, setTryOnAvatar] = React.useState<string | null>(null);
 
@@ -61,6 +64,64 @@ const Header: React.FC<HeaderProps> = ({ profileVersion, userData }) => {
       clearInterval(interval);
     };
   }, [location.pathname, profileVersion, userData]);
+
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (exploreRef.current && !exploreRef.current.contains(event.target as Node)) {
+        setExploreOpen(false);
+      }
+    };
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setExploreOpen(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, []);
+
+  React.useEffect(() => {
+    setExploreOpen(false);
+  }, [location.pathname]);
+
+  React.useEffect(() => {
+    const name = (() => {
+      const uname = (currentUser as any)?.username?.trim();
+      return uname || 'Friend';
+    })();
+    const resolveMotivation = () => {
+      try {
+        const userMotivation = (currentUser as any)?.motivation;
+        const assessment = loadAssessmentData();
+        const progress = loadQuestionnaireProgress();
+        return (
+          userMotivation ||
+          (assessment && assessment.motivation) ||
+          (progress && (progress as any).answers?.motivation) ||
+          null
+        );
+      } catch {
+        return null;
+      }
+    };
+    const motivation = resolveMotivation();
+    if (!motivation) {
+      setMotivationMessage(`Hello, ${name}! 👋`);
+      return;
+    }
+    const templates = [
+      `Pushing for "${motivation}" today—let's make it count, ${name}!`,
+      `${name}, "${motivation}" is your why. I've lined up steps to match it.`,
+      `Fueled by "${motivation}". I'm ready when you are, ${name}.`,
+      `Keeping "${motivation}" front and center. Let's roll, ${name}!`,
+      `${name}, let's turn "${motivation}" into momentum today.`,
+      `All about "${motivation}"—I'll keep you on track, ${name}.`
+    ];
+    const pick = templates[Math.floor(Math.random() * templates.length)];
+    setMotivationMessage(pick);
+  }, [currentUser, profileVersion]);
 
   // Determine admin status from currentUser or fallback to localStorage / JWT payload
   const isAdmin = React.useMemo(() => {
@@ -129,17 +190,86 @@ const Header: React.FC<HeaderProps> = ({ profileVersion, userData }) => {
   return (
     <header className="app-header">
       <div className="header-container">
-        {/* Page Title */}
-        <div className="page-title centered-title">
-          <h2>{getPageTitle()}</h2>
-          {currentUser && (
-            (() => {
-              const uname = (currentUser as any).username?.trim();
-              const fallbackName = (currentUser as any).username?.trim();
-              const displayName = uname || fallbackName || 'User';
-              return <p className="user-greeting">Hello, {displayName}! 👋</p>;
-            })()
-          )}
+        <div className="header-left">
+          <div className={`explore-launcher nav-dropdown ${exploreOpen ? 'open' : ''}`} ref={exploreRef}>
+            <button
+              className="explore-button"
+              aria-label="Explore"
+              aria-expanded={exploreOpen}
+              aria-haspopup="true"
+              onClick={() => setExploreOpen((open) => !open)}
+            >
+              <span className="explore-menu-lines" aria-hidden="true">
+                <span />
+                <span />
+                <span />
+              </span>
+              <span className="explore-sr-text">Explore menu</span>
+            </button>
+            <div className="explore-backdrop" aria-hidden="true" onClick={() => setExploreOpen(false)} />
+            <div className="dropdown-content explore-dropdown explore-drawer">
+              <div className="explore-profile">
+                <img
+                  src={tryOnAvatar || (currentUser && currentUser.avatar && currentUser.avatar.trim() ? currentUser.avatar : "/images/fitbuddy_head.png")}
+                  alt="Profile"
+                  className="explore-profile-image"
+                  onClick={() => { setExploreOpen(false); navigate(isSignedIn ? '/profile' : '/signin'); }}
+                />
+                <div className="explore-profile-text">
+                  <div className="explore-profile-name">
+                    {isSignedIn ? (((currentUser?.username && currentUser.username.trim()) || 'User')) : 'Sign in to personalize'}
+                  </div>
+                  {isSignedIn && (
+                    <div className="explore-profile-counters">
+                      <div className="header-counter streak">
+                        <Flame size={18} color="#ffb347" style={{ marginRight: 4 }} />
+                        <span className="counter-value">{currentUser?.streak ?? 0}</span>
+                      </div>
+                      <div className="header-counter energy">
+                        <Sparkles size={18} color="#1e90cb" style={{ marginRight: 4 }} />
+                        <span className="counter-value">{currentUser?.energy ?? 0}</span>
+                      </div>
+                    </div>
+                  )}
+                  <div className="explore-profile-actions">
+                    <button onClick={() => { setExploreOpen(false); navigate(isSignedIn ? '/profile' : '/signin'); }}>
+                      {isSignedIn ? 'View Profile' : 'Sign In'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <button onClick={() => { setExploreOpen(false); navigate('/?intro=0'); }}>Home</button>
+              <button onClick={() => { setExploreOpen(false); navigate('/workouts'); }}>Workouts</button>
+              <button onClick={() => { setExploreOpen(false); navigate('/questionnaire'); }}>Assessment</button>
+              <button onClick={() => { setExploreOpen(false); navigate('/calendar'); }}>Calendar</button>
+              <button
+                onClick={() => {
+                  try { window.dispatchEvent(new CustomEvent('fitbuddyai-open-chat')); } catch {}
+                  setExploreOpen(false);
+                  navigate('/chat');
+                }}
+              >
+                Chat
+              </button>
+              <button onClick={() => { setExploreOpen(false); navigate('/nutrition'); }}>Nutrition</button>
+              <button onClick={() => { setExploreOpen(false); navigate('/blog'); }}>Blog</button>
+              <button onClick={() => { setExploreOpen(false); navigate('/pricing'); }}>Pricing</button>
+              <button onClick={() => { setExploreOpen(false); navigate('/shop'); }} className="dropdown-shop">Shop</button>
+              {isSignedIn && (
+                <div className="explore-footer">
+                  <button onClick={() => { setExploreOpen(false); navigate('/profile/settings'); }}>Settings</button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Page Title */}
+          <div className="page-title centered-title">
+            <h2>{getPageTitle()}</h2>
+            {currentUser && motivationMessage && (
+              <p className="user-greeting">{motivationMessage}</p>
+            )}
+          </div>
         </div>
 
         {/* Navigation */}
@@ -188,18 +318,6 @@ const Header: React.FC<HeaderProps> = ({ profileVersion, userData }) => {
             <span className="sparkles-mobile-only"><Sparkles size={20} /></span>
             <span>Chat</span>
           </button>
-
-          <div className="nav-dropdown">
-            <button className="nav-button" aria-label="Explore">Explore ▾</button>
-            <div className="dropdown-content">
-              <button onClick={() => navigate('/dashboard')}>Dashboard</button>
-              <button onClick={() => navigate('/workouts')}>Workouts</button>
-              <button onClick={() => navigate('/nutrition')}>Nutrition</button>
-              <button onClick={() => navigate('/blog')}>Blog</button>
-              <button onClick={() => navigate('/pricing')}>Pricing</button>
-              <button onClick={() => navigate('/shop')} className="dropdown-shop">Shop</button>
-            </div>
-          </div>
 
           {/* theme toggle removed: theme controlled in footer via selector */}
 

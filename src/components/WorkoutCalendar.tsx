@@ -323,6 +323,21 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
         console.warn('Failed to populate missing rest days from weeklyStructure:', err);
       }
 
+      // Enforce that Rest days never mix with other categories
+      updatedWorkouts = updatedWorkouts.map(workout => {
+        const normalizedTypes = resolveWorkoutTypes(workout);
+        const normalizedCompletedTypes = Array.isArray(workout.completedTypes)
+          ? workout.completedTypes.filter(t => normalizedTypes.includes(t))
+          : [];
+        return {
+          ...workout,
+          type: (normalizedTypes[0] || workout.type || 'mixed') as WorkoutType,
+          types: normalizedTypes,
+          completedTypes: normalizedCompletedTypes,
+          completed: normalizedTypes.length > 0 ? normalizedCompletedTypes.length === normalizedTypes.length : !!workout.completed
+        };
+      });
+
       if (JSON.stringify(updatedWorkouts) !== JSON.stringify(workoutPlan.dailyWorkouts)) {
         // Persist normalized plan immediately so UI reflects rest-days for empty/mixed or missing entries
         const normalizedPlan = { ...workoutPlan, dailyWorkouts: updatedWorkouts, totalDays: updatedWorkouts.length };
@@ -358,6 +373,22 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
   // Determine the weekday index for the first day of the month (0 = Sun .. 6 = Sat)
   const monthStartIndex = monthStart.getDay();
 
+  const normalizeTypesExclusiveRest = (typesInput: (WorkoutType | string | null | undefined)[]): WorkoutType[] => {
+    const filtered = (typesInput || []).filter(Boolean) as WorkoutType[];
+    const unique = Array.from(new Set(filtered)) as WorkoutType[];
+    if (unique.includes('rest') && unique.length > 1) {
+      return ['rest'];
+    }
+    return unique.slice(0, 4) as WorkoutType[];
+  };
+
+  const mergeTypesWithRestGuard = (existingTypes: WorkoutType[], incomingType: WorkoutType): WorkoutType[] => {
+    const normalizedExisting = normalizeTypesExclusiveRest(existingTypes);
+    if (normalizedExisting.includes('rest')) return ['rest'];
+    if (incomingType === 'rest') return ['rest'];
+    return normalizeTypesExclusiveRest([...normalizedExisting, incomingType]);
+  };
+
   const formatDate = (dateInput: string | Date) => {
     let date;
     if (typeof dateInput === 'string') {
@@ -385,7 +416,7 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
     const raw = (workout as any)?.types;
     const types = Array.isArray(raw) ? raw.filter(Boolean) : [];
     if (types.length === 0 && workout.type) types.push(workout.type);
-    return Array.from(new Set(types)).slice(0, 4) as WorkoutType[];
+    return normalizeTypesExclusiveRest(types as WorkoutType[]);
   };
 
   const getPrimaryType = (workout: DayWorkout): WorkoutType => {
@@ -909,9 +940,11 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
           let dateStrLocal = parsedDate;
           try { if (parsedDate.includes('T')) dateStrLocal = format(new Date(parsedDate), 'yyyy-MM-dd'); } catch (err) { dateStrLocal = targetDate; }
           dateStrLocal = targetDate;
-          const normalizedTypes = Array.isArray(day?.types) && day?.types.length
-            ? day.types.slice(0, 4)
-            : [((day?.type || 'mixed') as WorkoutType)];
+          const normalizedTypes = normalizeTypesExclusiveRest(
+            Array.isArray(day?.types) && day?.types.length
+              ? day.types.slice(0, 4)
+              : [((day?.type || 'mixed') as WorkoutType)]
+          );
           const workoutsArr = Array.isArray(day?.workouts) ? day.workouts : (Array.isArray(day?.exercises) ? day.exercises : []);
           const altArr = Array.isArray(day?.alternativeWorkouts) ? day.alternativeWorkouts : (Array.isArray(day?.alternativeExercises) ? day.alternativeExercises : []);
           return {
@@ -1006,10 +1039,11 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
 
     const generatedPlan = await generateWorkoutPlan(userDataWithPreferences, {}, []);
 
+    const normalizedTypes = normalizeTypesExclusiveRest([((workoutType || 'mixed') as WorkoutType)]);
     const newWorkout: DayWorkout = {
       date: dateString,
-      type: (workoutType || 'mixed') as 'strength' | 'cardio' | 'flexibility' | 'rest' | 'mixed',
-      types: [((workoutType || 'mixed') as WorkoutType)],
+      type: (normalizedTypes[0] || 'mixed') as 'strength' | 'cardio' | 'flexibility' | 'rest' | 'mixed',
+      types: normalizedTypes,
       workouts: generatedPlan.dailyWorkouts[0]?.workouts || [],
       alternativeWorkouts: [],
       completed: false
@@ -1130,9 +1164,10 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
         const workoutsArr = Array.isArray(day?.workouts) ? day.workouts : (Array.isArray(day?.exercises) ? day.exercises : []);
         const altArr = Array.isArray(day?.alternativeWorkouts) ? day.alternativeWorkouts : (Array.isArray(day?.alternativeExercises) ? day.alternativeExercises : []);
 
-        const normalizedTypes = Array.isArray((day as any)?.types) && (day as any)?.types.length
+        const rawTypes = Array.isArray((day as any)?.types) && (day as any)?.types.length
           ? (day as any).types.slice(0, 4)
           : resolveWorkoutTypes(workout);
+        const normalizedTypes = normalizeTypesExclusiveRest(rawTypes as WorkoutType[]);
 
         return {
           date: dateStr,
@@ -1239,9 +1274,11 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
         [] // No existing workouts for a new day
       );
 
-      const normalizedTypes = Array.isArray((newDay as any)?.types) && (newDay as any)?.types.length
-        ? (newDay as any).types.slice(0, 4)
-        : [selectedWorkoutType];
+      const normalizedTypes = normalizeTypesExclusiveRest(
+        Array.isArray((newDay as any)?.types) && (newDay as any)?.types.length
+          ? (newDay as any).types.slice(0, 4)
+          : [selectedWorkoutType]
+      );
       const normalizedNewDay: DayWorkout = {
         ...(newDay as any),
         type: ((normalizedTypes[0] || selectedWorkoutType) as WorkoutType),
@@ -1432,7 +1469,7 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
       const existingTarget = workoutPlan.dailyWorkouts.find(d => d.date === targetDateString);
         // If a workout already exists on this date, just append the type (up to 4) instead of replacing the day
         if (existingTarget) {
-          const mergedTypes = Array.from(new Set([...resolveWorkoutTypes(existingTarget), typeForAI])).slice(0, 4) as WorkoutType[];
+          const mergedTypes = mergeTypesWithRestGuard(resolveWorkoutTypes(existingTarget), typeForAI as WorkoutType);
           const mergedCompletedTypes = (existingTarget.completedTypes || []).filter(t => mergedTypes.includes(t));
           const merged: DayWorkout = {
             ...existingTarget,
@@ -1471,9 +1508,11 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
           []
         );
 
-        const normalizedTypes = Array.isArray((newDayRaw as any)?.types) && (newDayRaw as any)?.types.length
-          ? (newDayRaw as any).types.slice(0, 4)
-          : [typeForAI];
+        const normalizedTypes = normalizeTypesExclusiveRest(
+          Array.isArray((newDayRaw as any)?.types) && (newDayRaw as any)?.types.length
+            ? (newDayRaw as any).types.slice(0, 4)
+            : [typeForAI]
+        );
         const normalizedDay: DayWorkout = {
           date: targetDateString,
           type: ((normalizedTypes[0] || (newDayRaw as any)?.type || typeForAI) as WorkoutType),

@@ -100,6 +100,7 @@
 }
 
 .calendar-page {
+  --calendar-day-height: 150px;
   min-height: calc(100vh - 60px);
   background: linear-gradient(135deg, #f7f7f7 0%, #e8f5e8 100%);
   padding: 20px;
@@ -401,7 +402,7 @@ body.theme-dark .batch-add-panel textarea {
 
 .calendar-day {
   background: white;
-  min-height: 120px;
+  min-height: var(--calendar-day-height);
   padding: 12px;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -510,8 +511,8 @@ body.theme-dark .calendar-day.streak-complete .workout-indicator {
   border: none;
   cursor: default;
   pointer-events: none;
-  min-height: 0;
-  padding: 0;
+  min-height: var(--calendar-day-height);
+  padding: 12px;
 }
 
 /* Place the first day into the correct weekday column using a small set of utility classes
@@ -526,16 +527,18 @@ body.theme-dark .calendar-day.streak-complete .workout-indicator {
 
 /* Tablet: slightly smaller cells and tighter spacing */
 @media (max-width: 1024px) {
+  .calendar-page { --calendar-day-height: 96px; }
   .calendar-header { flex-direction: column; align-items: stretch; gap: 12px; }
   .user-info p { max-width: 100%; }
   .calendar-grid { gap: 1px; border-radius: 12px; }
-  .calendar-day { min-height: 96px; padding: 8px; }
+  .calendar-day { padding: 8px; }
   .month-year { font-size: 22px; min-width: 160px; }
   .nav-button { width: 44px; height: 44px; }
 }
 
 /* Mobile: compact calendar, icon-only nav, stacked layout */
 @media (max-width: 480px) {
+  .calendar-page { --calendar-day-height: 58px; }
   .calendar-page { padding: 8px; }
   .calendar-header { margin-bottom: 12px; gap: 6px; }
   .user-info h1 { font-size: 18px; }
@@ -543,7 +546,7 @@ body.theme-dark .calendar-day.streak-complete .workout-indicator {
   /* Use fully flexible columns on tiny screens to avoid horizontal scrolling */
   .calendar-grid { grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 1px; overflow-x: hidden; }
   .day-header { padding: 6px 3px; font-size: 10px; }
-  .calendar-day { min-height: 58px; padding: 4px; }
+  .calendar-day { padding: 4px; }
   .day-number { font-size: 11px; }
   .workout-indicator { padding: 6px; font-size: 11px; }
   .calendar-nav { gap: 10px; margin-bottom: 12px; }
@@ -555,6 +558,7 @@ body.theme-dark .calendar-day.streak-complete .workout-indicator {
 
 /* Ultra-compact for small phones (iPhone SE ~375px) */
 @media (max-width: 375px) {
+  .calendar-page { --calendar-day-height: 42px; }
   .calendar-container { padding: 0 2px; }
   .calendar-header { gap: 4px; margin-bottom: 8px; }
   .calendar-nav { gap: 6px; }
@@ -562,7 +566,7 @@ body.theme-dark .calendar-day.streak-complete .workout-indicator {
   /* hide weekday labels to save horizontal space on very small phones */
   .day-header { display: none; }
   /* shrink cells further so the grid can fully fit the viewport */
-  .calendar-day { min-height: 42px; padding: 2px; }
+  .calendar-day { padding: 2px; }
   .day-number { font-size: 9px; }
   .workout-indicator { padding: 3px; font-size: 10px; }
   /* hide secondary duration text to save space */
