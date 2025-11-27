@@ -1,6 +1,6 @@
 import WelcomePage from './components/WelcomePage';
 import Questionnaire from './components/Questionnaire';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';
 import WorkoutCalendar from './components/WorkoutCalendar';
 import AgreementGuard from './components/AgreementGuard';
 import { useState, useEffect } from 'react';
@@ -41,6 +41,7 @@ function App() {
   const [planVersion, setPlanVersion] = useState(0);
   const navigate = useNavigate();
   const [profileVersion, setProfileVersion] = useState(0);
+  const [isHydratingUser, setIsHydratingUser] = useState(true);
   // themeMode: 'auto' | 'light' | 'dark'
   const [themeMode, setThemeMode] = useState<'auto' | 'light' | 'dark'>(() => {
     if (typeof window === 'undefined') return 'auto';
@@ -214,27 +215,36 @@ function App() {
 
   // Load saved data on startup and always fetch user from server if logged in
   useEffect(() => {
-    const savedUserData = loadUserData();
-    const savedWorkoutPlan = loadWorkoutPlan();
-  console.log('App startup - loadUserData ->', savedUserData);
-  console.log('App startup - loadWorkoutPlan ->', savedWorkoutPlan);
-    if (savedUserData) {
-      setUserData(savedUserData);
-      // Fetch latest from server
-      if (savedUserData.id) {
-        fetchUserById(savedUserData.id).then(freshUser => {
-          if (freshUser) setUserData(freshUser);
-        });
+    let cancelled = false;
+    (async () => {
+      const savedUserData = loadUserData();
+      const savedWorkoutPlan = loadWorkoutPlan();
+      console.log('App startup - loadUserData ->', savedUserData);
+      console.log('App startup - loadWorkoutPlan ->', savedWorkoutPlan);
+      if (!cancelled && savedUserData) {
+        setUserData(savedUserData);
+        if (savedUserData.id) {
+          try {
+            const freshUser = await fetchUserById(savedUserData.id);
+            if (!cancelled && freshUser) setUserData(freshUser);
+          } catch (e) {
+            // ignore fetch failure, keep saved data
+          }
+        }
       }
-    }
-    if (savedWorkoutPlan) {
-  setWorkoutPlan(savedWorkoutPlan);
-  setPlanVersion(v => v + 1);
-    }
+      if (!cancelled && savedWorkoutPlan) {
+        setWorkoutPlan(savedWorkoutPlan);
+        setPlanVersion(v => v + 1);
+      }
+      if (!cancelled) setIsHydratingUser(false);
+    })();
+    return () => { cancelled = true; };
   }, []);
 
   // Save data when it changes, but do not save if userData is null (prevents refresh after logout)
   useEffect(() => {
+    // Avoid clearing persisted session while we are still hydrating from storage
+    if (isHydratingUser) return;
     if (userData) {
       // Save local userData without triggering the cloud backup scheduler.
       // Cloud backups for chat are triggered explicitly from appendChatMessage to avoid
@@ -245,7 +255,7 @@ function App() {
       // (defensive, in case logout event missed)
       clearUserData();
     }
-  }, [userData]);
+  }, [userData, isHydratingUser]);
 
   useEffect(() => {
     if (workoutPlan) {
@@ -294,33 +304,55 @@ function App() {
         <Route 
           path="/questionnaire" 
           element={
-            <Questionnaire 
-              onComplete={(data, plan) => {
-                setUserData(data);
-                // use wrapper to ensure calendar re-renders when plan is set
-                setWorkoutPlan(plan);
-                setPlanVersion(v => v + 1);
-                navigate('/calendar');
-              }} 
-            />
+            userData?.id
+              ? (
+                <Questionnaire 
+                  onComplete={(data, plan) => {
+                    setUserData(data);
+                    // use wrapper to ensure calendar re-renders when plan is set
+                    setWorkoutPlan(plan);
+                    setPlanVersion(v => v + 1);
+                    navigate('/calendar');
+                  }} 
+                />
+              )
+              : (isHydratingUser ? <LoadingPage /> : <Navigate to="/signin" replace />)
           } 
         />
         <Route 
           path="/calendar" 
           element={
-            <AgreementGuard userData={userData}>
-              <WorkoutCalendar 
-                key={planVersion}
-                workoutPlan={workoutPlan}
-                userData={userData}
-                onUpdatePlan={(plan) => { setWorkoutPlan(plan); setPlanVersion(v => v + 1); }}
-              />
-            </AgreementGuard>
+            userData?.id
+              ? (
+                <AgreementGuard userData={userData}>
+                  <WorkoutCalendar 
+                    key={planVersion}
+                    workoutPlan={workoutPlan}
+                    userData={userData}
+                    onUpdatePlan={(plan) => { setWorkoutPlan(plan); setPlanVersion(v => v + 1); }}
+                  />
+                </AgreementGuard>
+              )
+              : (
+                isHydratingUser
+                  ? <LoadingPage />
+                  // If not signed in, still allow preview calendar (component handles guest fallback)
+                  : <WorkoutCalendar 
+                      key={planVersion}
+                      workoutPlan={workoutPlan}
+                      userData={userData}
+                      onUpdatePlan={(plan) => { setWorkoutPlan(plan); setPlanVersion(v => v + 1); }}
+                    />
+              )
           } 
         />
         <Route 
           path="/shop"
-          element={<ShopPage user={userData || { energy: 0, inventory: [] }} onPurchase={handleShopPurchase} />} 
+          element={
+            userData?.id
+              ? <ShopPage user={userData || { energy: 0, inventory: [] }} onPurchase={handleShopPurchase} />
+              : (isHydratingUser ? <LoadingPage /> : <Navigate to="/signin" replace />)
+          } 
         />
   <Route path="/chat" element={<AgreementGuard userData={userData}><GeminiChatPage userData={userData} /></AgreementGuard>} />
   <Route path="/admin" element={<AdminPage />} />

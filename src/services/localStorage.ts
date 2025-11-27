@@ -13,11 +13,13 @@ export interface QuestionnaireProgress {
 const STORAGE_KEYS = {
   QUESTIONNAIRE_PROGRESS: 'fitbuddyai_questionnaire_progress',
   USER_DATA: 'fitbuddyai_user_data',
+  USER_DATA_PERSISTED: 'fitbuddyai_user_data_persisted',
   ASSESSMENT_DATA: 'fitbuddyai_assessment_data',
   WORKOUT_PLAN: 'fitbuddyai_workout_plan'
 };
 const AUTH_KEYS = {
-  TOKEN: 'fitbuddyai_token'
+  TOKEN: 'fitbuddyai_token',
+  TOKEN_PERSISTED: 'fitbuddyai_token_persisted'
 };
 // Auto-backup: import cloud backup helper and provide a debounced scheduler
 import { backupUserDataToServer } from './cloudBackupService';
@@ -184,6 +186,8 @@ export const saveUserData = (userData: any, opts?: { skipBackup?: boolean }): vo
     const payload = { ...toStore, timestamp: Date.now() };
     // Persist unified user payload in sessionStorage only (do not store sensitive user payload in localStorage)
     try { sessionStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(payload)); } catch {}
+    // Also persist a non-sensitive copy in localStorage so reloads can restore the session
+    try { localStorage.setItem(STORAGE_KEYS.USER_DATA_PERSISTED, JSON.stringify(payload)); } catch {}
     // Broadcast to other tabs so they can sync via BroadcastChannel
     try {
       const bc = new BroadcastChannel('fitbuddyai');
@@ -202,7 +206,15 @@ export const saveUserData = (userData: any, opts?: { skipBackup?: boolean }): vo
 
 export const loadUserData = (): any | null => {
   try {
-    const saved = sessionStorage.getItem(STORAGE_KEYS.USER_DATA);
+    let saved = sessionStorage.getItem(STORAGE_KEYS.USER_DATA);
+    // If sessionStorage is empty, fall back to persisted localStorage copy and rehydrate sessionStorage
+    if (!saved) {
+      const persisted = localStorage.getItem(STORAGE_KEYS.USER_DATA_PERSISTED);
+      if (persisted) {
+        saved = persisted;
+        try { sessionStorage.setItem(STORAGE_KEYS.USER_DATA, persisted); } catch {}
+      }
+    }
     if (!saved) return null;
     
     const { data, timestamp } = JSON.parse(saved);
@@ -224,7 +236,9 @@ export const loadUserData = (): any | null => {
 export const clearUserData = (): void => {
   try {
     try { sessionStorage.removeItem(STORAGE_KEYS.USER_DATA); } catch {}
+    try { localStorage.removeItem(STORAGE_KEYS.USER_DATA_PERSISTED); } catch {}
     try { sessionStorage.removeItem(AUTH_KEYS.TOKEN); } catch {}
+    try { localStorage.removeItem(AUTH_KEYS.TOKEN_PERSISTED); } catch {}
     // No user -> nothing to back up, but clear any pending timer
     if (backupTimeout) {
       clearTimeout(backupTimeout);
@@ -237,11 +251,13 @@ export const clearUserData = (): void => {
   }
 };
 
-// Auth token helpers (store token in sessionStorage — not persisted across browser restarts)
+// Auth token helpers (sessionStorage first, with a time-limited persisted fallback)
 export const saveAuthToken = (token: string | null) => {
   try {
     if (!token) return;
     sessionStorage.setItem(AUTH_KEYS.TOKEN, String(token));
+    // Persist token with timestamp for reload recovery (expire alongside user profile)
+    localStorage.setItem(AUTH_KEYS.TOKEN_PERSISTED, JSON.stringify({ token, timestamp: Date.now() }));
   } catch (e) {
     // ignore
   }
@@ -251,6 +267,17 @@ export const getAuthToken = (): string | null => {
   try {
     const t = sessionStorage.getItem(AUTH_KEYS.TOKEN);
     if (t) return t;
+    // Fallback to persisted token if still fresh (<= 7 days)
+    const persisted = localStorage.getItem(AUTH_KEYS.TOKEN_PERSISTED);
+    if (persisted) {
+      const parsed = safeParseStored<{ token: string; timestamp: number }>(persisted);
+      if (parsed?.token && parsed.timestamp && (Date.now() - parsed.timestamp) <= 7 * 24 * 60 * 60 * 1000) {
+        try { sessionStorage.setItem(AUTH_KEYS.TOKEN, parsed.token); } catch {}
+        return parsed.token;
+      }
+      // expired persisted token should be cleared
+      try { localStorage.removeItem(AUTH_KEYS.TOKEN_PERSISTED); } catch {}
+    }
     return null;
   } catch (e) {
     return null;

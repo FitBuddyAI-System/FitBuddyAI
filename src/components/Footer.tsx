@@ -16,7 +16,7 @@ export default function Footer({ themeMode = 'auto', onChangeThemeMode }: Footer
           <div className="fb-logo"><Dumbbell size={28} color="#fff" /></div>
           <div>
             <h4>FitBuddyAI</h4>
-            <p className="muted">Your friendly AI fitness companion</p>
+            <p className="muted">Your friendly AI Fitness Companion</p>
           </div>
         </div>
 

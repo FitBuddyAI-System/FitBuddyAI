@@ -243,6 +243,14 @@ body.theme-dark .batch-add-panel textarea {
   max-width: 500px;
 }
 
+.card-box {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px var(--shadow-light);
+  border: 1px solid var(--border-light);
+  padding: 18px 20px;
+}
+
 .progress-stats {
   display: flex;
   align-items: center;
@@ -1635,6 +1643,9 @@ body.theme-dark .loader-overlay {
   font-weight: 500;
   color: var(--text-dark, #222);
   cursor: grab;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
   user-select: none;
 }
 .legend-item:active { cursor: grabbing; }

@@ -14,11 +14,11 @@
 }
 
 .dots-canvas.dots-ready {
-  opacity: 0.9;
+  opacity: 1;
 }
 
 body.theme-dark .dots-canvas.dots-ready {
-  opacity: 0.82;
+  opacity: 0.94;
 }
 
 body.theme-dark .dots-canvas {

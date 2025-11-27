@@ -79,7 +79,8 @@ const BackgroundDots: React.FC = () => {
         ctx.moveTo(d.x + d.r, d.y);
         ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
       }
-      ctx.fillStyle = 'rgba(20, 120, 80, 0.26)'; // darker alpha to make dots more visible
+      // Brighter, slightly more opaque dots for better visibility
+      ctx.fillStyle = 'rgba(30, 200, 130, 0.38)';
       ctx.fill();
       if (!oneShot) rafRef.current = requestAnimationFrame(loop);
     };
