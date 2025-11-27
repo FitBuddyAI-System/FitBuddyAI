@@ -634,18 +634,18 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
     return completedTypes.length === types.length || !!workout.completed;
   };
 
-  const computeStreak = (dailyWorkouts: DayWorkout[]): number => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+  const computeStreak = (dailyWorkouts: DayWorkout[], targetDate?: Date): number => {
+    const target = targetDate ? new Date(targetDate) : new Date();
+    target.setHours(0, 0, 0, 0);
     const formatDay = (d: Date) => format(d, 'yyyy-MM-dd');
     const workoutMap = new Map(dailyWorkouts.map(w => [w.date, w]));
-    const todayWorkout = workoutMap.get(formatDay(today));
-    if (!isWorkoutCompleteForStreak(todayWorkout)) return 0;
+    const dayWorkout = workoutMap.get(formatDay(target));
+    if (!isWorkoutCompleteForStreak(dayWorkout)) return 0;
 
     let streak = 1;
     for (let offset = 1; offset < 365; offset++) {
-      const prev = new Date(today);
-      prev.setDate(today.getDate() - offset);
+      const prev = new Date(target);
+      prev.setDate(target.getDate() - offset);
       const prevKey = formatDay(prev);
       const prevWorkout = workoutMap.get(prevKey);
       if (!isWorkoutCompleteForStreak(prevWorkout)) break;
@@ -1742,7 +1742,7 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
             // render logging removed to reduce noise
             const totalDurationLabel = workout ? getWorkoutDuration(workout) : null;
             const isStreakCompleteDay = workout ? isWorkoutCompleteForStreak(workout) : false;
-            const cellStreak = isStreakCompleteDay ? computeStreak(workoutPlan.dailyWorkouts) : 0;
+            const cellStreak = isStreakCompleteDay ? computeStreak(workoutPlan.dailyWorkouts, date) : 0;
             
             const firstStartClass = idx === 0 ? ` start-${monthStartIndex + 1}` : '';
 
