@@ -292,7 +292,7 @@ const questions: Question[] = [
   }
 ];
 
-const MenuScreen: React.FC<{ onRegenerate: () => void; onEditResponses: () => void }> = ({ onRegenerate, onEditResponses }) => {
+const MenuScreen: React.FC<{ onRegenerate: () => void; onEditResponses: () => void; onGoToCalendar: () => void }> = ({ onRegenerate, onEditResponses, onGoToCalendar }) => {
 
   return (
     <div className="menu-screen">
@@ -309,6 +309,11 @@ const MenuScreen: React.FC<{ onRegenerate: () => void; onEditResponses: () => vo
           <button className="btn btn-primary menu-btn menu-btn--large" onClick={() => onRegenerate()}>
             <RefreshCw size={18} />
             <span>Regenerate Plan</span>
+          </button>
+
+          <button className="btn btn-outline menu-btn menu-btn--large menu-btn--alt" onClick={() => onGoToCalendar()}>
+            <Calendar size={18} />
+            <span>Go to Calendar</span>
           </button>
 
           <button className="btn btn-outline menu-btn menu-btn--alt" onClick={() => onEditResponses()}>
@@ -1141,6 +1146,10 @@ const Questionnaire: React.FC<QuestionnaireProps> = ({ onComplete }) => {
     console.log('Questionnaire reset to allow editing of responses');
   };
 
+  const handleGoToCalendar = () => {
+    navigate('/calendar');
+  };
+
   // Menu screen for completed questionnaire
   const [isMenuVisible, setIsMenuVisible] = useState(false);
 
@@ -1357,7 +1366,7 @@ const Questionnaire: React.FC<QuestionnaireProps> = ({ onComplete }) => {
   }
 
   if (isMenuVisible) {
-    return <MenuScreen onRegenerate={handleRegenerate} onEditResponses={handleEditResponses} />;
+    return <MenuScreen onRegenerate={handleRegenerate} onEditResponses={handleEditResponses} onGoToCalendar={handleGoToCalendar} />;
   }
 
   if (isCompleted && showCompletionOptions) {

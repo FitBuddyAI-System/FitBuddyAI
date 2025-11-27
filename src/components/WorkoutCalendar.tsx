@@ -57,6 +57,9 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
   const [deleteMode, setDeleteMode] = useState(false);
   const [selectedForDeletion, setSelectedForDeletion] = useState<string[]>([]);
   const previewPlanSeededRef = useRef(false);
+  // Track whether we already auto-filled rest days for the current plan to avoid undoing user edits
+  const restAutofillDoneRef = useRef<boolean>(false);
+  const restAutofillPlanRef = useRef<string | null>(null);
   const guestUserData: UserData = {
     username: 'Guest',
     age: 28,
@@ -210,13 +213,22 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
 
   useEffect(() => {
     if (!workoutPlan) return;
-    rewardCompletedPastDays(workoutPlan.dailyWorkouts);
+    const maybeUpdated = rewardCompletedPastDays(workoutPlan.dailyWorkouts);
+    const workoutsForStreak = Array.isArray(maybeUpdated) && maybeUpdated.length ? maybeUpdated : workoutPlan.dailyWorkouts;
+    updateStreakCounter(workoutsForStreak);
   }, [workoutPlan]);
 
   useEffect(() => {}, []);
 
   useEffect(() => {
     if (workoutPlan) {
+      const currentPlanId = workoutPlan.id || 'default-plan';
+      // Reset autofill flag when a new plan is loaded
+      if (restAutofillPlanRef.current !== currentPlanId) {
+        restAutofillPlanRef.current = currentPlanId;
+        restAutofillDoneRef.current = false;
+      }
+
       // 1) Normalize any 'mixed' entries that are empty -> convert to explicit rest days
       let updatedWorkouts = workoutPlan.dailyWorkouts.map(workout => {
         const hasNoExercises = !workout.workouts || workout.workouts.length === 0;
@@ -242,52 +254,57 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
       });
 
       // 2) If the plan defines a weeklyStructure, ensure missing 'Rest' days are present
-      try {
-        const pattern = Array.isArray(workoutPlan.weeklyStructure) ? workoutPlan.weeklyStructure : [];
-        const totalDays = typeof workoutPlan.totalDays === 'number' && workoutPlan.totalDays > 0
-          ? workoutPlan.totalDays
-          : (workoutPlan.dailyWorkouts ? workoutPlan.dailyWorkouts.length : 0);
+      // Only run once per plan load so user-removed rest days stay removed
+      if (!restAutofillDoneRef.current) {
+        try {
+          const pattern = Array.isArray(workoutPlan.weeklyStructure) ? workoutPlan.weeklyStructure : [];
+          const totalDays = typeof workoutPlan.totalDays === 'number' && workoutPlan.totalDays > 0
+            ? workoutPlan.totalDays
+            : (workoutPlan.dailyWorkouts ? workoutPlan.dailyWorkouts.length : 0);
 
-        if (workoutPlan.startDate && totalDays > 0 && pattern.length === 7) {
-          const startParts = workoutPlan.startDate.split('-').map(Number);
-          if (startParts.length === 3) {
-            const start = new Date(startParts[0], startParts[1] - 1, startParts[2]);
-            // build a set of existing dates for quick lookup
-            const existingDates = new Set((updatedWorkouts || []).map(w => w.date));
+          if (workoutPlan.startDate && totalDays > 0 && pattern.length === 7) {
+            const startParts = workoutPlan.startDate.split('-').map(Number);
+            if (startParts.length === 3) {
+              const start = new Date(startParts[0], startParts[1] - 1, startParts[2]);
+              // build a set of existing dates for quick lookup
+              const existingDates = new Set((updatedWorkouts || []).map(w => w.date));
 
-            for (let i = 0; i < totalDays; i++) {
-              const d = new Date(start.getTime());
-              d.setDate(start.getDate() + i);
-              const dateStr = format(d, 'yyyy-MM-dd');
-              const patternIndex = i % 7;
-              const slot = (pattern[patternIndex] || '').toString().toLowerCase();
-              if (slot.includes('rest')) {
-                // if there's no existing entry for this date, insert a Rest Day
-                if (!existingDates.has(dateStr)) {
-                  const restWorkout = {
-                    date: dateStr,
-                    workouts: [{
-                      name: 'Rest Day',
-                      description: 'Take a well-deserved break and let your body recover.',
-                      duration: '0 min',
-                      difficulty: 'beginner',
-                      muscleGroups: []
-                    }],
-                    alternativeWorkouts: [],
-                    completed: false,
-                    type: 'rest'
-                  } as any;
-                  // 1 in 1,000,000 chance to convert this rest day into a rickroll rest day
-                  if (Math.random() < 1 / 1000000) restWorkout.isRickroll = true;
-                  updatedWorkouts = [...updatedWorkouts, restWorkout];
-                  existingDates.add(dateStr);
+              for (let i = 0; i < totalDays; i++) {
+                const d = new Date(start.getTime());
+                d.setDate(start.getDate() + i);
+                const dateStr = format(d, 'yyyy-MM-dd');
+                const patternIndex = i % 7;
+                const slot = (pattern[patternIndex] || '').toString().toLowerCase();
+                if (slot.includes('rest')) {
+                  // if there's no existing entry for this date, insert a Rest Day
+                  if (!existingDates.has(dateStr)) {
+                    const restWorkout = {
+                      date: dateStr,
+                      workouts: [{
+                        name: 'Rest Day',
+                        description: 'Take a well-deserved break and let your body recover.',
+                        duration: '0 min',
+                        difficulty: 'beginner',
+                        muscleGroups: []
+                      }],
+                      alternativeWorkouts: [],
+                      completed: false,
+                      type: 'rest'
+                    } as any;
+                    // 1 in 1,000,000 chance to convert this rest day into a rickroll rest day
+                    if (Math.random() < 1 / 1000000) restWorkout.isRickroll = true;
+                    updatedWorkouts = [...updatedWorkouts, restWorkout];
+                    existingDates.add(dateStr);
+                  }
                 }
               }
             }
           }
+        } catch (err) {
+          console.warn('Failed to populate missing rest days from weeklyStructure:', err);
+        } finally {
+          restAutofillDoneRef.current = true;
         }
-      } catch (err) {
-        console.warn('Failed to populate missing rest days from weeklyStructure:', err);
       }
 
       if (JSON.stringify(updatedWorkouts) !== JSON.stringify(workoutPlan.dailyWorkouts)) {
@@ -779,7 +796,8 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
     // Add one day to user-provided date to align with expected day
     let targetDate: Date;
     if (date) {
-      targetDate = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1);
+      // Use the exact calendar date without shifting to avoid off-by-one errors
+      targetDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
     } else {
       targetDate = new Date();
     }
@@ -1002,8 +1020,8 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
     let dateString: string;
 
     if (date) {
-      // Parse the date as local time and increment by one day to avoid timezone issues
-      targetDate = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1);
+      // Parse the date as local time without shifting to avoid off-by-one errors
+      targetDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
       dateString = format(targetDate, 'yyyy-MM-dd');
 
       const today = new Date();
@@ -1015,7 +1033,11 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
 
       const existingWorkout = workoutPlan.dailyWorkouts.find(w => w.date === dateString);
       if (existingWorkout) {
-        return;
+        // Allow replacing rest days, block replacing active workout days
+        if (getPrimaryType(existingWorkout) !== 'rest') {
+          alert('That date already has a workout. Remove or edit it first.');
+          return;
+        }
       }
     } else {
       const lastDate = workoutPlan.dailyWorkouts.length > 0 
@@ -1051,7 +1073,9 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
       completed: false
     };
 
-    const updatedWorkouts = [...workoutPlan.dailyWorkouts, newWorkout];
+    // Replace any existing entry for the date (including rest days) to avoid duplicates
+    const updatedWorkouts = [...workoutPlan.dailyWorkouts.filter(w => w.date !== dateString), newWorkout]
+      .sort((a, b) => a.date.localeCompare(b.date));
     const updatedPlan: WorkoutPlan = {
       ...workoutPlan,
       dailyWorkouts: updatedWorkouts,
@@ -2194,9 +2218,9 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
                     Cancel
                   </button>
                 </div>
-                {selectedWorkoutDate && workoutPlan?.dailyWorkouts.find(w => w.date === selectedWorkoutDate) && (
+                {selectedWorkoutDate && workoutPlan?.dailyWorkouts.find(w => w.date === selectedWorkoutDate && getPrimaryType(w) !== 'rest') && (
                   <div className="error-message">
-                    This date already has a workout. Please select a different date.
+                    This date already has a workout. Please select a different date or edit the existing one.
                   </div>
                 )}
               </div>
