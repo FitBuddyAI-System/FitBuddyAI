@@ -1643,6 +1643,9 @@ body.theme-dark .loader-overlay {
   font-weight: 500;
   color: var(--text-dark, #222);
   cursor: grab;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
   user-select: none;
 }
 .legend-item:active { cursor: grabbing; }
