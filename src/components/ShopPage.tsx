@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './ShopPage.css';
+import BackgroundDots from './BackgroundDots';
 import { fetchUserById, buyShopItem } from '../services/authService';
 import { saveUserData } from '../services/localStorage';
 import { Dumbbell, Sparkles, Smile, RefreshCw, ShoppingCart, Search, Filter, Flame, ShieldCheck } from 'lucide-react';
@@ -213,6 +214,7 @@ const ShopPage: React.FC<ShopPageProps> = ({ user, onPurchase }) => {
 
   return (
     <div className="shop-page fade-in-bounce">
+      <BackgroundDots />
       <div className="shop-header-row">
         <header className="shop-header">
           <Dumbbell size={32} className="shop-logo" />

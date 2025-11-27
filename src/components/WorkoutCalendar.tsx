@@ -42,7 +42,6 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
   const [dragOverDate, setDragOverDate] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [draggedLegendType, setDraggedLegendType] = useState<string | null>(null);
-  const [draggedTypeInfo, setDraggedTypeInfo] = useState<{ date: string; type: WorkoutType } | null>(null);
   const [isLegendDropTarget, setIsLegendDropTarget] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [lastUpdatedDate, setLastUpdatedDate] = useState<string | null>(null);
@@ -57,9 +56,6 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
   const [deleteMode, setDeleteMode] = useState(false);
   const [selectedForDeletion, setSelectedForDeletion] = useState<string[]>([]);
   const previewPlanSeededRef = useRef(false);
-  // Track whether we already auto-filled rest days for the current plan to avoid undoing user edits
-  const restAutofillDoneRef = useRef<boolean>(false);
-  const restAutofillPlanRef = useRef<string | null>(null);
   const guestUserData: UserData = {
     username: 'Guest',
     age: 28,
@@ -188,16 +184,6 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
     // no-op: kept for potential future side-effects when workoutPlan changes
   }, [workoutPlan]);
 
-  // Persist latest questionnaire/user data so updated rest-day allowances apply
-  useEffect(() => {
-    if (!userData) return;
-    try {
-      saveUserData({ data: userData });
-    } catch (err) {
-      console.warn('Failed to persist updated user data:', err);
-    }
-  }, [userData]);
-
   // Persist multi-type days to user profile for history/backup
   useEffect(() => {
     if (!workoutPlan) return;
@@ -213,22 +199,13 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
 
   useEffect(() => {
     if (!workoutPlan) return;
-    const maybeUpdated = rewardCompletedPastDays(workoutPlan.dailyWorkouts);
-    const workoutsForStreak = Array.isArray(maybeUpdated) && maybeUpdated.length ? maybeUpdated : workoutPlan.dailyWorkouts;
-    updateStreakCounter(workoutsForStreak);
+    rewardCompletedPastDays(workoutPlan.dailyWorkouts);
   }, [workoutPlan]);
 
   useEffect(() => {}, []);
 
   useEffect(() => {
     if (workoutPlan) {
-      const currentPlanId = workoutPlan.id || 'default-plan';
-      // Reset autofill flag when a new plan is loaded
-      if (restAutofillPlanRef.current !== currentPlanId) {
-        restAutofillPlanRef.current = currentPlanId;
-        restAutofillDoneRef.current = false;
-      }
-
       // 1) Normalize any 'mixed' entries that are empty -> convert to explicit rest days
       let updatedWorkouts = workoutPlan.dailyWorkouts.map(workout => {
         const hasNoExercises = !workout.workouts || workout.workouts.length === 0;
@@ -254,57 +231,52 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
       });
 
       // 2) If the plan defines a weeklyStructure, ensure missing 'Rest' days are present
-      // Only run once per plan load so user-removed rest days stay removed
-      if (!restAutofillDoneRef.current) {
-        try {
-          const pattern = Array.isArray(workoutPlan.weeklyStructure) ? workoutPlan.weeklyStructure : [];
-          const totalDays = typeof workoutPlan.totalDays === 'number' && workoutPlan.totalDays > 0
-            ? workoutPlan.totalDays
-            : (workoutPlan.dailyWorkouts ? workoutPlan.dailyWorkouts.length : 0);
+      try {
+        const pattern = Array.isArray(workoutPlan.weeklyStructure) ? workoutPlan.weeklyStructure : [];
+        const totalDays = typeof workoutPlan.totalDays === 'number' && workoutPlan.totalDays > 0
+          ? workoutPlan.totalDays
+          : (workoutPlan.dailyWorkouts ? workoutPlan.dailyWorkouts.length : 0);
 
-          if (workoutPlan.startDate && totalDays > 0 && pattern.length === 7) {
-            const startParts = workoutPlan.startDate.split('-').map(Number);
-            if (startParts.length === 3) {
-              const start = new Date(startParts[0], startParts[1] - 1, startParts[2]);
-              // build a set of existing dates for quick lookup
-              const existingDates = new Set((updatedWorkouts || []).map(w => w.date));
+        if (workoutPlan.startDate && totalDays > 0 && pattern.length === 7) {
+          const startParts = workoutPlan.startDate.split('-').map(Number);
+          if (startParts.length === 3) {
+            const start = new Date(startParts[0], startParts[1] - 1, startParts[2]);
+            // build a set of existing dates for quick lookup
+            const existingDates = new Set((updatedWorkouts || []).map(w => w.date));
 
-              for (let i = 0; i < totalDays; i++) {
-                const d = new Date(start.getTime());
-                d.setDate(start.getDate() + i);
-                const dateStr = format(d, 'yyyy-MM-dd');
-                const patternIndex = i % 7;
-                const slot = (pattern[patternIndex] || '').toString().toLowerCase();
-                if (slot.includes('rest')) {
-                  // if there's no existing entry for this date, insert a Rest Day
-                  if (!existingDates.has(dateStr)) {
-                    const restWorkout = {
-                      date: dateStr,
-                      workouts: [{
-                        name: 'Rest Day',
-                        description: 'Take a well-deserved break and let your body recover.',
-                        duration: '0 min',
-                        difficulty: 'beginner',
-                        muscleGroups: []
-                      }],
-                      alternativeWorkouts: [],
-                      completed: false,
-                      type: 'rest'
-                    } as any;
-                    // 1 in 1,000,000 chance to convert this rest day into a rickroll rest day
-                    if (Math.random() < 1 / 1000000) restWorkout.isRickroll = true;
-                    updatedWorkouts = [...updatedWorkouts, restWorkout];
-                    existingDates.add(dateStr);
-                  }
+            for (let i = 0; i < totalDays; i++) {
+              const d = new Date(start.getTime());
+              d.setDate(start.getDate() + i);
+              const dateStr = format(d, 'yyyy-MM-dd');
+              const patternIndex = i % 7;
+              const slot = (pattern[patternIndex] || '').toString().toLowerCase();
+              if (slot.includes('rest')) {
+                // if there's no existing entry for this date, insert a Rest Day
+                if (!existingDates.has(dateStr)) {
+                  const restWorkout = {
+                    date: dateStr,
+                    workouts: [{
+                      name: 'Rest Day',
+                      description: 'Take a well-deserved break and let your body recover.',
+                      duration: '0 min',
+                      difficulty: 'beginner',
+                      muscleGroups: []
+                    }],
+                    alternativeWorkouts: [],
+                    completed: false,
+                    type: 'rest'
+                  } as any;
+                  // 1 in 1,000,000 chance to convert this rest day into a rickroll rest day
+                  if (Math.random() < 1 / 1000000) restWorkout.isRickroll = true;
+                  updatedWorkouts = [...updatedWorkouts, restWorkout];
+                  existingDates.add(dateStr);
                 }
               }
             }
           }
-        } catch (err) {
-          console.warn('Failed to populate missing rest days from weeklyStructure:', err);
-        } finally {
-          restAutofillDoneRef.current = true;
         }
+      } catch (err) {
+        console.warn('Failed to populate missing rest days from weeklyStructure:', err);
       }
 
       if (JSON.stringify(updatedWorkouts) !== JSON.stringify(workoutPlan.dailyWorkouts)) {
@@ -375,74 +347,6 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
   const getPrimaryType = (workout: DayWorkout): WorkoutType => {
     const types = resolveWorkoutTypes(workout);
     return types[0] || 'mixed';
-  };
-  const isRestDay = (workout: DayWorkout | null | undefined) => workout ? getPrimaryType(workout) === 'rest' : false;
-
-  const getAllowedRestPerWeek = () => {
-    // 1) Try explicit rest preference from questionnaire answers
-    try {
-      const progress = loadQuestionnaireProgress();
-      const ans: any = progress?.answers || {};
-      const qRest = ans.restDaysPerWeek ?? ans.restDays;
-      if (typeof qRest === 'number' && qRest >= 0 && qRest <= 7) return qRest;
-      if (typeof qRest === 'string') {
-        const m = qRest.match(/(\d+)/);
-        if (m) {
-          const n = parseInt(m[1], 10);
-          if (Number.isFinite(n) && n >= 0 && n <= 7) return n;
-        }
-      }
-      const qDaysPerWeek = ans.daysPerWeek;
-      if (typeof qDaysPerWeek === 'string') {
-        const m = qDaysPerWeek.match(/(\d+)/);
-        if (m) {
-          const workouts = parseInt(m[1], 10);
-          if (Number.isFinite(workouts)) return Math.max(0, Math.min(7, 7 - workouts));
-        }
-      }
-    } catch {}
-
-    // 2) Fallback to current user profile
-    const explicitRest = (effectiveUserData as any)?.restDaysPerWeek ?? (effectiveUserData as any)?.restDays;
-    if (typeof explicitRest === 'number' && explicitRest >= 0 && explicitRest <= 7) {
-      return explicitRest;
-    }
-    const daysPerWeekRaw = effectiveUserData?.daysPerWeek;
-    if (typeof daysPerWeekRaw === 'string') {
-      const match = daysPerWeekRaw.match(/(\d+)/);
-      if (match) {
-        const workouts = parseInt(match[1], 10);
-        if (Number.isFinite(workouts)) {
-          return Math.max(0, Math.min(7, 7 - workouts));
-        }
-      }
-    }
-    return 2; // sensible default if not specified
-  };
-
-  const getRestCountInWindow = (targetDate: string, daily: DayWorkout[]) => {
-    const [y, m, d] = targetDate.split('-').map(Number);
-    const anchor = new Date(y, m - 1, d);
-    const start = new Date(anchor);
-    start.setDate(anchor.getDate() - 6);
-    const endTs = anchor.getTime();
-    return daily.filter(w => {
-      if (!isRestDay(w)) return false;
-      const [wy, wm, wd] = w.date.split('-').map(Number);
-      const dt = new Date(wy, wm - 1, wd).getTime();
-      return dt >= start.getTime() && dt <= endTs;
-    }).length;
-  };
-
-  const canAddRestOnDate = (dateStr: string, plan: WorkoutPlan, targetAlreadyRest: boolean) => {
-    const allowed = getAllowedRestPerWeek();
-    const currentCount = getRestCountInWindow(dateStr, plan.dailyWorkouts);
-    const nextCount = currentCount + (targetAlreadyRest ? 0 : 1);
-    if (nextCount > allowed) {
-      alert(`You can only have ${allowed} rest day${allowed === 1 ? '' : 's'} in any 7-day window based on your questionnaire.`);
-      return false;
-    }
-    return true;
   };
 
   // Normalize to midnight and check if the target date has already passed
@@ -796,8 +700,7 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
     // Add one day to user-provided date to align with expected day
     let targetDate: Date;
     if (date) {
-      // Use the exact calendar date without shifting to avoid off-by-one errors
-      targetDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      targetDate = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1);
     } else {
       targetDate = new Date();
     }
@@ -806,7 +709,6 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
       return;
     }
     const dateString = format(targetDate, 'yyyy-MM-dd');
-    if (!canAddRestOnDate(dateString, workoutPlan, false)) return;
     
     // Check if workout already exists for this date
     const existingWorkout = workoutPlan.dailyWorkouts.find(w => w.date === dateString);
@@ -1020,8 +922,8 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
     let dateString: string;
 
     if (date) {
-      // Parse the date as local time without shifting to avoid off-by-one errors
-      targetDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      // Parse the date as local time and increment by one day to avoid timezone issues
+      targetDate = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1);
       dateString = format(targetDate, 'yyyy-MM-dd');
 
       const today = new Date();
@@ -1033,11 +935,7 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
 
       const existingWorkout = workoutPlan.dailyWorkouts.find(w => w.date === dateString);
       if (existingWorkout) {
-        // Allow replacing rest days, block replacing active workout days
-        if (getPrimaryType(existingWorkout) !== 'rest') {
-          alert('That date already has a workout. Remove or edit it first.');
-          return;
-        }
+        return;
       }
     } else {
       const lastDate = workoutPlan.dailyWorkouts.length > 0 
@@ -1073,9 +971,7 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
       completed: false
     };
 
-    // Replace any existing entry for the date (including rest days) to avoid duplicates
-    const updatedWorkouts = [...workoutPlan.dailyWorkouts.filter(w => w.date !== dateString), newWorkout]
-      .sort((a, b) => a.date.localeCompare(b.date));
+    const updatedWorkouts = [...workoutPlan.dailyWorkouts, newWorkout];
     const updatedPlan: WorkoutPlan = {
       ...workoutPlan,
       dailyWorkouts: updatedWorkouts,
@@ -1412,6 +1308,11 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
       return;
     }
 
+    if (!draggedWorkout) {
+      handleLegendDragLeave();
+      handleDragEnd();
+      return;
+    }
     const updatedDaily = workoutPlan.dailyWorkouts.filter(w => w.date !== draggedWorkout.date);
     const updatedPlan = { ...workoutPlan, dailyWorkouts: updatedDaily, totalDays: updatedDaily.length };
     onUpdatePlan(updatedPlan);
@@ -1426,9 +1327,7 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
     setDraggedWorkout(null);
     setDraggedLegendType(null);
     setDragOverDate(null);
-    setDraggedTypeInfo(null);
   };
-
   const handleDrop = async (e: React.DragEvent, targetDate: Date) => {
     e.preventDefault();
 
@@ -1472,54 +1371,14 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
     if (legendType) {
       const typeForAI = legendType as DayWorkout['type'];
       const existingTarget = workoutPlan.dailyWorkouts.find(d => d.date === targetDateString);
-        // Special-case rest: always replace existing content with a pure rest day
-        if (typeForAI === 'rest') {
-          if (!canAddRestOnDate(targetDateString, workoutPlan, isRestDay(existingTarget))) {
-            setDraggedLegendType(null);
-            setIsDragging(false);
-            setDragOverDate(null);
-            return;
-          }
-          const restDay: DayWorkout = {
-            date: targetDateString,
-            type: 'rest',
-            types: ['rest'],
-            completed: false,
-            completedTypes: [],
-            totalTime: '0 min',
-            workouts: [{
-              name: 'Rest Day',
-              description: 'Take a well-deserved break and let your body recover.',
-              duration: '0 min',
-              difficulty: 'beginner',
-              muscleGroups: []
-            }],
-            alternativeWorkouts: []
-          };
-          const withoutTarget = workoutPlan.dailyWorkouts.filter(d => d.date !== targetDateString);
-          const nextDaily = [...withoutTarget, restDay].sort((a, b) => a.date.localeCompare(b.date));
-          const updatedPlan = { ...workoutPlan, dailyWorkouts: nextDaily, totalDays: nextDaily.length };
-          onUpdatePlan(updatedPlan);
-          try { saveWorkoutPlan(updatedPlan); } catch (err) { console.warn('Failed to save rest day drop locally:', err); }
-          setLastUpdatedDate(targetDateString);
-          window.setTimeout(() => setLastUpdatedDate(null), 2000);
-          setDraggedLegendType(null);
-          setIsDragging(false);
-          setDragOverDate(null);
-          return;
-        }
-        // If existing target is a rest day, treat as empty so we replace it
-        const isExistingRest = existingTarget && getPrimaryType(existingTarget) === 'rest';
-        const targetForMerge = isExistingRest ? undefined : existingTarget;
         // If a workout already exists on this date, just append the type (up to 4) instead of replacing the day
-        if (targetForMerge) {
-          const existingTypes = resolveWorkoutTypes(targetForMerge).filter(t => t !== 'rest');
-          const mergedTypes = Array.from(new Set([...existingTypes, typeForAI])).slice(0, 4) as WorkoutType[];
-          const mergedCompletedTypes = (targetForMerge.completedTypes || []).filter(t => mergedTypes.includes(t));
+        if (existingTarget) {
+          const mergedTypes = Array.from(new Set([...resolveWorkoutTypes(existingTarget), typeForAI])).slice(0, 4) as WorkoutType[];
+          const mergedCompletedTypes = (existingTarget.completedTypes || []).filter(t => mergedTypes.includes(t));
           const merged: DayWorkout = {
-            ...targetForMerge,
+            ...existingTarget,
             types: mergedTypes,
-            type: (mergedTypes[0] || targetForMerge.type || typeForAI) as WorkoutType,
+            type: (mergedTypes[0] || existingTarget.type || typeForAI) as WorkoutType,
             completedTypes: mergedCompletedTypes,
             completed: mergedCompletedTypes.length === mergedTypes.length && mergedTypes.length > 0
           };
@@ -1600,33 +1459,6 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
 
     const targetWorkout = workoutPlan.dailyWorkouts.find(w => w.date === targetDateString);
     let updatedWorkouts = [...workoutPlan.dailyWorkouts];
-
-    // If moving a rest day, ensure the target window won't exceed allowed rest count
-    if (draggedWorkout && isRestDay(draggedWorkout) && targetDateString !== sourceDateString) {
-      const simulate = () => {
-        let candidate = workoutPlan.dailyWorkouts.map(w => ({ ...w }));
-        if (targetWorkout) {
-          candidate = candidate.map(w => {
-            if (w.date === sourceDateString) return { ...targetWorkout, date: sourceDateString };
-            if (w.date === targetDateString) return { ...draggedWorkout, date: targetDateString };
-            return w;
-          });
-        } else {
-          candidate = candidate.map(w => w.date === sourceDateString ? { ...w, date: targetDateString } : w);
-        }
-        return candidate;
-      };
-      const candidate = simulate();
-      const allowedRest = getAllowedRestPerWeek();
-      const restCountTargetWindow = getRestCountInWindow(targetDateString, candidate);
-      if (restCountTargetWindow > allowedRest) {
-        alert(`You can only have ${allowedRest} rest day${allowedRest === 1 ? '' : 's'} in any 7-day window based on your questionnaire.`);
-        setIsDragging(false);
-        setDraggedWorkout(null);
-        setDragOverDate(null);
-        return;
-      }
-    }
 
     if (targetWorkout) {
       updatedWorkouts = updatedWorkouts.map(workout => {
@@ -1908,11 +1740,8 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
                                   e.dataTransfer.setData('text/fba-remove-type', JSON.stringify({ date: workout.date, type: t }));
                                   e.dataTransfer.effectAllowed = 'move';
                                 } catch {}
-                                setDraggedTypeInfo({ date: workout.date, type: t });
                                 setIsDragging(true);
                               }}
-                              onDragEnd={handleDragEnd}
-                              title="Drag to legend to remove this type"
                             ></span>
                           ))}
                         </div>
@@ -2218,9 +2047,9 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
                     Cancel
                   </button>
                 </div>
-                {selectedWorkoutDate && workoutPlan?.dailyWorkouts.find(w => w.date === selectedWorkoutDate && getPrimaryType(w) !== 'rest') && (
+                {selectedWorkoutDate && workoutPlan?.dailyWorkouts.find(w => w.date === selectedWorkoutDate) && (
                   <div className="error-message">
-                    This date already has a workout. Please select a different date or edit the existing one.
+                    This date already has a workout. Please select a different date.
                   </div>
                 )}
               </div>

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import './GeminiChatPage.css';
 import { getAITextResponse } from '../services/aiService';
+import BackgroundDots from './BackgroundDots';
 // ActionConfirmModal removed: actions are applied automatically
 
 const ASSISTANT_GREETING = 'Hi! I am Buddy — your AI Fitness assistant. I can answer questions about your workouts, goals, and progress.';
@@ -657,6 +658,7 @@ const GeminiChatPage: React.FC<GeminiChatPageProps> = ({ userData }) => {
 
   return (
     <div className="gemini-page-root">
+      <BackgroundDots />
       <div className="gemini-page">
       <div className="gemini-container">
         <header className="gemini-header">

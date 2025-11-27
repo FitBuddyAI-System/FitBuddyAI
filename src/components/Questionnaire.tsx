@@ -15,6 +15,7 @@ import {
 } from '../services/localStorage';
 import { restoreUserDataFromServer } from '../services/cloudBackupService';
 import './Questionnaire.css';
+import BackgroundDots from './BackgroundDots';
 
 // Webhook URL for Google Sheets integration
 const SHEET_WEBHOOK_URL = 'https://corsproxy.io/?key=7cf03de1&url=https://script.google.com/macros/s/AKfycbwFDdT0QVaP2jY8t4N0048PfQW_rYxB4noFaG-nExO9MZ5h3DCuNLUPNg3-qntT01tg/exec?gid=0';
@@ -1382,6 +1383,7 @@ const Questionnaire: React.FC<QuestionnaireProps> = ({ onComplete }) => {
 
   return (
     <div className="questionnaire-page">
+      <BackgroundDots />
       <div className="questionnaire-container">
         {/* Header */}
         <div className="questionnaire-header">          <button className="back-button" onClick={handleBack} aria-label="Go back to previous question">

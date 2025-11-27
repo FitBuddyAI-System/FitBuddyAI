@@ -333,7 +333,17 @@ function App() {
                   />
                 </AgreementGuard>
               )
-              : (isHydratingUser ? <LoadingPage /> : <Navigate to="/signin" replace />)
+              : (
+                isHydratingUser
+                  ? <LoadingPage />
+                  // If not signed in, still allow preview calendar (component handles guest fallback)
+                  : <WorkoutCalendar 
+                      key={planVersion}
+                      workoutPlan={workoutPlan}
+                      userData={userData}
+                      onUpdatePlan={(plan) => { setWorkoutPlan(plan); setPlanVersion(v => v + 1); }}
+                    />
+              )
           } 
         />
         <Route 
