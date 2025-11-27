@@ -22,6 +22,31 @@ const GEMINI_URL = GEMINI_API_KEY
   ? `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${encodeURIComponent(GEMINI_API_KEY)}`
   : '/api/ai/generate';
 
+// Helper: extract a JSON block from AI text. Handles fenced ```json``` blocks,
+// top-level {...} or [...] blocks, and falls back to stripping code fences.
+const extractJSONBlock = (raw: string): string | null => {
+  if (!raw || typeof raw !== 'string') return null;
+  // Prefer fenced blocks like ```json
+  const fenceMatch = raw.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+  if (fenceMatch && fenceMatch[1]) return fenceMatch[1].trim();
+
+  // Try to find a top-level JSON object or array by indexes (first open, last close)
+  const firstObj = raw.indexOf('{');
+  const lastObj = raw.lastIndexOf('}');
+  const firstArr = raw.indexOf('[');
+  const lastArr = raw.lastIndexOf(']');
+  if (firstObj !== -1 && lastObj !== -1 && lastObj > firstObj) {
+    return raw.slice(firstObj, lastObj + 1).trim();
+  }
+  if (firstArr !== -1 && lastArr !== -1 && lastArr > firstArr) {
+    return raw.slice(firstArr, lastArr + 1).trim();
+  }
+
+  // Last resort: strip common code-fence markers and return what remains.
+  const stripped = raw.replace(/```[a-zA-Z]*\s*/g, '').replace(/```/g, '').trim();
+  return stripped || null;
+};
+
 // Deterministic fallback plan used when the AI response is empty or non-JSON.
 const buildFallbackPlan = (userData: UserData, answers: Record<string, any>): WorkoutPlan => {
   const start = answers.startDate || new Date().toISOString().split('T')[0];
@@ -209,25 +234,20 @@ const parseAIResponse = (responseText: string, userData: UserData): WorkoutPlan 
   console.log('Parsing AI response:', responseText);
 
   try {
-    // Extract JSON between ``` or ```json fences
-    let cleanedResponse = responseText;
-    const codeFenceMatch = responseText.match(/```(?:json)?\s*([\s\S]*?)```/i);
-    if (codeFenceMatch && codeFenceMatch[1]) {
-      cleanedResponse = codeFenceMatch[1].trim();
-    } else {
-      // Fallback: strip any backticks markers
-      cleanedResponse = responseText.replace(/```[a-zA-Z]*\n?|```/g, '').trim();
-    }
+    // Use helper to extract a JSON block from whatever the AI returned
+    const extracted = extractJSONBlock(responseText);
+    if (!extracted) throw new Error('No JSON block found in AI response');
+    let cleanedResponse = extracted;
     console.log('Extracted AI JSON:', cleanedResponse);
 
-    // Ensure we only keep the JSON object by finding the first '{' and last '}'
-    const jsonBlockMatch = cleanedResponse.match(/{[\s\S]*}/);
+    // If the extract returned a larger block, trim to the first object/array
+    const jsonBlockMatch = cleanedResponse.match(/[\[{][\s\S]*[\]}]/);
     if (jsonBlockMatch) {
       cleanedResponse = jsonBlockMatch[0];
       console.log('Trimmed to JSON block:', cleanedResponse);
     }
-    // Validate if the cleaned response is JSON
-    if (cleanedResponse.startsWith('{') && cleanedResponse.endsWith('}')) {
+    // Validate if the cleaned response looks like JSON
+    if (cleanedResponse.startsWith('{') || cleanedResponse.startsWith('[')) {
       let parsedResponse = JSON.parse(cleanedResponse);
       // If AI returned a wrapper object, unwrap it
       if (parsedResponse.workout_plan) {
@@ -449,6 +469,8 @@ Generate one DayWorkout JSON for ${targetDate}, type '${workoutType}', compatibl
         ...(controller ? { signal: controller.signal } : {})
       });
       data = await response.json();
+      // Log raw provider response to help debug empty-text issues
+      try { console.log('generateWorkoutForDay: raw AI response (post-fetch):', data); } catch (e) { /* ignore */ }
     } catch (err) {
       if ((err as any)?.name === 'AbortError') {
         console.warn(`generateWorkoutForDay: attempt ${attempt} timed out after ${timeoutMs}ms`);
@@ -464,16 +486,29 @@ Generate one DayWorkout JSON for ${targetDate}, type '${workoutType}', compatibl
     } finally {
       if (timeoutId) clearTimeout(timeoutId);
     }
-    const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    // Accept several possible response shapes from local server or Gemini
+    let generatedText = '';
+    try {
+      if (typeof data?.text === 'string' && data.text.trim()) generatedText = data.text;
+      else if (typeof data?.message === 'string' && data.message.trim()) generatedText = data.message;
+      else if (data?.candidates && data.candidates[0]?.content?.parts?.[0]?.text) generatedText = data.candidates[0].content.parts[0].text;
+      else if (typeof data?.generated_text === 'string' && data.generated_text.trim()) generatedText = data.generated_text;
+      else if (typeof data === 'string' && data.trim()) generatedText = data;
+    } catch (e) {
+      console.warn('generateWorkoutForDay: unexpected AI response shape', e, data);
+    }
     console.log('generateWorkoutForDay: received AI text=', generatedText);
     try {
-      // reuse cleaning/parsing logic
-      const codeFenceMatch = generatedText.match(/```(?:json)?\s*([\s\S]*?)```/i);
-      let cleaned = codeFenceMatch?.[1]?.trim() ?? generatedText.replace(/```[a-zA-Z]*\\n?|```/g, '').trim();
-      const jsonMatch = cleaned.match(/{[\s\S]*}/);
-      if (jsonMatch) cleaned = jsonMatch[0];
+      // Extract potential JSON block robustly
+      const extracted = extractJSONBlock(generatedText);
+      let cleaned = extracted?.trim() ?? '';
+      // If we still don't have content, try to find a {...} or [...] block
+      if ((!cleaned || cleaned.length < 2) && generatedText) {
+        const jsonMatch = generatedText.match(/[\[{][\s\S]*[\]}]/);
+        if (jsonMatch) cleaned = jsonMatch[0];
+      }
       if (!cleaned || cleaned.length < 2) throw new Error('Empty AI response');
-      console.log('generateWorkoutForDay: parsing cleaned=', cleaned);
+      console.log('generateWorkoutForDay: parsing cleaned=', cleaned.slice(0, 2000));
       return JSON.parse(cleaned);
     } catch (e: any) {
       console.warn(`generateWorkoutForDay: parse failed on attempt ${attempt}:`, e);
