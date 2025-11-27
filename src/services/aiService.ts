@@ -5,7 +5,13 @@ import { WorkoutPlan } from '../types';
 // Prefer server-side env (process.env.GEMINI_API_KEY) — set this in Vercel or
 // in your local environment for server processes. We intentionally do NOT
 // read any `VITE_` prefixed env here to avoid exposing secrets to the client.
-const GEMINI_API_KEY = (typeof process !== 'undefined' && (process as any).env && (process as any).env.GEMINI_API_KEY) || '';
+// Accept multiple env var names so the client can use a key provided via Vite/Next public prefixes when needed.
+const GEMINI_API_KEY =
+  (typeof process !== 'undefined' && (process as any).env && (
+    (process as any).env.GEMINI_API_KEY ||
+    (process as any).env.VITE_GEMINI_API_KEY ||
+    (process as any).env.NEXT_PUBLIC_GEMINI_API_KEY
+  )) || '';
 
 // Build the Gemini REST URL when an API key is present. If no key is available
 // (for example when client code shouldn't have a secret), callers should use
@@ -430,12 +436,34 @@ Generate one DayWorkout JSON for ${targetDate}, type '${workoutType}', compatibl
     const promptBase = `${basePrompt}\n\nVariation-hint: please vary the workout details and ordering where possible. RequestNonce:${nonceDay} RequestTime:${tsDay}`;
     const prompt = attempt === 1 ? promptBase : promptBase + schemaReminderDay;
     console.log(`generateWorkoutForDay: attempt ${attempt}, nonce=${nonceDay}, promptStart=`, prompt.slice(0, 300));
-    const response = await fetch(GEMINI_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-    });
-    const data = await response.json();
+    // Short-circuit long waits with a client-side timeout
+    const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const timeoutMs = attempt === 1 ? 12000 : 8000;
+    const timeoutId = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
+    let data: any = null;
+    try {
+      const response = await fetch(GEMINI_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+        ...(controller ? { signal: controller.signal } : {})
+      });
+      data = await response.json();
+    } catch (err) {
+      if ((err as any)?.name === 'AbortError') {
+        console.warn(`generateWorkoutForDay: attempt ${attempt} timed out after ${timeoutMs}ms`);
+      } else {
+        console.warn(`generateWorkoutForDay: attempt ${attempt} failed`, err);
+      }
+      if (timeoutId) clearTimeout(timeoutId);
+      if (attempt === 2) {
+        console.warn('generateWorkoutForDay: using fallback day due to errors/timeouts');
+        return fallbackDay();
+      }
+      continue;
+    } finally {
+      if (timeoutId) clearTimeout(timeoutId);
+    }
     const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
     console.log('generateWorkoutForDay: received AI text=', generatedText);
     try {
@@ -564,7 +592,16 @@ export async function getAITextResponse(payload: { prompt: string; workoutPlan?:
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ contents: [{ parts: [{ text: promptWithContext }] }] })
   });
-  const data = await response.json();
+  let data: any = null;
+  try {
+    data = await response.json();
+  } catch (e) {
+    console.warn('getAITextResponse: failed to parse JSON response', e);
+  }
+  if (!response.ok) {
+    const errMsg = (data && (data.message || data.error)) ? (data.message || data.error) : `AI request failed (${response.status})`;
+    throw new Error(errMsg);
+  }
   const candidate = data.candidates?.[0];
   // Accept several possible server response shapes:
   // - { text: '...' } (our local server)
@@ -573,6 +610,9 @@ export async function getAITextResponse(payload: { prompt: string; workoutPlan?:
   let rawText: string = '';
   if (typeof data?.text === 'string' && data.text.trim()) {
     rawText = data.text;
+  } else if (typeof data?.message === 'string' && data.message.trim()) {
+    // Handle server error payloads that are still 200 OK
+    rawText = data.message;
   } else if (candidate && candidate.content && Array.isArray(candidate.content.parts) && candidate.content.parts[0] && typeof candidate.content.parts[0].text === 'string') {
     rawText = candidate.content.parts[0].text;
   } else if (typeof data?.generated_text === 'string') {
@@ -585,5 +625,7 @@ export async function getAITextResponse(payload: { prompt: string; workoutPlan?:
   // Strip code fences if present for display, but also return raw
   const fenceMatch = rawText.match(/```(?:json)?\n([\s\S]*?)```/);
   const cleaned = fenceMatch && fenceMatch[1] ? fenceMatch[1].trim() : rawText.trim();
-  return { text: cleaned, raw: rawText };
+  // Avoid returning an empty string so the UI can show a helpful fallback
+  const fallback = data?.message || 'Buddy is currently unavailable. Please try again later.';
+  return { text: cleaned || fallback, raw: rawText || fallback };
 }

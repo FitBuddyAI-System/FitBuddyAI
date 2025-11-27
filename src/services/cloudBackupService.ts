@@ -129,6 +129,20 @@ export async function restoreUserDataFromServer(userId: string) {
   writeIfPresent('fitbuddyai_questionnaire_progress');
   writeIfPresent('fitbuddyai_workout_plan');
   writeIfPresent('fitbuddyai_assessment_data');
+  // If username/avatar were returned, merge them into the stored user profile
+  try {
+    const storedUserRaw = sessionStorage.getItem('fitbuddyai_user_data') || localStorage.getItem('fitbuddyai_user_data');
+    const storedUser = storedUserRaw ? JSON.parse(storedUserRaw) : null;
+    const existing = storedUser?.data || storedUser || null;
+    const nextUser = { ...(existing || {}), ...(payload.username ? { username: payload.username } : {}), ...(payload.avatar ? { avatar: payload.avatar } : {}) };
+    if (Object.keys(nextUser).length > 0) {
+      const wrapper = storedUser && storedUser.timestamp ? { ...storedUser, data: nextUser } : { data: nextUser, timestamp: Date.now() };
+      try { sessionStorage.setItem('fitbuddyai_user_data', JSON.stringify(wrapper)); } catch {}
+      try { localStorage.setItem('fitbuddyai_user_data', JSON.stringify(wrapper)); } catch {}
+    }
+  } catch (e) {
+    console.warn('restoreUserDataFromServer: failed to merge username/avatar into local user_data', e);
+  }
   // Also handle chat history: write into per-user chat key if present
   try {
     const chat = payload.chat_history ?? payload.fitbuddyai_chat ?? payload.fitbuddyai_chat_history;

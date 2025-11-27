@@ -13,7 +13,11 @@ if (SUPABASE_URL && SUPABASE_KEY) {
   }
 }
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY as string | undefined;
+// Accept multiple env var names so it works on Vercel, local dev, or when the
+// key was mistakenly added with a VITE_/NEXT_PUBLIC_ prefix.
+const GEMINI_API_KEY = (process.env.GEMINI_API_KEY ||
+  process.env.VITE_GEMINI_API_KEY ||
+  process.env.NEXT_PUBLIC_GEMINI_API_KEY) as string | undefined;
 const GEMINI_URL = GEMINI_API_KEY
   ? `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`
   : null;

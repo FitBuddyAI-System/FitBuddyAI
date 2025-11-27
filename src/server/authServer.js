@@ -438,7 +438,8 @@ app.post('/api/ai/generate', async (req, res) => {
       return res.status(400).json({ message: 'Missing prompt', bodyType: typeof req.body, bodySample: sample });
     }
 
-    const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+    // Accept multiple env var names so deployments that used VITE_/NEXT_PUBLIC_ still work
+    const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY;
     const GEMINI_URL = GEMINI_API_KEY
       ? `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`
       : null;

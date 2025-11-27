@@ -72,6 +72,18 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
 
   useEffect(() => {
     if (workoutPlan || previewPlanSeededRef.current) return;
+    // If a saved plan exists (or the user is signed in), do NOT seed the preview
+    try {
+      const storedPlan = loadWorkoutPlan();
+      if (storedPlan && Array.isArray(storedPlan.dailyWorkouts) && storedPlan.dailyWorkouts.length > 0) {
+        onUpdatePlan(storedPlan);
+        return;
+      }
+      const storedUser = loadUserData();
+      if (storedUser?.id) return;
+    } catch (err) {
+      console.warn('Preview seed guard failed to read storage:', err);
+    }
     const today = new Date();
     const start = format(today, 'yyyy-MM-dd');
     const endDateObj = new Date(today.getTime() + 6 * 24 * 60 * 60 * 1000);
@@ -996,6 +1008,18 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
     const normalizedTypes = resolveWorkoutTypes(updatedWorkout);
     const normalizedCompletedTypes = (updatedWorkout.completedTypes || []).filter(t => normalizedTypes.includes(t));
     const allComplete = normalizedTypes.length > 0 ? normalizedCompletedTypes.length === normalizedTypes.length : updatedWorkout.completed;
+
+    // If all exercises were removed, drop the day entirely so it can be re-added later
+    const hasWorkouts = Array.isArray(updatedWorkout.workouts) && updatedWorkout.workouts.length > 0;
+    const hasAlternatives = Array.isArray(updatedWorkout.alternativeWorkouts) && updatedWorkout.alternativeWorkouts.length > 0;
+    if (!hasWorkouts && !hasAlternatives) {
+      const prunedDaily = workoutPlan.dailyWorkouts.filter(w => w.date !== updatedWorkout.date);
+      const prunedPlan = { ...workoutPlan, dailyWorkouts: prunedDaily, totalDays: prunedDaily.length };
+      onUpdatePlan(prunedPlan);
+      try { saveWorkoutPlan(prunedPlan); } catch (err) { console.warn('Failed to persist plan after deleting empty day:', err); }
+      return;
+    }
+
     const normalizedWorkout: DayWorkout = {
       ...updatedWorkout,
       type: (normalizedTypes[0] || updatedWorkout.type || 'mixed') as WorkoutType,
@@ -1144,6 +1168,7 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
     if (!workoutPlan || !selectedWorkoutDate) return;
 
     setLoadingDate(selectedWorkoutDate);
+    setLoadingDates(prev => Array.from(new Set([...prev, selectedWorkoutDate])));
 
     // block adding/generating on past dates
     const selected = new Date(selectedWorkoutDate);
@@ -1210,9 +1235,11 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
       });
 
       setLoadingDate(null);
+      setLoadingDates(prev => prev.filter(d => d !== selectedWorkoutDate));
     } catch (error) {
       console.error('Error generating workout:', error);
       setLoadingDate(null);
+      setLoadingDates(prev => prev.filter(d => d !== selectedWorkoutDate));
     }
   };
 
@@ -1395,6 +1422,7 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
       }
 
       setLoadingDate(targetDateString);
+      setLoadingDates(prev => Array.from(new Set([...prev, targetDateString])));
       const progress = loadQuestionnaireProgress();
       const savedAnswers = progress?.answers || {};
       const savedQuestions = progress?.questionsList || [];
@@ -1437,6 +1465,7 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
         console.error('Drag-generate error for', targetDateString, err);
       } finally {
         setLoadingDate(null);
+        setLoadingDates(prev => prev.filter(d => d !== targetDateString));
         setDraggedLegendType(null);
         setIsDragging(false);
         setDragOverDate(null);

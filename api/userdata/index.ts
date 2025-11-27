@@ -116,9 +116,24 @@ export default async function handler(req: any, res: any) {
         // Only include columns that were actually provided to avoid touching missing columns in the schema.
         if (payloadToWrite && Object.prototype.hasOwnProperty.call(payloadToWrite, 'questionnaire_progress')) upsertRow.questionnaire_progress = payloadToWrite.questionnaire_progress;
         if (payloadToWrite && Object.prototype.hasOwnProperty.call(payloadToWrite, 'workout_plan')) upsertRow.workout_plan = payloadToWrite.workout_plan;
+        // Username / avatar support: accept either top-level username/avatar or nested user payloads
+        const userPayload = (payloadToWrite && (payloadToWrite.fitbuddyai_user_data || payloadToWrite.user || payloadToWrite.user_data)) || null;
+        const maybeUser = (userPayload && typeof userPayload === 'object')
+          ? (userPayload.data || userPayload)
+          : null;
+        const usernameFromPayload = (payloadToWrite && payloadToWrite.username) || (maybeUser && (maybeUser.username || maybeUser.name)) || null;
+        const avatarFromPayload = (payloadToWrite && payloadToWrite.avatar) || (maybeUser && (maybeUser.avatar || maybeUser.avatar_url || maybeUser.photoUrl)) || null;
+        if (usernameFromPayload) {
+          upsertRow.username = usernameFromPayload;
+          delete payloadToWrite.username;
+        }
+        if (avatarFromPayload) {
+          upsertRow.avatar = avatarFromPayload;
+          delete payloadToWrite.avatar;
+        }
         // Do not attempt to write an 'assessment_data' column (not present in current schema)
         // Warn if there are other arbitrary payload keys (we are intentionally not storing them)
-        const allowedKeys = new Set(['questionnaire_progress','workout_plan','accepted_terms','accepted_privacy','chat_history']);
+        const allowedKeys = new Set(['questionnaire_progress','workout_plan','accepted_terms','accepted_privacy','chat_history','username','avatar','fitbuddyai_user_data','user','user_data']);
         const extraKeys = Object.keys(payloadToWrite || {}).filter(k => !allowedKeys.has(k));
         if (extraKeys.length) console.warn('[api/userdata] ignoring extra payload keys (not stored to DB):', extraKeys);
         console.log('[api/userdata] upsertRow keys:', Object.keys(upsertRow));
@@ -510,7 +525,7 @@ export default async function handler(req: any, res: any) {
 
       try {
         // Read explicit canonical columns (preferred). Do not select legacy `payload` column (not present in current schema).
-        const { data, error } = await supabase.from('fitbuddyai_userdata').select('questionnaire_progress, workout_plan, accepted_terms, accepted_privacy, chat_history').eq('user_id', String(userId)).limit(1).maybeSingle();
+        const { data, error } = await supabase.from('fitbuddyai_userdata').select('questionnaire_progress, workout_plan, accepted_terms, accepted_privacy, chat_history, username, avatar').eq('user_id', String(userId)).limit(1).maybeSingle();
         if (error) {
           console.error('[api/userdata] load fetch error:', error);
           return res.status(500).json({ error: error.message || 'Fetch failed' });
@@ -518,7 +533,7 @@ export default async function handler(req: any, res: any) {
         try { res.setHeader('x-userdata-source', 'supabase'); } catch (e) {}
         // No payload column selected here — use explicit columns only
         const storedPayload = null;
-        const storedCols: any = { questionnaire_progress: data?.questionnaire_progress ?? null, workout_plan: data?.workout_plan ?? null, accepted_terms: data?.accepted_terms ?? null, accepted_privacy: data?.accepted_privacy ?? null, chat_history: data?.chat_history ?? null };
+        const storedCols: any = { questionnaire_progress: data?.questionnaire_progress ?? null, workout_plan: data?.workout_plan ?? null, accepted_terms: data?.accepted_terms ?? null, accepted_privacy: data?.accepted_privacy ?? null, chat_history: data?.chat_history ?? null, username: data?.username ?? null, avatar: data?.avatar ?? null };
         const normalizeVal = (v: any) => {
           if (v === null || v === undefined) return null;
           if (typeof v === 'string') {
@@ -538,7 +553,7 @@ export default async function handler(req: any, res: any) {
           if (ch && typeof ch === 'string') {
             try { ch = JSON.parse(ch); } catch (e) {}
           }
-          storedNorm = sanitizePayload({ questionnaire_progress: qp, workout_plan: wp, accepted_terms: storedCols.accepted_terms ?? null, accepted_privacy: storedCols.accepted_privacy ?? null, chat_history: Array.isArray(ch) ? ch : (ch ? [ch] : null) }) || null;
+          storedNorm = sanitizePayload({ questionnaire_progress: qp, workout_plan: wp, accepted_terms: storedCols.accepted_terms ?? null, accepted_privacy: storedCols.accepted_privacy ?? null, chat_history: Array.isArray(ch) ? ch : (ch ? [ch] : null), username: storedCols.username ?? null, avatar: storedCols.avatar ?? null }) || null;
         } else {
           // No legacy payload column available; if explicit columns absent, nothing to return
           storedNorm = null;
