@@ -546,14 +546,14 @@ body.theme-dark .inventory-value {
 .streak-saver-btn {
   background: transparent;
   border: 2px solid rgba(251, 146, 60, 0.9);
-  border-radius: 12px;
-  padding: 12px;
+  border-radius: 24px;
+  padding: 16px 18px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   font-weight: 700;
   color: #fff;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.35);
+  text-shadow: none;
   box-shadow: 0 8px 22px rgba(251,146,60,0.18);
   transition: transform .14s ease, box-shadow .14s ease, background-color .14s ease;
 }
@@ -570,21 +570,21 @@ body.theme-dark .inventory-value {
   font-size: 14px;
   letter-spacing: 0.25px;
   color: #fff;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.35);
+  text-shadow: none;
 }
 .option-price {
   color: #1d0f00;
   font-weight: 800;
-  font-size: 18px;
-  min-width: 74px;
-  height: 42px;
-  border-radius: 10px;
+  font-size: 17px;
+  min-width: 88px;
+  height: 46px;
+  border-radius: 22px;
   background: #fb923c;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   box-shadow: 0 4px 12px rgba(0,0,0,0.18);
-  text-shadow: 0 1px 1px rgba(255,255,255,0.35);
+  text-shadow: none;
 }
 
 body.theme-dark .streak-saver-card {
@@ -595,12 +595,12 @@ body.theme-dark .streak-saver-btn {
   background: transparent;
   border-color: rgba(251, 146, 60, 0.9);
   color: #fff;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+  text-shadow: none;
 }
 body.theme-dark .streak-saver-btn .option-title,
 body.theme-dark .streak-saver-btn .option-price {
   color: #fff;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+  text-shadow: none;
 }
 body.theme-dark .option-price {
   color: #1d0f00;
