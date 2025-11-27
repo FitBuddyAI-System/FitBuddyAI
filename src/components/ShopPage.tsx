@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './ShopPage.css';
 import { fetchUserById, buyShopItem } from '../services/authService';
-import { Dumbbell, Sparkles, Smile, RefreshCw, ShoppingCart, Search, Filter } from 'lucide-react';
+import { saveUserData } from '../services/localStorage';
+import { Dumbbell, Sparkles, Smile, RefreshCw, ShoppingCart, Search, Filter, Flame, ShieldCheck } from 'lucide-react';
 
 // Example shop items
 const AVATARS = [
@@ -19,6 +20,14 @@ const AVATARS = [
   { id: 'avatar12', name: 'Forest Sprite', image: 'https://api.dicebear.com/7.x/bottts/svg?seed=ForestSprite', price: 130, type: 'avatar', description: 'Whimsical woodland friend.' },
   { id: 'avatar13', name: 'Forest Sprite', image: '/images/ChatGPT_Image_Clan_Of_27_Fire.png', price: 130, type: 'avatar', description: 'Whimsical woodland friend.' }
 ];
+
+const STREAK_SAVER_OPTIONS = [
+  { id: 'streak-saver-1', name: 'Streak Saver 1x', quantity: 1, price: 1000 },
+  { id: 'streak-saver-3', name: 'Streak Saver 3x', quantity: 3, price: 2000 },
+  { id: 'streak-saver-5', name: 'Streak Saver 5x', quantity: 5, price: 3000 }
+];
+
+const DEFAULT_ENERGY = 10000;
 
 const POWERUPS = [
   { id: 'spinpfp', name: 'Spinning Profile Picture', icon: <RefreshCw size={32} color="#1e90cb" />, price: 300, type: 'powerup', description: 'Make your profile picture spin for 7 days!' },
@@ -119,21 +128,63 @@ const ShopPage: React.FC<ShopPageProps> = ({ user, onPurchase }) => {
     prevEnergyRef.current = now;
   }, [user?.energy]);
 
-  const energyFillPercent = Math.min(100, Math.round(((user?.energy||0) / (user?.maxEnergy||500)) * 100));
+  const energyFillPercent = Math.min(100, Math.round(((user?.energy||0) / (user?.maxEnergy||DEFAULT_ENERGY)) * 100));
   const energyFillBucket = Math.round(energyFillPercent / 5) * 5; // bucket to nearest 5%
   const energyFillClass = `fill--${energyFillBucket}`;
 
   // Fetch user after purchase
   const handlePurchase = async (item: any) => {
+    if (!user?.id) {
+      alert('Please sign in to purchase items.');
+      return;
+    }
     if (user.energy < item.price) {
       alert('Not enough energy!');
       return;
     }
     setPurchasing(item.id);
-    // Call server to buy and save item
+
+    const isStreakSaver = String(item.id || '').startsWith('streak-saver');
+
+    // Handle streak saver client-side to avoid server rejection of custom ids
+    if (isStreakSaver) {
+      try {
+        const qty = Number((item as any).quantity ?? 1);
+        let nextInventory = Array.isArray(user.inventory) ? [...user.inventory] : [];
+        const idx = nextInventory.findIndex((it: any) => String(it?.id || '').startsWith('streak-saver'));
+        if (idx >= 0) {
+          const existing = nextInventory[idx];
+          const existingQty = Number(existing.quantity ?? existing.count ?? 1);
+          nextInventory[idx] = { ...existing, quantity: (Number.isFinite(existingQty) ? existingQty : 1) + qty };
+        } else {
+          nextInventory.push({ id: 'streak-saver', quantity: qty, type: 'powerup' });
+        }
+        const nextEnergy = Math.max(0, (user.energy ?? DEFAULT_ENERGY) - item.price);
+        const nextUser = { ...user, energy: nextEnergy, inventory: nextInventory };
+        saveUserData({ data: nextUser });
+        onPurchase(item);
+        window.dispatchEvent(new Event('storage'));
+      } catch (e) {
+        console.warn('Failed to process streak saver purchase:', e);
+        alert('Purchase failed.');
+      } finally {
+        setPurchasing(null);
+      }
+      return;
+    }
+
+    // Default flow for server-backed items
     const updated = await buyShopItem(user.id, item);
     setPurchasing(null);
     if (updated) {
+      try {
+        let nextInventory = Array.isArray(updated.inventory) ? [...updated.inventory] : (Array.isArray(user.inventory) ? [...user.inventory] : []);
+        const nextEnergy = Math.max(0, (updated.energy ?? user.energy) - item.price);
+        const nextUser = { ...user, ...updated, energy: nextEnergy, inventory: nextInventory };
+        saveUserData({ data: nextUser });
+      } catch (e) {
+        console.warn('Failed to save user after purchase:', e);
+      }
       onPurchase(item);
       window.dispatchEvent(new Event('storage'));
     } else {
@@ -149,20 +200,43 @@ const ShopPage: React.FC<ShopPageProps> = ({ user, onPurchase }) => {
     return out;
   };
 
+  const getInventoryCount = (prefix: string) => {
+    const inv = Array.isArray(user?.inventory) ? user.inventory : [];
+    return inv.reduce((sum: number, it: any) => {
+      if (!it?.id || !String(it.id).startsWith(prefix)) return sum;
+      const qty = Number((it as any).quantity ?? (it as any).count ?? 1);
+      return sum + (Number.isFinite(qty) ? qty : 1);
+    }, 0);
+  };
+
+  const streakSaverCount = getInventoryCount('streak-saver');
+
   return (
     <div className="shop-page fade-in-bounce">
-      <header className="shop-header">
-        <Dumbbell size={32} className="shop-logo" />
-        <h1 className="shop-title gradient-text">FitBuddyAI Shop</h1>
-        <div className="shop-energy">
-          <div className={`energy-pill ${energyPulse ? 'pulse' : ''}`} aria-live="polite">
-            <span className="energy-value">⚡ {user.energy}</span>
-            <div className="energy-meter" aria-hidden>
-              <div className={`fill ${energyFillClass}`} />
+      <div className="shop-header-row">
+        <header className="shop-header">
+          <Dumbbell size={32} className="shop-logo" />
+          <h1 className="shop-title gradient-text">FitBuddyAI Shop</h1>
+          <div className="shop-energy">
+            <div className={`energy-pill ${energyPulse ? 'pulse' : ''}`} aria-live="polite">
+              <span className="energy-value">⚡ {user.energy}</span>
+              <div className="energy-meter" aria-hidden>
+                <div className={`fill ${energyFillClass}`} />
+              </div>
             </div>
           </div>
-        </div>
-      </header>
+        </header>
+        <aside className="shop-inventory">
+          <div className="inventory-header">
+            <ShieldCheck size={18} />
+            <span>Inventory</span>
+          </div>
+          <div className="inventory-row">
+            <span className="inventory-label">Streak Savers</span>
+            <span className="inventory-value">{streakSaverCount}</span>
+          </div>
+        </aside>
+      </div>
       <div className="shop-topbar">
         <div className="shop-tabs" ref={tabsRef} role="tablist" aria-label="Shop categories">
           <div className="tab-indicator" ref={indicatorRef} aria-hidden="true" />
@@ -197,6 +271,35 @@ const ShopPage: React.FC<ShopPageProps> = ({ user, onPurchase }) => {
         <button className="featured-cta">Learn More</button>
       </div>
       <div className="shop-items-grid">
+        {selectedTab === 'powerups' && (
+          <div className="shop-card streak-saver-card shop-card-span">
+            <div className="shop-card-top">
+              <div className="shop-powerup-icon streak-saver-icon"><Flame size={36} color="#fff" /></div>
+            </div>
+            <div className="shop-card-body">
+              <h2 className="shop-item-title">Streak Savers</h2>
+              <p className="shop-item-desc">Choose a pack to protect your streak on a missed day.</p>
+              <div className="streak-saver-options">
+                {STREAK_SAVER_OPTIONS.map(opt => {
+                  const item = { id: opt.id, name: opt.name, price: opt.price, type: 'powerup', description: `${opt.quantity}x streak saver`, quantity: opt.quantity, icon: <Flame size={24} color="#fb923c" /> };
+                  const isBuying = purchasing === opt.id;
+                  const disabled = user.energy < opt.price || isBuying;
+                  return (
+                    <button
+                      key={opt.id}
+                      className="streak-saver-btn"
+                      disabled={disabled}
+                      onClick={() => handlePurchase(item)}
+                    >
+                      <div className="option-title">{opt.quantity}x Saver</div>
+                      <div className="option-price">⚡ {opt.price}</div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
         {selectedTab === 'avatars' && filteredItems(AVATARS).map(item => {
           const alreadyOwned = Array.isArray(user.inventory) && user.inventory.some((inv: any) => inv.id === item.id);
           return (
@@ -222,7 +325,7 @@ const ShopPage: React.FC<ShopPageProps> = ({ user, onPurchase }) => {
           );
         })}
         {selectedTab === 'powerups' && filteredItems(POWERUPS).map(item => (
-          <div className="shop-card" key={item.id} onClick={()=>setPreview(item)}>
+          <div className={`shop-card ${item.id === 'streak-saver' ? 'shop-card-span' : ''}`} key={item.id} onClick={()=>setPreview(item)}>
             <div className="shop-card-top">
               <div className="shop-powerup-icon">{item.icon}</div>
             </div>

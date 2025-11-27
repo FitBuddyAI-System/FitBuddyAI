@@ -4,6 +4,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  padding-top: 24px;
   padding-bottom: 48px;
   position: relative;
   z-index: 1;
@@ -39,6 +40,59 @@
   display: flex;
   flex-direction: column;
   align-items: flex-end;
+}
+.shop-header-row {
+  width: 100%;
+  max-width: 1100px;
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 18px;
+  align-items: stretch;
+}
+.shop-header-row .shop-header,
+.shop-header-row .shop-inventory {
+  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.shop-inventory {
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 8px 28px rgba(30,203,123,0.08);
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border: 1px solid var(--border-light, rgba(0,0,0,0.08));
+}
+.inventory-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 800;
+  color: var(--text-dark, #222);
+}
+.inventory-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: rgba(30,203,123,0.08);
+  border-radius: 12px;
+  font-weight: 700;
+}
+.inventory-label { color: var(--text-medium, #444); }
+.inventory-value { color: var(--text-dark, #222); }
+body.theme-dark .shop-inventory {
+  background: #0f1624;
+  border-color: #1f2a36;
+  box-shadow: 0 12px 30px rgba(0,0,0,0.45);
+}
+body.theme-dark .inventory-row {
+  background: rgba(30,203,123,0.14);
+}
+body.theme-dark .inventory-label,
+body.theme-dark .inventory-value {
+  color: #e9eef5;
 }
 .energy-label {
   color: var(--text-medium, #555);
@@ -463,6 +517,100 @@
   max-width: 1100px;
   margin: 0 auto;
   padding: 0 12px;
+}
+
+.shop-card-span {
+  grid-column: 1 / -1;
+}
+
+.streak-saver-card {
+  background: linear-gradient(135deg, #fff7ed, #fff);
+  border: 2px solid #fb923c;
+}
+.streak-saver-icon {
+  width: 72px;
+  height: 72px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, #fb923c, #f97316);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 10px 28px rgba(251,146,60,0.25);
+}
+.streak-saver-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+.streak-saver-btn {
+  background: transparent;
+  border: 2px solid rgba(251, 146, 60, 0.9);
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.35);
+  box-shadow: 0 8px 22px rgba(251,146,60,0.18);
+  transition: transform .14s ease, box-shadow .14s ease, background-color .14s ease;
+}
+.streak-saver-btn:hover:not(:disabled) {
+  transform: translateY(-3px);
+  box-shadow: 0 14px 30px rgba(251,146,60,0.25);
+  background: rgba(251,146,60,0.1);
+}
+.streak-saver-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+.option-title {
+  font-size: 14px;
+  letter-spacing: 0.25px;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.35);
+}
+.option-price {
+  color: #1d0f00;
+  font-weight: 800;
+  font-size: 18px;
+  min-width: 74px;
+  height: 42px;
+  border-radius: 10px;
+  background: #fb923c;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.18);
+  text-shadow: 0 1px 1px rgba(255,255,255,0.35);
+}
+
+body.theme-dark .streak-saver-card {
+  background: linear-gradient(135deg, #2d1a00, #1b1205);
+  border-color: #fb923c;
+}
+body.theme-dark .streak-saver-btn {
+  background: transparent;
+  border-color: rgba(251, 146, 60, 0.9);
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+}
+body.theme-dark .streak-saver-btn .option-title,
+body.theme-dark .streak-saver-btn .option-price {
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+}
+body.theme-dark .option-price {
+  color: #1d0f00;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+}
+body.theme-dark .streak-saver-btn:hover:not(:disabled) {
+  box-shadow: 0 12px 28px rgba(251,146,60,0.25);
+}
+body.theme-dark .option-price {
+  color: #fb923c;
 }
 .shop-card {
   background: linear-gradient(180deg, #ffffff 0%, #fbfffd 100%);

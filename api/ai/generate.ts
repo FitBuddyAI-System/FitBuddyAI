@@ -18,7 +18,24 @@ const GEMINI_URL = GEMINI_API_KEY
   ? `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`
   : null;
 
+// Lightweight CORS helper so static builds and alternate origins can call this function
+function applyCors(req: any, res: any) {
+  try {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Debug-Userdata, x-debug-userdata');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+  } catch (e) {
+    // ignore header write errors
+  }
+  if (req.method === 'OPTIONS') {
+    try { res.status(200).end(); } catch { try { res.end(); } catch {} }
+    return true;
+  }
+  return false;
+}
+
 export default async function handler(req: any, res: any) {
+  if (applyCors(req, res)) return;
   if (req.method !== 'POST') return res.status(405).json({ message: 'Method not allowed' });
   try {
     // Accept either { prompt: string, userId, meta } or the Google-style

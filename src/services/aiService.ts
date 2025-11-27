@@ -16,6 +16,56 @@ const GEMINI_URL = GEMINI_API_KEY
   ? `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${encodeURIComponent(GEMINI_API_KEY)}`
   : '/api/ai/generate';
 
+// Deterministic fallback plan used when the AI response is empty or non-JSON.
+const buildFallbackPlan = (userData: UserData, answers: Record<string, any>): WorkoutPlan => {
+  const start = answers.startDate || new Date().toISOString().split('T')[0];
+  const startDate = new Date(start);
+  const pattern: Array<'strength' | 'cardio' | 'flexibility' | 'rest' | 'mixed'> = [
+    'strength',
+    'cardio',
+    'strength',
+    'flexibility',
+    'mixed',
+    'cardio',
+    'rest'
+  ];
+  const dailyWorkouts = pattern.map((type, idx) => {
+    const d = new Date(startDate);
+    d.setDate(d.getDate() + idx);
+    const dateStr = d.toISOString().split('T')[0];
+    const baseWorkout = {
+      name: type === 'rest' ? 'Rest Day' : type === 'cardio' ? 'Intervals' : 'Bodyweight Circuit',
+      description: type === 'rest'
+        ? 'Recovery and light movement.'
+        : 'A simple session you can do anywhere.',
+      difficulty: 'beginner' as 'beginner',
+      duration: type === 'rest' ? '0 min' : '30 minutes',
+      reps: type === 'rest' ? '' : '3 rounds',
+      muscleGroups: type === 'cardio' ? ['cardio'] : ['full body'],
+      equipment: []
+    };
+    return {
+      date: dateStr,
+      type,
+      completed: false,
+      totalTime: type === 'rest' ? '0 minutes' : '30 minutes',
+      workouts: [baseWorkout],
+      alternativeWorkouts: []
+    };
+  });
+
+  return {
+    id: `fallback-plan-${Date.now()}`,
+    name: `${userData.username || userData.name || 'Your'} Plan`,
+    description: 'Starter plan fallback',
+    startDate: startDate.toISOString().split('T')[0],
+    endDate: new Date(startDate.getTime() + (dailyWorkouts.length - 1) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    totalDays: dailyWorkouts.length,
+    weeklyStructure: pattern.map(t => `${t[0].toUpperCase()}${t.slice(1)} Day`),
+    dailyWorkouts
+  };
+};
+
 export const generateWorkoutPlan = async (
   userData: UserData,
   answers: Record<string, any>,
@@ -136,7 +186,16 @@ Generate and return the JSON now.`;
   if (!res.ok) throw new Error('AI generation failed');
   const body = await res.json();
   const generatedText = body.text || '';
-  return parseAIResponse(generatedText, userData);
+  if (!generatedText || String(generatedText).trim().length < 2) {
+    console.warn('generateWorkoutPlan: empty AI response; using fallback plan');
+    return buildFallbackPlan(userData, answers);
+  }
+  try {
+    return parseAIResponse(generatedText, userData);
+  } catch (err) {
+    console.warn('generateWorkoutPlan: parse failed, falling back to deterministic plan', err);
+    return buildFallbackPlan(userData, answers);
+  }
 };
 
 // Parse AI JSON response into WorkoutPlan
@@ -214,19 +273,23 @@ const parseAIResponse = (responseText: string, userData: UserData): WorkoutPlan 
         totalTime: day.totalTime || '',
         workouts: ((day.workouts ?? day.exercises) || []).map((w: any) => {
           if (typeof w === 'string') {
-            return { name: w, description: w, difficulty: 'beginner', muscleGroups: [], equipment: [], duration: '', reps: '' };
+            return { name: w, description: w, difficulty: 'beginner' as 'beginner', muscleGroups: [], equipment: [], duration: '', reps: '' };
           }
-        // choose correct field for name
-        const name = w.name ?? w.exercise ?? '';
-        const description = w.description ?? w.instructions ?? '';
-        const duration = w.duration ?? (w.durationSeconds ? `${w.durationSeconds} sec` : '');
-        const sets = w.sets;
-        const reps = w.reps ?? '';
-        const rest = w.rest ?? '';
+          // choose correct field for name
+          const name = w.name ?? w.exercise ?? '';
+          const description = w.description ?? w.instructions ?? '';
+          const duration = w.duration ?? (w.durationSeconds ? `${w.durationSeconds} sec` : '');
+          const sets = w.sets;
+          const reps = w.reps ?? '';
+          const rest = w.rest ?? '';
+          const difficultyValue = w.difficulty || 'beginner';
+          const validDifficulty = ['beginner', 'intermediate', 'advanced'].includes(difficultyValue) 
+            ? (difficultyValue as 'beginner' | 'intermediate' | 'advanced')
+            : 'beginner' as const;
           return {
             name,
             description,
-            difficulty: w.difficulty || 'beginner',
+            difficulty: validDifficulty,
             muscleGroups: w.muscleGroups || [],
             equipment: w.equipment || [],
             duration,
@@ -235,29 +298,33 @@ const parseAIResponse = (responseText: string, userData: UserData): WorkoutPlan 
             ...(rest ? { rest } : {})
           };
         }),
-        alternativeWorkouts: ((day.alternativeWorkouts ?? day.alternativeExercises) || []).map((w: any) => {
+        alternativeWorkouts: ((day.alternativeWorkouts ?? day.alternatives) || []).map((w: any) => {
           if (typeof w === 'string') {
-            return { name: w, description: w, difficulty: 'beginner', muscleGroups: [], equipment: [], duration: '', reps: '' };
+            return { name: w, description: w, difficulty: 'beginner' as 'beginner', muscleGroups: [], equipment: [], duration: '', reps: '' };
           }
-        const altName = w.name ?? w.exercise ?? '';
-        const altDescription = w.description ?? w.instructions ?? '';
-        const altDuration = w.duration ?? (w.durationSeconds ? `${w.durationSeconds} sec` : '');
-        const altSets = w.sets;
-        const altReps = w.reps ?? '';
-        const altRest = w.rest ?? '';
+          const name = w.name ?? w.exercise ?? '';
+          const description = w.description ?? w.instructions ?? '';
+          const duration = w.duration ?? (w.durationSeconds ? `${w.durationSeconds} sec` : '');
+          const sets = w.sets;
+          const reps = w.reps ?? '';
+          const rest = w.rest ?? '';
+          const difficultyValue = w.difficulty || 'beginner';
+          const validDifficulty = ['beginner', 'intermediate', 'advanced'].includes(difficultyValue)
+            ? (difficultyValue as 'beginner' | 'intermediate' | 'advanced')
+            : 'beginner' as const;
           return {
-            name: altName,
-            description: altDescription,
-            difficulty: w.difficulty || 'beginner',
+            name,
+            description,
+            difficulty: validDifficulty,
             muscleGroups: w.muscleGroups || [],
             equipment: w.equipment || [],
-            duration: altDuration,
-            reps: altReps,
-            ...(altSets !== undefined ? { sets: altSets } : {}),
-            ...(altRest ? { rest: altRest } : {})
+            duration,
+            reps,
+            ...(sets !== undefined ? { sets } : {}),
+            ...(rest ? { rest } : {})
           };
         }),
-        completed: false,
+        completed: day.completed ?? false,
         type: day.type || 'mixed'
       }));
 
@@ -347,7 +414,7 @@ Generate one DayWorkout JSON for ${targetDate}, type '${workoutType}', compatibl
       description: workoutType === 'rest'
         ? 'Take a breather to recover.'
         : 'A quick, equipment-free session to keep you moving.',
-      difficulty: 'beginner',
+      difficulty: 'beginner' as 'beginner',
       duration: workoutType === 'rest' ? '0 min' : '30 minutes',
       reps: workoutType === 'rest' ? '' : '3 rounds',
       muscleGroups: workoutType === 'cardio' ? ['cardio'] : ['full body'],

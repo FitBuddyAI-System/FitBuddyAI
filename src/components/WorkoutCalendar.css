@@ -395,6 +395,99 @@ body.theme-dark .batch-add-panel textarea {
   flex-direction: column;
 }
 
+.calendar-day.streak-complete {
+  background: #ffedd5;
+  border: 2px solid #fb923c;
+  box-shadow: 0 6px 20px rgba(251, 146, 60, 0.35);
+}
+
+.calendar-day.streak-complete .workout-indicator {
+  background: linear-gradient(135deg, #fb923c, #f97316);
+  color: #fff;
+}
+
+.calendar-day.streak-complete .workout-progress-bar {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.calendar-day.streak-complete .workout-progress-bar .progress-fill {
+  background: #fff;
+}
+
+.day-streak-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #fb923c;
+  color: #fff;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-weight: 800;
+  font-size: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+}
+
+.day-streak-badge .flame-icon {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.day-streak-badge .streak-value {
+  line-height: 1;
+}
+
+body.theme-dark .calendar-day.streak-complete {
+  background: #2d1a00;
+  border-color: #fb923c;
+  box-shadow: 0 6px 20px rgba(251, 146, 60, 0.35);
+}
+
+body.theme-dark .calendar-day.streak-complete .workout-indicator {
+  background: linear-gradient(135deg, #fb923c, #f97316);
+  color: #fff;
+}
+
+.streak-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: linear-gradient(135deg, #fb923c, #f97316);
+  color: #fff;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.4);
+  box-shadow: inset 0 2px 8px rgba(255,255,255,0.2);
+}
+
+.streak-card .streak-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255,255,255,0.18);
+  border-radius: 50%;
+  width: 48px;
+  height: 48px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.12);
+}
+
+.streak-card .streak-number {
+  font-size: 26px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.streak-card .streak-label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+
 /* Empty placeholder cells used for grid alignment should not visually obstruct layout */
 .calendar-day.empty {
   background: transparent;
@@ -599,6 +692,27 @@ body.theme-dark .batch-add-panel textarea {
   margin-bottom: 8px;
 }
 
+.day-total-time {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(30, 203, 123, 0.12);
+  color: var(--text-dark);
+  border: 1px solid rgba(30, 144, 203, 0.2);
+  border-radius: 10px;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  pointer-events: none;
+}
+
+body.theme-dark .day-total-time {
+  background: rgba(30, 203, 123, 0.18);
+  color: #e9eef5;
+  border-color: rgba(30, 203, 123, 0.35);
+}
+
 .workout-indicator {
   flex: 1;
   border-radius: 12px;
@@ -682,21 +796,19 @@ body.theme-dark .batch-add-panel textarea {
 
 .workout-segments {
   width: 100%;
-  display: grid;
-  grid-template-columns: repeat(1, 1fr);
-  gap: 2px;
-  margin-bottom: 4px;
-  border-radius: 8px;
-  overflow: hidden;
+  display: flex;
+  gap: 10px;
+  margin: 8px 0;
+  justify-content: center;
+  align-items: stretch;
 }
 
-.workout-segments[data-count="2"] { grid-template-columns: repeat(2, 1fr); }
-.workout-segments[data-count="3"] { grid-template-columns: repeat(3, 1fr); }
-.workout-segments[data-count="4"] { grid-template-columns: repeat(4, 1fr); }
-
 .workout-segments .segment {
-  height: 8px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
   display: block;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.18);
 }
 
 .workout-segments .segment.strength { background: linear-gradient(135deg, #ff6b6b, #ee5a52); }
@@ -1481,6 +1593,21 @@ body.theme-dark .loader-overlay {
   border-radius: 16px;
   box-shadow: 0 4px 20px var(--shadow-light, rgba(0, 0, 0, 0.08));
   border: 1px solid var(--border-light, rgba(0,0,0,0.08));
+}
+
+.calendar-legend.drop-target {
+  border: 1px dashed var(--red, #F44336);
+  box-shadow: 0 10px 28px rgba(244, 67, 54, 0.16);
+  background: rgba(244, 67, 54, 0.06);
+}
+
+.calendar-legend.drop-target::after {
+  content: 'Drop here to remove from schedule';
+  display: block;
+  margin-top: 12px;
+  color: var(--red, #F44336);
+  font-weight: 600;
+  text-align: center;
 }
 
 .calendar-legend h3 {

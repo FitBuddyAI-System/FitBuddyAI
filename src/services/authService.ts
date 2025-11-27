@@ -3,6 +3,8 @@ import attachAuthHeaders from './apiAuth';
 import { supabase } from './supabaseClient';
 import { saveUserData, saveAuthToken, clearAuthToken, loadUserData } from './localStorage';
 
+const DEFAULT_ENERGY = 10000;
+
 export async function buyShopItem(id: string, item: any): Promise<User | null> {
   try {
     // Send a minimal, safe payload (avoid sending React elements or functions)
@@ -59,8 +61,10 @@ export async function fetchUserById(id: string): Promise<User | null> {
     if (!res.ok) return null;
     const data = await res.json();
     if (data.user) {
-      try { saveUserData({ data: data.user }); } catch {}
-      return data.user;
+      const nextEnergy = data.user.energy ?? DEFAULT_ENERGY;
+      const next = { ...data.user, energy: nextEnergy };
+      try { saveUserData({ data: next }); } catch {}
+      return next;
     }
     return null;
   } catch {
@@ -111,7 +115,8 @@ export async function signIn(email: string, password: string): Promise<User> {
         // ignore; we'll fallback to email
       }
     }
-  const toSave = { data: { id: user.id, email: user.email, username: usernameVal || user.email, energy: (user.user_metadata && user.user_metadata.energy) || 0 } };
+  const fallbackEnergy = (user.user_metadata && user.user_metadata.energy) ?? DEFAULT_ENERGY;
+  const toSave = { data: { id: user.id, email: user.email, username: usernameVal || user.email, energy: fallbackEnergy } };
   // Clear any cross-tab 'no auto restore' guard set during sign-out so sign-in can persist data
   try { sessionStorage.removeItem('fitbuddyai_no_auto_restore'); } catch {}
   try { localStorage.removeItem('fitbuddyai_no_auto_restore'); } catch {}
@@ -144,22 +149,24 @@ export async function signIn(email: string, password: string): Promise<User> {
   const data = await res.json();
   if (data.user) {
     // Persist unified user_data with optional token so attachAuthHeaders can find it
-    const toSave = { data: data.user, token: data.token ?? null };
+    const nextEnergy = data.user.energy ?? DEFAULT_ENERGY;
+    const nextUser = { ...data.user, energy: nextEnergy };
+    const toSave = { data: nextUser, token: data.token ?? null };
     try { saveUserData(toSave, { skipBackup: true }); } catch { /* ignore */ }
   }
-  return data.user;
+  return { ...data.user, energy: data.user.energy ?? DEFAULT_ENERGY };
 }
 
 export async function signUp(email: string, username: string, password: string): Promise<User> {
   const normalizedEmail = String(email).trim().toLowerCase();
   const useSupabase = Boolean(import.meta.env.VITE_LOCAL_USE_SUPABASE || import.meta.env.VITE_SUPABASE_URL);
   if (useSupabase) {
-    const result = await supabase.auth.signUp({ email: normalizedEmail, password, options: { data: { username, energy: 100 } } });
+    const result = await supabase.auth.signUp({ email: normalizedEmail, password, options: { data: { username, energy: DEFAULT_ENERGY } } });
     if (result.error) throw new Error(result.error.message || 'Sign up failed');
     // Supabase may not return a session depending on config; if a session exists save token
     const token = result.data?.session?.access_token ?? null;
     const user = result.data?.user ?? null;
-  const toSave = user ? { id: user.id, email: user.email, username, energy: 100 } : null;
+  const toSave = user ? { id: user.id, email: user.email, username, energy: DEFAULT_ENERGY } : null;
   // Only persist client-side if we actually received a session/token. For email-verify flows
   // Supabase may require the user to confirm via email before signing in; do not mark them
   // as signed-in (or persist their profile) until a token exists.

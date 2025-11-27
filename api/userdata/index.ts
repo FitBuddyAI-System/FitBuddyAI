@@ -11,6 +11,22 @@ const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const supabase = SUPABASE_URL && SUPABASE_KEY ? createClient(SUPABASE_URL, SUPABASE_KEY) : null;
 const supabaseAdmin = SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY ? createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY) : null;
 
+// Lightweight CORS helper for serverless usage from static builds or alternate origins
+function applyCors(req: any, res: any) {
+  try {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Debug-Userdata, x-debug-userdata');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+  } catch (e) {
+    // ignore header errors
+  }
+  if (req.method === 'OPTIONS') {
+    try { res.status(200).end(); } catch { try { res.end(); } catch {} }
+    return true;
+  }
+  return false;
+}
+
 function checkAdminToken(req: any) {
   const adminToken = process.env.ADMIN_API_TOKEN;
   // If no ADMIN_API_TOKEN is configured, do NOT auto-allow — require other verification methods
@@ -20,6 +36,7 @@ function checkAdminToken(req: any) {
 }
 
 export default async function handler(req: any, res: any) {
+  if (applyCors(req, res)) return;
   const action = String(req.query.action || req.query?.[0] || '').toLowerCase();
   const isVercel = Boolean(process.env.VERCEL);
 
