@@ -27,6 +27,9 @@
 .hero-sub { margin:0; color:var(--text-medium); }
 
 .hero-right { display:flex; flex-direction:column; gap:8px; align-items:flex-end; }
+.ai-save-row { display:flex; flex-direction:column; align-items:flex-start; gap:4px; margin-top:8px; }
+.ai-save-btn { align-self:flex-start; }
+.ai-save-hint { font-size:12px; color:var(--text-medium); max-width:420px; }
 .search-wrap { width: 420px; max-width: 48vw; min-width: 0; align-self: stretch; }
 .search-input {
   /* Default to the same visual width as .search-wrap when used standalone */

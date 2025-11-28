@@ -17,6 +17,8 @@ export type SavedWorkout = {
 
 const PLAN_KEY = 'fitbuddyai_my_plan';
 const EVENT_KEY = 'fitbuddyai-saved-library-updated';
+let inMemoryLibrary: SavedWorkout[] = [];
+let storageUnavailable = false;
 
 export const sanitizeWorkout = (item: SavedWorkout): SavedWorkout => {
   if (!item) return { title: 'Workout' };
@@ -38,6 +40,9 @@ export const sanitizeWorkout = (item: SavedWorkout): SavedWorkout => {
 };
 
 export const loadSavedWorkouts = (): SavedWorkout[] => {
+  if (storageUnavailable) {
+    return [...inMemoryLibrary];
+  }
   try {
     const saved = localStorage.getItem(PLAN_KEY) || sessionStorage.getItem(PLAN_KEY);
     const parsed = saved ? JSON.parse(saved) : [];
@@ -50,18 +55,22 @@ export const loadSavedWorkouts = (): SavedWorkout[] => {
     };
     if (Array.isArray(parsed)) parsed.forEach(addIfNew);
     if (Array.isArray(fromUser)) fromUser.forEach(addIfNew);
+    // Only overwrite the in-memory cache when storage calls are working
+    inMemoryLibrary = combined;
     return combined;
   } catch (err) {
     console.warn('Failed to load saved workouts:', err);
-    return [];
+    storageUnavailable = true;
+    return [...inMemoryLibrary];
   }
 };
 
 export const persistSavedWorkouts = (list: SavedWorkout[]): SavedWorkout[] => {
   const sanitized = (list || []).map(sanitizeWorkout);
   const payload = JSON.stringify(sanitized);
-  try { localStorage.setItem(PLAN_KEY, payload); } catch {}
-  try { sessionStorage.setItem(PLAN_KEY, payload); } catch {}
+  inMemoryLibrary = sanitized;
+  try { localStorage.setItem(PLAN_KEY, payload); } catch { storageUnavailable = true; }
+  try { sessionStorage.setItem(PLAN_KEY, payload); } catch { storageUnavailable = true; }
   try {
     const existingUser = loadUserData();
     if (existingUser) {

@@ -3,7 +3,6 @@ import './WorkoutsPage.css';
 import {
   loadSavedWorkouts,
   persistSavedWorkouts,
-  sanitizeWorkout,
   subscribeSavedWorkouts,
   SavedWorkout
 } from '../utils/savedLibrary';
@@ -67,7 +66,6 @@ const PersonalLibraryPage: React.FC = () => {
                     <span className={`category ${w.categoryClass || ''}`} data-cat={w.displayCategory}>{w.displayCategory}</span>
                   ) : null}
                 </div>
-                <p className="card-desc">{w.exampleNote || w.meta?.description?.slice(0,120) || 'No description available.'}</p>
               </div>
               <div className="card-footer">
                 <button className="btn-ghost danger" onClick={() => removeFromPlan(w.title)}>Remove</button>
