@@ -1,15 +1,15 @@
 /* Ensure footer is visible even if a user-agent or external stylesheet hides it */
-.fb-footer{display: block !important}
+.fitbuddy-footer{display: block !important}
 
-.fb-footer{
+.fitbuddy-footer{
   background: linear-gradient(135deg, var(--background-white, #f0fbf6) 0%, var(--background-light, #e8f5ff) 100%);
   border-top: 1px solid var(--border-light, rgba(0,0,0,0.04));
   padding:28px 12px;
   color:var(--text-medium);
 }
 /* Footer participates in normal document flow so pages can control layout (sticky behavior handled by page containers) */
-.fb-footer{position:relative;padding-left:12px;padding-right:12px;z-index:80}
-.fb-footer-inner{max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+.fitbuddy-footer{position:relative;padding-left:12px;padding-right:12px;z-index:80}
+.fitbuddy-footer-inner{max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
 
 /* Avoid reserving global space for the footer; instead apply padding on pages that include it. */
 /* Add a page-scoped safe area so content isn't obscured by the fixed footer when present */
@@ -51,8 +51,8 @@
 }
 
 /* Dark mode */
-.theme-dark .fb-footer,
-body.theme-dark .fb-footer {
+.theme-dark .fitbuddy-footer,
+body.theme-dark .fitbuddy-footer {
   background: linear-gradient(135deg, #0f1828 0%, #0b111b 100%);
   border-top: 1px solid rgba(255,255,255,0.06);
   color: var(--text-dark);
@@ -63,10 +63,10 @@ body.theme-dark .fb-bottom {
 }
 .theme-dark .fb-col a,
 .theme-dark .fb-brand .muted,
-.theme-dark .fb-footer .muted,
+.theme-dark .fitbuddy-footer .muted,
 body.theme-dark .fb-col a,
 body.theme-dark .fb-brand .muted,
-body.theme-dark .fb-footer .muted {
+body.theme-dark .fitbuddy-footer .muted {
   color: var(--text-medium);
 }
 .theme-dark .fb-col a:hover,
