@@ -36,7 +36,7 @@ const BackgroundDots: React.FC = () => {
         body?.clientHeight || 0,
         canvas.parentElement?.scrollHeight || 0
       );
-      return scrollH || window.innerHeight;
+      return scrollH || window.innerHeight; /*Safeguard probably not needed, but kept just in case*/
     };
 
     let width = window.innerWidth;
@@ -77,8 +77,10 @@ const BackgroundDots: React.FC = () => {
         }
 
         if (mouseRef.current.active && animate) {
+          /*Change in x = x of dot - x of mouse*/
           const dx = d.x - mouseRef.current.x;
-          const dy = d.y - mouseRef.current.y;
+           /*Change in y = y of dot - (y of mouse + scroll offset - circle radius)*/
+          const dy = d.y - mouseRef.current.y - document.documentElement.scrollTop + 60; 
           const dist = Math.hypot(dx, dy);
           if (dist < influence && dist > 0.01) {
             const force = (influence - dist) / influence;
@@ -104,9 +106,10 @@ const BackgroundDots: React.FC = () => {
       // Always run a regular frame (oneShot=false) when scheduled by rAF.
       draw(false);
     };
-
+ 
     const handleMove = (e: MouseEvent) => {
       mouseRef.current = { x: e.clientX, y: e.clientY, active: true };
+      /*console.log(e.clientX.toString() + "\\" + e.clientY.toString())*/
     };
     const handleLeave = () => {
       mouseRef.current.active = false;
