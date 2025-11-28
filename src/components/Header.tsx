@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Calendar, User, Flame, Sparkles, Home, Dumbbell } from 'lucide-react';
+import { Calendar, User, Flame, Sparkles, Home } from 'lucide-react';
 import { loadQuestionnaireProgress, clearUserData, clearQuestionnaireProgress, clearWorkoutPlan, loadAssessmentData } from '../services/localStorage';
 import './Header.css';
 import { backupAndDeleteSensitive } from '../services/cloudBackupService';
@@ -255,7 +255,6 @@ const Header: React.FC<HeaderProps> = ({ profileVersion, userData }) => {
               <button onClick={() => { setExploreOpen(false); navigate('/blog'); }}>Blog</button>
               <button onClick={() => { setExploreOpen(false); navigate('/pricing'); }}>Pricing</button>
               <button onClick={() => { setExploreOpen(false); navigate('/shop'); }} className="dropdown-shop">Shop</button>
-              <button onClick={() => { setExploreOpen(false); navigate('/my-plan'); }}>My Plan</button>
               {isSignedIn && (
                 <div className="explore-footer">
                   <button onClick={() => { setExploreOpen(false); navigate('/profile/settings'); }}>Settings</button>

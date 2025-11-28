@@ -20,6 +20,7 @@
   font-size: 36px;
   margin: 0 0 6px 0;
   background: linear-gradient(90deg,var(--primary-green),var(--secondary-blue));
+  background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -48,7 +49,6 @@
 .filters { display:flex; gap:8px; }
 .filter-btn { padding:8px 12px; border-radius:999px; background:transparent; border:1px solid var(--border-light); color:var(--text-medium); cursor:pointer; }
 .filter-btn.active { background: linear-gradient(90deg,var(--primary-green),var(--secondary-blue)); color:#fff; box-shadow: 0 8px 30px rgba(30,203,123,0.08); }
-.ai-plan-btn { align-self: flex-end; }
 .sort-control {
   display: inline-flex;
   align-items: center;
@@ -73,9 +73,8 @@ body.theme-dark .sort-control {
 body.theme-dark .sort-control label { color: rgba(233,238,245,0.85); }
 body.theme-dark .sort-control select { color: #e9eef5; }
 
-.workouts-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap:18px; margin-top:18px; }
+.workouts-grid { display:grid; grid-template-columns: repeat(3, 1fr); gap:18px; margin-top:18px; }
 .empty { padding:32px; text-align:center; color:var(--text-medium); grid-column:1/-1; }
-.ai-plan-message { margin: 8px 0 4px; font-weight: 700; color: var(--primary-green); }
 
 .workout-card { background: var(--calendar-surface); border-radius:14px; overflow:hidden; display:flex; flex-direction:column; border:1px solid var(--border-light); box-shadow: 0 8px 36px rgba(2,6,23,0.06); transition:transform .18s ease, box-shadow .18s ease; }
 .workout-card:hover { transform: translateY(-8px); box-shadow: 0 24px 80px rgba(2,6,23,0.12); }
@@ -153,10 +152,10 @@ body.theme-dark .sort-control select { color: #e9eef5; }
 }
 .muscle-badge .muscle-text {
   display:inline-block;
-  max-width: 100%;
-  overflow: visible;
-  text-overflow: clip;
-  white-space: normal;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .muscle-badge.primary .muscle-text.primary-text {
   /* Primary muscles should not be truncated; allow wrapping */
@@ -167,15 +166,13 @@ body.theme-dark .sort-control select { color: #e9eef5; }
 }
 .muscle-badge.secondary .muscle-text.secondary-text {
   /* Secondary muscles should truncate with an ellipsis */
-  max-width: 100%;
-  white-space: normal;
-  overflow: visible;
-  text-overflow: clip;
+  max-width: 140px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Layout behavior: primary grows/wraps; secondary will move to next line if primary uses available space */
-.muscle-badge.primary { /* primary occupies the first (fluid) column and can wrap */ }
-.muscle-badge.secondary { /* secondary stays in the second column and will be truncated */ }
 .muscle-badge.primary strong, .muscle-badge.secondary strong { margin-right:6px; font-weight:800; }
 
 /* In modal, allow badges to use available space */
@@ -299,7 +296,7 @@ body:not(.theme-dark) .btn-ghost:hover {
 .modal-media .media-fallback.large { height:360px; display:flex; align-items:center; justify-content:center; font-size:64px; color:var(--text-medium); background: linear-gradient(180deg, rgba(0,0,0,0.02), rgba(255,255,255,0.02)); }
 
 .modal-info { overflow:auto; max-height:60vh; padding-right:6px; }
-.long-desc { color: var(--text-medium); font-size:15px; line-height:1.6; margin: 0; }
+.long-desc { color: var(--text-medium); font-size:15px; line-height:1.6; }
 .resources h4 { margin: 12px 0 8px 0; }
 .resources ul { margin: 8px 0 0 18px; }
 .resources a { color: var(--secondary-blue); text-decoration: underline; }
@@ -308,57 +305,6 @@ body:not(.theme-dark) .btn-ghost:hover {
 .meta-item { background: var(--bg-light); padding:10px; border-radius:10px; font-size:13px; border:1px solid var(--border-light); display:flex; flex-direction:column; gap:6px; }
 .meta-item strong { text-transform:capitalize; font-size:12px; color:var(--text-medium); }
 .meta-item span { color:var(--text-dark); font-weight:600; }
-
-.pill.meta-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 10px;
-  border-radius: 12px;
-  font-size: 12px;
-  font-weight: 700;
-  background: rgba(255,255,255,0.14);
-  color: #fff;
-  border: 1px solid rgba(255,255,255,0.12);
-}
-.pill.meta-pill.level { background: rgba(76,175,80,0.2); color: #c5f7ca; }
-.pill.meta-pill.force { background: rgba(255,193,7,0.2); color: #ffe8a3; }
-.pill.meta-pill.mechanic { background: rgba(33,150,243,0.2); color: #c7e7ff; }
-.pill.meta-pill.category-pill { background: rgba(255,105,180,0.2); color: #ffd4ec; }
-.pill.meta-pill.equipment { background: rgba(156,39,176,0.2); color: #f0c8ff; }
-
-.info-card {
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.06);
-  border-radius: 14px;
-  padding: 12px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.25);
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.instructions {
-  background: rgba(0,0,0,0.04);
-  border: 1px solid rgba(0,0,0,0.04);
-  border-radius: 12px;
-  padding: 10px 12px;
-}
-.instructions h4 { margin: 0 0 6px 0; }
-.instructions ol { margin: 0 0 0 16px; padding: 0; color: var(--text-medium); }
-
-.description-card {
-  background: rgba(0,0,0,0.04);
-  border: 1px solid rgba(0,0,0,0.04);
-  border-radius: 12px;
-  padding: 10px 12px;
-}
-.description-card h4 { margin: 0 0 6px 0; }
-.muscle-grid { display:grid; grid-template-columns: 1fr; gap:12px; }
-.muscle-section.modal { margin-top: 12px; }
-.muscle-list.split { display:flex; gap:12px; flex-wrap:wrap; }
-.muscle-col.pane { background: rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.08); padding:12px; border-radius:12px; min-width:200px; box-shadow: 0 6px 18px rgba(0,0,0,0.12); }
-.muscle-col strong { margin-bottom:6px; }
 
 .modal-actions { display:flex; gap:12px; justify-content:flex-end; padding:16px 20px; border-top: 1px solid rgba(0,0,0,0.04); background: linear-gradient(180deg, rgba(0,0,0,0.02), transparent); }
 .btn-primary { background: linear-gradient(90deg,var(--primary-green),var(--secondary-blue)); color:white; padding:12px 18px; border-radius:12px; border:none; cursor:pointer; font-weight:700; }

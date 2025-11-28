@@ -1,7 +1,5 @@
 import React, { useMemo, useState } from 'react';
 import './WorkoutsPage.css';
-import { loadAssessmentData } from '../services/localStorage';
-import confetti from 'canvas-confetti';
 
 type Workout = {
   id?: string;
@@ -28,6 +26,8 @@ type Workout = {
   // UI helpers added at runtime
   displayDifficulty?: string;
   difficultyClass?: string;
+  displayCategory?: string;
+  categoryClass?: string;
 };
 
 const WorkoutsPage: React.FC = () => {
@@ -36,8 +36,6 @@ const WorkoutsPage: React.FC = () => {
   const [categorySort, setCategorySort] = useState<string>('All');
   const [selected, setSelected] = useState<string | null>(null);
   const [myPlan, setMyPlan] = useState<Array<{ title: string; id: string } & Workout>>([]);
-  const [aiAdding, setAiAdding] = useState(false);
-  const [aiMessage, setAiMessage] = useState<string | null>(null);
 
   // Map JSON level values to UI difficulty labels
   const mapLevel = (lvl?: string) => {
@@ -111,23 +109,31 @@ const WorkoutsPage: React.FC = () => {
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const normCategory = normalizeCategoryLabel(categorySort);
-    const normDifficulty = difficulty.toLowerCase();
     return workouts.filter(w => {
       if (difficulty !== 'All') {
         const d = (w.displayDifficulty || '').toLowerCase();
-        if (d !== normDifficulty) return false;
+        if (difficulty.toLowerCase() !== d) return false;
       }
       if (categorySort !== 'All') {
         const catLabel = getCategoryLabel(w);
-        if (normalizeCategoryLabel(catLabel) !== normCategory) return false;
+        if (normalizeCategoryLabel(catLabel) !== normalizeCategoryLabel(categorySort)) return false;
       }
       if (!q) return true;
 
-      const hay = `${w.title || ''} ${w.exampleNote || ''} ${w.meta?.description || ''} ${(w.primaryMuscles || []).join(' ')} ${(w.secondaryMuscles || []).join(' ')} ${(w as any).displayCategory || ''} ${w.category || ''} ${(Array.isArray(w.instructions) ? w.instructions.join(' ') : '')}`.toLowerCase();
+      const parts: string[] = [];
+      if (w.title) parts.push(w.title);
+      if (w.exampleNote) parts.push(w.exampleNote);
+      if (w.meta?.description) parts.push(w.meta.description);
+      if (Array.isArray(w.primaryMuscles)) parts.push(w.primaryMuscles.join(' '));
+      if (Array.isArray(w.secondaryMuscles)) parts.push(w.secondaryMuscles.join(' '));
+      if ((w as any).displayCategory) parts.push((w as any).displayCategory);
+      if (w.category) parts.push(String(w.category));
+      if (Array.isArray(w.instructions)) parts.push(w.instructions.join(' '));
+
+      const hay = parts.join(' ').toLowerCase();
       return hay.includes(q);
     });
-  }, [workouts, query, difficulty, categorySort]);
+  }, [workouts, query, difficulty]);
 
   const sorted = useMemo(() => {
     const list = [...filtered];
@@ -176,52 +182,6 @@ const WorkoutsPage: React.FC = () => {
     setMyPlan(prev => prev.filter(p => p.title !== title));
   };
 
-  const pickAiPlan = () => {
-    setAiAdding(true);
-    setAiMessage(null);
-    setTimeout(() => {
-      try {
-        const assessment = loadAssessmentData() || {};
-        const prefs: string[] = Array.isArray(assessment.preferences) ? assessment.preferences.map((p: string) => String(p).toLowerCase()) : [];
-        const targetCats = new Set<string>();
-        prefs.forEach(p => {
-          if (p.includes('strength')) targetCats.add('strength training');
-          if (p.includes('cardio')) targetCats.add('cardio');
-          if (p.includes('yoga') || p.includes('stretch')) targetCats.add('stretching');
-          if (p.includes('hiit')) targetCats.add('hiit');
-          if (p.includes('bodyweight')) targetCats.add('bodyweight');
-        });
-
-        const scored = sorted.map(w => {
-          const cat = (w.displayCategory || '').toLowerCase();
-          let score = 0;
-          if (targetCats.size === 0) score += 1;
-          if (targetCats.has(cat)) score += 3;
-          if (prefs.some(p => (w.title || '').toLowerCase().includes(p))) score += 2;
-          if (Array.isArray(w.primaryMuscles) && prefs.some(p => w.primaryMuscles.some(m => String(m).toLowerCase().includes(p)))) score += 1;
-          return { w, score };
-        });
-
-        scored.sort((a, b) => b.score - a.score || (a.w.title || '').localeCompare(b.w.title || ''));
-        const chosen = scored
-          .map(s => s.w)
-          .filter(w => !myPlan.some(p => p.title === w.title))
-          .slice(0, 8);
-
-        if (chosen.length === 0) {
-          setAiMessage('Nothing new to add yet. Try adding more variety from the library.');
-        } else {
-          chosen.forEach(w => addToPlan(w as any));
-          setAiMessage(`Added ${chosen.length} workout${chosen.length === 1 ? '' : 's'} based on your assessment.`);
-        }
-      } catch (e) {
-        setAiMessage('Could not add workouts automatically. Please try again.');
-      } finally {
-        setAiAdding(false);
-      }
-    }, 120);
-  };
-
   return (
     <div className="workouts-page">
       <div className="workouts-hero">
@@ -230,13 +190,6 @@ const WorkoutsPage: React.FC = () => {
           <p className="hero-sub">Explore exercises, watch technique videos, and view trusted resources — curated for quick practice.</p>
         </div>
         <div className="hero-right">
-          <button
-            className="btn-ghost add ai-plan-btn"
-            onClick={pickAiPlan}
-            disabled={aiAdding}
-          >
-            {aiAdding ? 'Adding...' : 'Have AI add workouts to your plan based on assessment responses'}
-          </button>
           <div className="search-wrap">
             <input
               className="search-input"
@@ -276,8 +229,6 @@ const WorkoutsPage: React.FC = () => {
         </div>
       </div>
 
-      {aiMessage && <div className="ai-plan-message">{aiMessage}</div>}
-
       <div className="workouts-grid">
         {sorted.length === 0 && (
           <div className="empty">No workouts found. Try a different search.</div>
@@ -304,6 +255,26 @@ const WorkoutsPage: React.FC = () => {
                       <span className={`category ${w.categoryClass || ''}`} data-cat={w.displayCategory}>{w.displayCategory}</span>
                     ) : null}
                   </div>
+              <p className="card-desc">{w.exampleNote || w.meta?.description?.slice(0,120) || (w.instructions && w.instructions[0]) || 'No description available.'}</p>
+              {((Array.isArray(w.primaryMuscles) && w.primaryMuscles.length > 0) || (Array.isArray(w.secondaryMuscles) && w.secondaryMuscles.length > 0)) && (
+                <div className="muscle-section">
+                  <div className="muscle-header">Muscles Exercised</div>
+                  <div className="muscle-list">
+                    {Array.isArray(w.primaryMuscles) && w.primaryMuscles.length > 0 && (
+                      <span className="muscle-badge primary" title={w.primaryMuscles.join(', ')}>
+                        <strong>Primary:</strong>
+                        <span className="muscle-text primary-text">{w.primaryMuscles.join(', ')}</span>
+                      </span>
+                    )}
+                    {Array.isArray(w.secondaryMuscles) && w.secondaryMuscles.length > 0 && (
+                      <span className="muscle-badge secondary" title={w.secondaryMuscles.join(', ')}>
+                        <strong>Secondary:</strong>
+                        <span className="muscle-text secondary-text">{w.secondaryMuscles.join(', ')}</span>
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
             <div className="card-footer">
               <button className="btn-ghost" onClick={(e) => { e.stopPropagation(); setSelected(w.title); }}>View</button>
@@ -324,16 +295,10 @@ const WorkoutsPage: React.FC = () => {
           title={selected}
           data={workouts.find(w => w.title === selected)!}
           onClose={() => setSelected(null)}
-          onAddToPlan={(item) => {
-            addToPlan(item as any);
-            confetti({ particleCount: 120, spread: 70, origin: { y: 0.6 } });
-            alert('Workout added to your plan');
-            window.location.href = '/my-plan';
-          }}
         />
       )}
 
-      <section className="my-plan-section" id="my-plan">
+      <section className="my-plan-section">
         <header className="my-plan-header">
           <div>
             <h2>My Plan</h2>
@@ -373,7 +338,7 @@ const WorkoutsPage: React.FC = () => {
   );
 };
 
-function WorkoutModal({ title, data, onClose, onAddToPlan }: { title: string; data: Workout; onClose: () => void; onAddToPlan: (item: Workout) => void }) {
+function WorkoutModal({ title, data, onClose }: { title: string; data: Workout; onClose: () => void }) {
   return (
     <div className="workouts-modal-overlay" role="dialog" aria-modal="true" aria-label={`${title} details`}>
       <div className="workouts-modal">
@@ -382,11 +347,6 @@ function WorkoutModal({ title, data, onClose, onAddToPlan }: { title: string; da
             <h2>{title}</h2>
             <div className="meta-row">
               <span className={`difficulty ${(data as any).difficultyClass || ''}`}>{(data as any).displayDifficulty || data.difficulty || 'Varies'}</span>
-              <span className="pill meta-pill level">{data.level || 'N/A'}</span>
-              <span className="pill meta-pill force">{data.force ? String(data.force) : 'N/A'}</span>
-              <span className="pill meta-pill mechanic">{data.mechanic ? String(data.mechanic) : 'N/A'}</span>
-              <span className="pill meta-pill category-pill">{(data as any).displayCategory || data.category || 'N/A'}</span>
-              <span className="pill meta-pill equipment">{Array.isArray(data.equipment) ? (data.equipment.join(', ') || 'N/A') : (data.equipment || 'N/A')}</span>
               <span className="duration">{data.duration}</span>
             </div>
           </div>
@@ -411,44 +371,56 @@ function WorkoutModal({ title, data, onClose, onAddToPlan }: { title: string; da
           </div>
 
           <div className="modal-info">
-            <div className="info-card">
-              {Array.isArray(data.instructions) && data.instructions.length > 0 && (
-                <section className="instructions">
-                  <h4>Instructions</h4>
-                  <ol>
-                    {data.instructions.map((ins, idx) => <li key={idx}>{ins}</li>)}
-                  </ol>
-                </section>
-              )}
-              {(data.meta?.description || data.exampleNote) && (
-                <section className="description-card">
-                  <h4>Description</h4>
-                  <p className="long-desc">{data.meta?.description || data.exampleNote}</p>
-                </section>
-              )}
-            </div>
+            <p className="long-desc">{data.meta?.description || data.exampleNote}</p>
+
+            <section className="details">
+              <div><strong>ID:</strong> {data.id || '—'}</div>
+              <div><strong>Force:</strong> {String(data.force ?? '—')}</div>
+              <div><strong>Level:</strong> {data.level || '—'}</div>
+              <div><strong>Mechanic:</strong> {data.mechanic || '—'}</div>
+              <div><strong>Equipment:</strong> {Array.isArray(data.equipment) ? data.equipment.join(', ') : data.equipment || '—'}</div>
+              <div><strong>Category:</strong> {data.category ? (
+                <span className={`category ${(data as any).categoryClass || ''}`} data-cat={(data as any).displayCategory || data.category}>{(data as any).displayCategory || data.category}</span>
+              ) : '—'}</div>
+            </section>
+
+            {Array.isArray(data.instructions) && data.instructions.length > 0 && (
+              <section className="instructions">
+                <h4>Instructions</h4>
+                <ol>
+                  {data.instructions.map((ins, idx) => <li key={idx}>{ins}</li>)}
+                </ol>
+              </section>
+            )}
 
             <div className="muscle-grid">
-              <div className="muscle-section modal">
-                <div className="muscle-list split">
-                  <div className="muscle-col pane">
-                    <strong>Primary Muscles</strong>
-                    <div className="muscle-badge primary" title={Array.isArray(data.primaryMuscles) && data.primaryMuscles.length ? data.primaryMuscles.join(', ') : 'N/A'}>
-                      <span className="muscle-text primary-text">
-                        {Array.isArray(data.primaryMuscles) && data.primaryMuscles.length ? data.primaryMuscles.join(', ') : 'N/A'}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="muscle-col pane">
-                    <strong>Secondary Muscles</strong>
-                    <div className="muscle-badge secondary" title={Array.isArray(data.secondaryMuscles) && data.secondaryMuscles.length ? data.secondaryMuscles.join(', ') : 'N/A'}>
-                      <span className="muscle-text secondary-text">
-                        {Array.isArray(data.secondaryMuscles) && data.secondaryMuscles.length ? data.secondaryMuscles.join(', ') : 'N/A'}
-                      </span>
-                    </div>
+              {((Array.isArray(data.primaryMuscles) && data.primaryMuscles.length > 0) || (Array.isArray(data.secondaryMuscles) && data.secondaryMuscles.length > 0)) && (
+                <div className="muscle-section modal">
+                  <div className="muscle-header">Muscles Exercised</div>
+                  <div className="muscle-list">
+                    {Array.isArray(data.primaryMuscles) && (
+                      <div className="muscle-col">
+                        <strong>Primary Muscles</strong>
+                        <div>
+                          <span className="muscle-badge primary" title={data.primaryMuscles.join(', ')}>
+                            <span className="muscle-text primary-text">{data.primaryMuscles.join(', ')}</span>
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                    {Array.isArray(data.secondaryMuscles) && (
+                      <div className="muscle-col">
+                        <strong>Secondary Muscles</strong>
+                        <div>
+                          <span className="muscle-badge secondary" title={data.secondaryMuscles.join(', ')}>
+                            <span className="muscle-text secondary-text">{data.secondaryMuscles.join(', ')}</span>
+                          </span>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
-              </div>
+              )}
             </div>
 
             {data.resources?.length ? (
@@ -471,7 +443,7 @@ function WorkoutModal({ title, data, onClose, onAddToPlan }: { title: string; da
         </main>
 
         <footer className="modal-actions">
-          <button className="btn-primary" onClick={() => onAddToPlan(data)}>Add to Plan</button>
+          <button className="btn-primary" onClick={() => { /* placeholder for add to plan */ }}>Add to Plan</button>
           <button className="btn-outline" onClick={onClose}>Close</button>
         </footer>
       </div>

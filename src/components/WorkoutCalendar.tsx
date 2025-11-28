@@ -6,7 +6,7 @@ import { UserData } from '../services/aiService';
 import WorkoutModal from './WorkoutModal';
 import './WorkoutCalendar.css';
 import { generateWorkoutPlan, generateWorkoutForDay } from '../services/aiService';
-import { loadQuestionnaireProgress, loadUserData, loadWorkoutPlan, saveUserData, saveWorkoutPlan, loadAssessmentData } from '../services/localStorage';
+import { loadQuestionnaireProgress, loadUserData, loadWorkoutPlan, saveUserData, saveWorkoutPlan } from '../services/localStorage';
 import { restoreUserDataFromServer, backupUserDataToServer } from '../services/cloudBackupService';
 
 interface WorkoutCalendarProps {
@@ -254,7 +254,7 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
       let updatedWorkouts = workoutPlan.dailyWorkouts.map(workout => {
         const hasNoExercises = !workout.workouts || workout.workouts.length === 0;
         const hasNoTime = !workout.totalTime || workout.totalTime.toString().trim().startsWith('0');
-        if (workout.type === 'mixed' && hasNoExercises && hasNoTime) {
+        if ((workout.type as string) === 'mixed' && hasNoExercises && hasNoTime) {
           const rest = {
             ...workout,
             type: 'rest' as const,
@@ -327,7 +327,7 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
       updatedWorkouts = updatedWorkouts.map(workout => {
         const normalizedTypes = resolveWorkoutTypes(workout);
         const normalizedCompletedTypes = Array.isArray(workout.completedTypes)
-          ? workout.completedTypes.filter(t => normalizedTypes.includes(t))
+          ? workout.completedTypes.filter((t: WorkoutType) => normalizedTypes.includes(t))
           : [];
         return {
           ...workout,
@@ -370,114 +370,20 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
   const monthEnd = endOfMonth(currentDate);
   const monthDays = eachDayOfInterval({ start: monthStart, end: monthEnd });
 
-  const allowedTypes: WorkoutType[] = ['strength', 'cardio', 'plyometrics', 'powerlifting', 'olympic', 'stretching', 'strongman', 'rest'];
-  const MY_PLAN_KEY = 'fitbuddyai_my_plan';
-  const libraryCache = useRef<Record<WorkoutType, any[]>>({});
-
-  const loadLibraryByType = () => {
-    if (Object.keys(libraryCache.current || {}).length > 0) return libraryCache.current;
-    try {
-      const modules = (import.meta as any).glob('../data/exercises/*.json', { eager: true }) as Record<string, any>;
-      const assets = (import.meta as any).glob('../data/exercises/**', { eager: true, as: 'url' }) as Record<string, string>;
-      const map: Record<WorkoutType, any[]> = {} as any;
-      Object.entries(modules).forEach(([path, mod]) => {
-        const data = (mod && (mod as any).default) ? (mod as any).default : mod;
-        const title = data.name || data.id || path.split('/').pop()?.replace('.json', '') || 'Workout';
-        const displayCategory = data.category || data.displayCategory || '';
-        const cat = canonType(displayCategory);
-        if (!allowedTypes.includes(cat)) return;
-        const duration = data.duration || data.time || '30 min';
-        const desc = data.exampleNote || data.meta?.description || (Array.isArray(data.instructions) ? data.instructions[0] : '') || '';
-        const difficulty = (data.level || data.difficulty || 'beginner').toString().toLowerCase().includes('intermediate') ? 'intermediate' : 'beginner';
-        const images: string[] = Array.isArray(data.images) ? data.images.map((p: string) => {
-          const key = `../data/exercises/${p}`;
-          if (assets[key]) return assets[key];
-          const found = Object.entries(assets).find(([k]) => k.endsWith(`/${p}`) || k.endsWith(p));
-          if (found) return found[1];
-          try { return new URL(`../data/exercises/${p}`, import.meta.url).href; } catch { return ''; }
-        }) : [];
-        const exercise = {
-          name: title,
-          description: desc || `Focused ${displayCategory || cat}`,
-          duration,
-          difficulty: difficulty as any,
-          muscleGroups: data.primaryMuscles || [],
-          equipment: data.equipment || [],
-          images,
-        };
-        if (!map[cat]) map[cat] = [];
-        map[cat].push(exercise);
-      });
-      libraryCache.current = map;
-    } catch {
-      libraryCache.current = {};
-    }
-    return libraryCache.current;
-  };
-
-  const getExercisesForTypes = (types: WorkoutType[]): any[] => {
-    const lib = loadLibraryByType();
-    const picks: any[] = [];
-    types.forEach(t => {
-      const list = lib[canonType(t)] || [];
-      if (list && list.length) picks.push(...list.slice(0, 3));
-    });
-    if (picks.length > 0) return picks.slice(0, 6);
-    return buildExercisesForType(types[0] || 'strength');
-  };
-
-  const ensureWorkoutsForDay = (day: DayWorkout): DayWorkout => {
-    const types = normalizeTypesExclusiveRest(resolveWorkoutTypes(day));
-    const workouts = Array.isArray(day.workouts) ? day.workouts : [];
-    const looksGeneric = workouts.length === 0 || workouts.every(w => {
-      const n = (w?.name || '').toString().toLowerCase();
-      return n.includes('rest') || n.includes('circuit') || n.includes('workout');
-    });
-    const finalWorkouts = looksGeneric ? getExercisesForTypes(types) : workouts;
-    return { ...day, type: types[0] || canonType(day.type), types, workouts: finalWorkouts };
-  };
-
-  // Normalize all days once per plan load so legacy/mixed entries align with current categories
-  useEffect(() => {
-    if (!workoutPlan) return;
-    const normalizedDaily = workoutPlan.dailyWorkouts.map(day => {
-      const normalizedTypes = normalizeTypesExclusiveRest(resolveWorkoutTypes(day));
-      const primary = normalizedTypes[0] || canonType(day.type);
-      const completedTypes = Array.isArray(day.completedTypes) ? day.completedTypes.filter(t => normalizedTypes.includes(canonType(t) as WorkoutType)) as WorkoutType[] : [];
-      const enriched = ensureWorkoutsForDay({ ...day, type: primary, types: normalizedTypes, completedTypes });
-      return enriched;
-    });
-    const changed = JSON.stringify(normalizedDaily) !== JSON.stringify(workoutPlan.dailyWorkouts);
-    if (changed) {
-      const nextPlan = { ...workoutPlan, dailyWorkouts: normalizedDaily };
-      onUpdatePlan(nextPlan);
-      try { saveWorkoutPlan(nextPlan); } catch {}
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [workoutPlan?.id]);
-
-  const canonType = (t?: string | null): WorkoutType => {
-    const s = (t || '').toString().toLowerCase().trim();
-    if (!s) return 'strength';
-    if (s === 'rest') return 'rest';
-    if (s.includes('cardio')) return 'cardio';
-    if (s.includes('plyo')) return 'plyometrics';
-    if (s.includes('powerlift')) return 'powerlifting';
-    if (s.includes('olympic')) return 'olympic';
-    if (s.includes('stretch') || s.includes('flex') || s.includes('mobility')) return 'stretching';
-    if (s.includes('strongman')) return 'strongman';
-    if (s.includes('mixed')) return 'strength';
-    if (s.includes('strength')) return 'strength';
-    return 'strength';
-  };
-
   const legendCategories: Array<{ type: WorkoutType; label: string; colorClass: string; title: string }> = [
+    { type: 'strength', label: 'Strength Training', colorClass: 'strength', title: 'Drag onto a date to generate a strength workout' },
     { type: 'cardio', label: 'Cardio', colorClass: 'cardio', title: 'Drag onto a date to generate a cardio workout' },
-    { type: 'olympic', label: 'Olympic Weightlifting', colorClass: 'olympic', title: 'Drag onto a date to generate an Olympic weightlifting workout' },
+    { type: 'bodyweight', label: 'Bodyweight', colorClass: 'bodyweight', title: 'Drag onto a date to generate a bodyweight workout' },
+    { type: 'dumbbell', label: 'Dumbbell', colorClass: 'dumbbell', title: 'Drag onto a date to generate a dumbbell workout' },
+    { type: 'barbell', label: 'Barbell', colorClass: 'barbell', title: 'Drag onto a date to generate a barbell workout' },
+    { type: 'kettlebell', label: 'Kettlebell', colorClass: 'kettlebell', title: 'Drag onto a date to generate a kettlebell workout' },
     { type: 'plyometrics', label: 'Plyometrics', colorClass: 'plyometrics', title: 'Drag onto a date to generate a plyometrics workout' },
     { type: 'powerlifting', label: 'Powerlifting', colorClass: 'powerlifting', title: 'Drag onto a date to generate a powerlifting workout' },
-    { type: 'strength', label: 'Strength', colorClass: 'strength', title: 'Drag onto a date to generate a strength workout' },
+    { type: 'mobility', label: 'Mobility', colorClass: 'mobility', title: 'Drag onto a date to generate a mobility session' },
     { type: 'stretching', label: 'Stretching', colorClass: 'stretching', title: 'Drag onto a date to generate a stretching session' },
+    { type: 'hiit', label: 'HIIT', colorClass: 'hiit', title: 'Drag onto a date to generate a HIIT workout' },
+    { type: 'mixed', label: 'Mixed', colorClass: 'mixed', title: 'Drag onto a date to generate a mixed workout' },
+    { type: 'flexibility', label: 'Flexibility', colorClass: 'flexibility', title: 'Drag onto a date to generate a flexibility workout' },
     { type: 'strongman', label: 'Strongman', colorClass: 'strongman', title: 'Drag onto a date to generate a strongman workout' },
     { type: 'rest', label: 'Rest Day', colorClass: 'rest', title: 'Drag onto a date to add a rest day' },
   ];
@@ -486,11 +392,12 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
   const monthStartIndex = monthStart.getDay();
 
   const normalizeTypesExclusiveRest = (typesInput: (WorkoutType | string | null | undefined)[]): WorkoutType[] => {
-    const mapped = (typesInput || []).map(t => canonType(t));
-    const unique = Array.from(new Set(mapped)) as WorkoutType[];
-    const filtered = unique.filter(t => allowedTypes.includes(t));
-    if (filtered.includes('rest') && filtered.length > 1) return ['rest'];
-    return filtered.slice(0, 4) as WorkoutType[];
+    const filtered = (typesInput || []).filter(Boolean) as WorkoutType[];
+    const unique = Array.from(new Set(filtered)) as WorkoutType[];
+    if (unique.includes('rest') && unique.length > 1) {
+      return ['rest'];
+    }
+    return unique.slice(0, 4) as WorkoutType[];
   };
 
   const mergeTypesWithRestGuard = (existingTypes: WorkoutType[], incomingType: WorkoutType): WorkoutType[] => {
@@ -598,14 +505,7 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
     
     // Normal mode - show workout modal
     if (workout) {
-      const enriched = ensureWorkoutsForDay(workout);
-      if (JSON.stringify(enriched.workouts) !== JSON.stringify(workout.workouts) || enriched.type !== workout.type) {
-        const updatedDaily = workoutPlan.dailyWorkouts.map(d => d.date === enriched.date ? enriched : d);
-        const updatedPlan = { ...workoutPlan, dailyWorkouts: updatedDaily };
-        onUpdatePlan(updatedPlan);
-        try { saveWorkoutPlan(updatedPlan); } catch {}
-      }
-      setSelectedDay(enriched);
+      setSelectedDay(workout);
       setShowWorkoutModal(true);
     }
   };
@@ -668,17 +568,19 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
   };
 
   const getWorkoutTypeColor = (type: WorkoutType | string | undefined) => {
-    const t = canonType(type as string);
-    switch (t) {
-      case 'strength': return 'strength';
-      case 'cardio': return 'cardio';
-      case 'plyometrics': return 'plyometrics';
-      case 'powerlifting': return 'powerlifting';
-      case 'olympic': return 'olympic';
-      case 'stretching': return 'stretching';
-      case 'strongman': return 'strongman';
-      case 'rest': return 'rest';
-      default: return 'strength';
+    switch (type) {
+      case 'strength':
+        return 'strength';
+      case 'cardio':
+        return 'cardio';
+      case 'flexibility':
+        return 'flexibility';
+      case 'rest':
+        return 'rest';
+      case 'mixed':
+        return 'mixed';
+      default:
+        return 'mixed';
     }
   };
 
@@ -687,16 +589,12 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
       switch (type) {
         case 'strength': return 'Strength';
         case 'cardio': return 'Cardio';
-        case 'plyometrics': return 'Plyometrics';
-        case 'powerlifting': return 'Powerlifting';
-        case 'olympic': return 'Olympic Weightlifting';
-        case 'stretching': return 'Stretching';
-        case 'strongman': return 'Strongman';
+        case 'flexibility': return 'Flexibility';
         case 'rest': return 'Rest';
-        default: return 'Strength';
+        default: return 'Mixed';
       }
     };
-    if (!types || types.length === 0) return 'Strength';
+    if (!types || types.length === 0) return 'Mixed';
     if (types.length > 1) return types.map(formatSingle).join(' / ');
     return formatSingle(types[0]);
   };
@@ -773,82 +671,6 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
     // Default: assume 30 minutes per type if no explicit durations are present
     const defaultMinutes = 30 * safeTypeCount;
     return formatMinutes(defaultMinutes);
-  };
-
-  const loadMyPlanItems = () => {
-    try {
-      const raw = localStorage.getItem(MY_PLAN_KEY);
-      if (!raw) return [];
-      const parsed = JSON.parse(raw);
-      return Array.isArray(parsed) ? parsed : [];
-    } catch {
-      return [];
-    }
-  };
-
-  const buildExercisesForType = (type: WorkoutType) => {
-    loadLibraryByType();
-    const myPlan = loadMyPlanItems();
-    const assessment = loadAssessmentData?.() || {};
-    const prefers = Array.isArray(assessment.preferences) ? assessment.preferences.join(', ') : '';
-    const fromLib = (libraryCache.current[canonType(type)] || []).slice(0, 6).map((it: any) => ({
-      name: it.name || 'Workout',
-      description: it.description || `Category: ${type}`,
-      duration: it.duration || '30 min',
-      difficulty: it.difficulty || 'beginner',
-      muscleGroups: it.muscleGroups || [],
-      equipment: it.equipment || []
-    }));
-    if (fromLib.length) return fromLib;
-    const matchFromPlan = myPlan
-      .filter((item: any) => canonType(item.displayCategory || item.category || '') === type)
-      .slice(0, 4)
-      .map((item: any) => ({
-        name: item.title || item.name || 'Workout',
-        description: item.exampleNote || item.meta?.description || `From My Plan (${item.displayCategory || type})`,
-        duration: item.duration || '30 min',
-        difficulty: 'beginner',
-        muscleGroups: [],
-      }));
-
-    if (matchFromPlan.length > 0) return matchFromPlan;
-
-    const templates: Record<WorkoutType, any[]> = {
-      strength: [
-        { name: 'Squat Series', description: 'Foundational strength block.', duration: '35 min' },
-        { name: 'Push/Pull', description: 'Upper-body compound moves.', duration: '30 min' },
-      ],
-      cardio: [
-        { name: 'Tempo Run', description: 'Steady aerobic effort.', duration: '30 min' },
-        { name: 'Intervals', description: 'Short bursts, quick recoveries.', duration: '25 min' },
-      ],
-      plyometrics: [
-        { name: 'Jump Circuit', description: 'Explosive lower-body hops.', duration: '20 min' },
-      ],
-      powerlifting: [
-        { name: 'Power Triplet', description: 'Heavy hinge, press, squat.', duration: '40 min' },
-      ],
-      olympic: [
-        { name: 'Oly Skills', description: 'Clean & snatch technique focus.', duration: '30 min' },
-      ],
-      stretching: [
-        { name: 'Mobility Flow', description: 'Full-body stretch & openers.', duration: '25 min' },
-      ],
-      strongman: [
-        { name: 'Carry & Drag', description: 'Loaded carries and pulls.', duration: '35 min' },
-      ],
-      rest: [
-        { name: 'Rest Day', description: 'Recovery and hydration.', duration: '0 min' },
-      ],
-    };
-
-    const defaults = templates[type] || templates.strength;
-    return defaults.map(ex => ({
-      ...ex,
-      description: `${ex.description}${prefers ? ` | Prefs: ${prefers}` : ''}`,
-      difficulty: 'beginner',
-      muscleGroups: [],
-    }));
   };
 
   const isWorkoutCompleteForStreak = (workout?: DayWorkout | null): boolean => {
@@ -1701,7 +1523,7 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
           targetDateString,
           typeForAI,
           others,
-          loadMyPlanItems()
+          []
         );
 
         const normalizedTypes = normalizeTypesExclusiveRest(
@@ -1720,11 +1542,9 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
           alternativeWorkouts: Array.isArray((newDayRaw as any)?.alternativeWorkouts) ? (newDayRaw as any).alternativeWorkouts : []
         };
 
-        const enrichedDay = ensureWorkoutsForDay(normalizedDay);
-
         // replace or add, keep plan ordered
         const withoutTarget = workoutPlan.dailyWorkouts.filter(d => d.date !== targetDateString);
-        const nextDaily = [...withoutTarget, enrichedDay].sort((a, b) => a.date.localeCompare(b.date));
+        const nextDaily = [...withoutTarget, normalizedDay].sort((a, b) => a.date.localeCompare(b.date));
         const updatedPlan = { ...workoutPlan, dailyWorkouts: nextDaily, totalDays: nextDaily.length };
         onUpdatePlan(updatedPlan);
         try { saveWorkoutPlan(updatedPlan); } catch (err) { console.warn('Failed to save generated day locally:', err); }
@@ -1873,7 +1693,7 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
         )}
         {/* Header */}
         <div className="calendar-header">
-          <div className="user-info hero-card">
+          <div className="user-info">
             <h1>Welcome back, {displayName}!</h1>
             <p>{workoutPlan.description}</p>
           </div>
