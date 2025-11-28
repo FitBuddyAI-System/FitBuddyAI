@@ -116,19 +116,21 @@ body.theme-dark .sort-control select { color: #e9eef5; }
   background: var(--cat-accent);
 }
 /* Category color variants (use classes matching sanitized category names) */
-.category.strongman { --cat-accent: #ff7a18; background: linear-gradient(90deg,#fff4eb,#fff0e6); color:#6b3000; }
-.category.barbell { --cat-accent: #22303f; background: linear-gradient(90deg,#f6f8fa,#eef2f6); color:#102027; }
-.category.dumbbell { --cat-accent: #1ecb7b; background: linear-gradient(90deg,#f3fff6,#e8faf0); color:#06321a; }
-.category.kettlebell { --cat-accent: #7c4dff; background: linear-gradient(90deg,#f6f2ff,#f0eaff); color:#33124b; }
-.category.bodyweight { --cat-accent: #1e90cb; background: linear-gradient(90deg,#f1fbff,#e8f6ff); color:#073147; }
-.category.cardio { --cat-accent: #ff6b6b; background: linear-gradient(90deg,#fff6f6,#fff0f0); color:#4a0b0b; }
-.category.mobility { --cat-accent: #9b59b6; background: linear-gradient(90deg,#fcf6ff,#f7f0fb); color:#32123b; }
+.category.strength { --cat-accent: #ff6b6b; background: linear-gradient(90deg,#fff3f4,#ffecec); color:#5c1111; }
+.category.cardio { --cat-accent: #26c6da; background: linear-gradient(90deg,#e8fbff,#dcf7fb); color:#0a4c59; }
+.category.plyometrics { --cat-accent: #ff8a00; background: linear-gradient(90deg,#fff5e8,#ffeeda); color:#5c2d00; }
+.category.powerlifting { --cat-accent: #11c58f; background: linear-gradient(90deg,#e8fbf5,#dcf7ee); color:#0b3d2f; }
+.category.olympic,
+.category.olympic-weightlifting { --cat-accent: #f5c400; background: linear-gradient(90deg,#fff8e1,#fff2c2); color:#4d3a00; }
+.category.stretching,
+.category.mobility { --cat-accent: #ffb3d6; background: linear-gradient(90deg,#fff3fa,#ffeaf5); color:#4b1b2f; }
+.category.strongman { --cat-accent: #ff7a18; background: linear-gradient(90deg,#fff2e7,#ffeada); color:#5c2c00; }
+.category.bodyweight { --cat-accent: #4ecdc4; background: linear-gradient(90deg,#e7fbf8,#dcf6f3); color:#0f4f49; }
+.category.barbell { --cat-accent: #22303f; background: linear-gradient(90deg,#f4f6f8,#e8edf2); color:#12202b; }
+.category.dumbbell { --cat-accent: #4ecdc4; background: linear-gradient(90deg,#e7fbf8,#dcf6f3); color:#0f4f49; }
+.category.kettlebell { --cat-accent: #7c4dff; background: linear-gradient(90deg,#f5f0ff,#ede5ff); color:#2f1c6b; }
+.category.mobility { --cat-accent: #ffb3d6; background: linear-gradient(90deg,#fff3fa,#ffeaf5); color:#4b1b2f; }
 .category.uncategorized { --cat-accent: #b0b0b0; background: linear-gradient(90deg,#fbfbfb,#f2f2f2); color:#333; }
-/* Additional requested category variants */
-.category.strength { --cat-accent: #0d6b88; background: linear-gradient(90deg,#eef8fb,#e6f2f6); color:#063241; }
-.category.stretching { --cat-accent: #ffb3d6; background: linear-gradient(90deg,#fff6fb,#fff0f6); color:#4a1230; }
-.category.powerlifting { --cat-accent: #2b2b2b; background: linear-gradient(90deg,#f6f6f6,#efefef); color:#0b0b0b; }
-.category.plyometrics { --cat-accent: #ff8a00; background: linear-gradient(90deg,#fff7ec,#fff3e6); color:#4a2600; }
 .card-desc { margin:0; color:var(--text-medium); font-size:14px; }
 
 /* Muscle badges (non-colored, truncated with ellipsis) */
@@ -346,7 +348,7 @@ body:not(.theme-dark) .btn-ghost:hover {
 .category-chip.mobility { --cat-chip: linear-gradient(135deg, #ffb3d6, #f793c5); }
 .category-chip.strongman { --cat-chip: linear-gradient(135deg, #ff7a18, #ff5714); }
 .category-chip.olympic,
-.category-chip.olympic-weightlifting { --cat-chip: linear-gradient(135deg, #0ea5e9, #0284c7); }
+.category-chip.olympic-weightlifting { --cat-chip: linear-gradient(135deg, #ffd84d, #f5c400); }
 .category-chip.bodyweight { --cat-chip: linear-gradient(135deg, #1e90cb, #0fb77a); }
 .category-chip.rest { --cat-chip: linear-gradient(135deg, #6b7280, #4b5563); }
 

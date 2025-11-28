@@ -395,6 +395,7 @@ updatedWorkouts = updatedWorkouts.map(workout => {
     { type: 'cardio', label: 'Cardio', colorClass: 'cardio', title: 'Drag onto a date to generate a cardio workout' },
     { type: 'plyometrics', label: 'Plyometrics', colorClass: 'plyometrics', title: 'Drag onto a date to generate a plyometrics workout' },
     { type: 'powerlifting', label: 'Powerlifting', colorClass: 'powerlifting', title: 'Drag onto a date to generate a powerlifting workout' },
+    { type: 'olympic', label: 'Olympic Weightlifting', colorClass: 'olympic', title: 'Drag onto a date to generate an Olympic lifting session' },
     { type: 'stretching', label: 'Stretching', colorClass: 'stretching', title: 'Drag onto a date to generate a stretching session' },
     { type: 'strongman', label: 'Strongman', colorClass: 'strongman', title: 'Drag onto a date to generate a strongman workout' },
     { type: 'rest', label: 'Rest Day', colorClass: 'rest', title: 'Drag onto a date to add a rest day' },
@@ -403,8 +404,24 @@ updatedWorkouts = updatedWorkouts.map(workout => {
   // Determine the weekday index for the first day of the month (0 = Sun .. 6 = Sat)
   const monthStartIndex = monthStart.getDay();
 
+  const normalizeTypeValue = (value: WorkoutType | string | null | undefined): WorkoutType | null => {
+    if (!value) return null;
+    const raw = value.toString().toLowerCase().trim();
+    if (raw.includes('olympic')) return 'olympic';
+    if (raw.includes('cardio')) return 'cardio';
+    if (raw.includes('plyo')) return 'plyometrics';
+    if (raw.includes('power')) return 'powerlifting';
+    if (raw.includes('stretch') || raw.includes('flex') || raw.includes('mobility')) return 'stretching';
+    if (raw.includes('strong')) return 'strongman';
+    if (raw.includes('rest')) return 'rest';
+    if (raw.includes('strength')) return 'strength';
+    return raw as WorkoutType;
+  };
+
   const normalizeTypesExclusiveRest = (typesInput: (WorkoutType | string | null | undefined)[]): WorkoutType[] => {
-    const filtered = (typesInput || []).filter(Boolean) as WorkoutType[];
+    const filtered = (typesInput || [])
+      .map(normalizeTypeValue)
+      .filter(Boolean) as WorkoutType[];
     const unique = Array.from(new Set(filtered)) as WorkoutType[];
     if (unique.includes('rest') && unique.length > 1) {
       return ['rest'];
@@ -602,6 +619,29 @@ updatedWorkouts = updatedWorkouts.map(workout => {
 
     if (!type) return 'mixed';
     return colorMap[type as WorkoutType] || 'mixed';
+  };
+
+  const getWorkoutAccentHex = (type: WorkoutType | string | undefined) => {
+    const accentMap: Record<string, string> = {
+      strength: '#ff6b6b',
+      cardio: '#4ecdc4',
+      plyometrics: '#ff8a00',
+      powerlifting: '#11c58f',
+      olympic: '#f5c400',
+      stretching: '#ffb3d6',
+      strongman: '#ff7a18',
+      rest: '#9ca3af',
+      mixed: '#5c6b80'
+    };
+    const key = getWorkoutTypeColor(type);
+    return accentMap[key] || accentMap.mixed;
+  };
+
+  const buildMultiTypeGradient = (types: WorkoutType[]) => {
+    if (!Array.isArray(types) || types.length === 0) return undefined;
+    const first = getWorkoutAccentHex(types[0]);
+    const second = getWorkoutAccentHex(types[1] || types[0]);
+    return `linear-gradient(135deg, ${first}, ${second})`;
   };
 
   const getWorkoutTypeLabel = (types: WorkoutType[]) => {
@@ -1859,6 +1899,9 @@ updatedWorkouts = updatedWorkouts.map(workout => {
             // render logging removed to reduce noise
             const totalDurationLabel = workout ? getWorkoutDuration(workout) : null;
             const isStreakCompleteDay = workout ? isWorkoutCompleteForStreak(workout) : false;
+            const multiGradient = isMultiType && typeList.length > 1
+              ? buildMultiTypeGradient(typeList as WorkoutType[])
+              : undefined;
             const cellStreak = isStreakCompleteDay ? computeStreak(workoutPlan.dailyWorkouts, date) : 0;
             
             const firstStartClass = idx === 0 ? ` start-${monthStartIndex + 1}` : '';
@@ -1896,6 +1939,7 @@ updatedWorkouts = updatedWorkouts.map(workout => {
                   {!isStreakCompleteDay && workout ? (
                     <div
                       className={`workout-indicator ${isMultiType ? 'multi' : getWorkoutTypeColor(primaryType)} ${workout.completed ? 'completed' : ''}`}
+                      style={isMultiType && multiGradient ? { ['--multi-gradient' as any]: multiGradient } : undefined}
                       draggable={!showEditMenu && !isPastDay}
                       onDragStart={(e) => handleDragStart(e, workout)}
                       onDragEnd={handleDragEnd}

@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
 import { X, Check, RotateCcw, Clock, Zap, Edit3, Trash2, ArrowRight, ArrowLeft, Save, Dumbbell } from 'lucide-react';
-import { DayWorkout, WorkoutType } from '../types';
+import { DayWorkout, WorkoutType, Exercise } from '../types';
 import './WorkoutModal.css';
 import ExerciseDetailModal from './ExerciseDetailModal';
 import confetti from 'canvas-confetti';
@@ -52,6 +52,99 @@ const WorkoutModal: React.FC<WorkoutModalProps> = ({
   const availableTypes = resolveWorkoutTypes(workout);
   const [selectedType, setSelectedType] = useState<WorkoutType>(availableTypes[0] || 'strength');
 
+  const libraryExercises = useMemo(() => {
+    try {
+      const modules = (import.meta as any).glob('../data/exercises/*.json', { eager: true }) as Record<string, any>;
+      return Object.values(modules).map((mod) => {
+        const data = mod?.default || mod || {};
+        return {
+          title: data.name || data.id,
+          category: (data.category || '').toString().toLowerCase(),
+          level: data.level || data.difficulty,
+          duration: data.duration,
+          primaryMuscles: Array.isArray(data.primaryMuscles) ? data.primaryMuscles : [],
+          secondaryMuscles: Array.isArray(data.secondaryMuscles) ? data.secondaryMuscles : [],
+          instructions: Array.isArray(data.instructions) ? data.instructions : [],
+          exampleNote: data.exampleNote,
+          meta: data.meta || {},
+          equipment: data.equipment,
+          images: Array.isArray(data.images) ? data.images : [],
+        };
+      });
+    } catch (err) {
+      console.warn('Failed to load exercise library for modal', err);
+      return [];
+    }
+  }, []);
+
+  const normalizeLibraryDifficulty = (lvl?: string): Exercise['difficulty'] => {
+    const s = (lvl || '').toString().toLowerCase();
+    if (s.includes('beginner') || s.includes('easy')) return 'beginner';
+    if (s.includes('intermediate') || s.includes('moderate') || s.includes('medium')) return 'intermediate';
+    if (s.includes('advanced') || s.includes('hard')) return 'advanced';
+    return 'intermediate';
+  };
+
+  const pickSuggestedExercises = useCallback((types: WorkoutType[], count = 5): Exercise[] => {
+    if (!libraryExercises.length) return [];
+    const normalizedTypes = (types && types.length ? types : ['strength']).map(t => canonType(t));
+    const categoryMap: Record<WorkoutType, string[]> = {
+      strength: ['strength', 'powerlifting', 'olympic', 'strongman', 'bodyweight', 'dumbbell', 'barbell', 'kettlebell'],
+      cardio: ['cardio', 'plyometrics'],
+      plyometrics: ['plyometrics', 'cardio', 'strength'],
+      powerlifting: ['powerlifting', 'strength'],
+      olympic: ['olympic', 'strength'],
+      stretching: ['stretching', 'flexibility', 'mobility'],
+      strongman: ['strongman', 'strength'],
+      rest: [],
+      flexibility: ['stretching', 'flexibility', 'mobility'],
+      mixed: ['strength', 'cardio', 'plyometrics'],
+      bodyweight: ['bodyweight', 'strength'],
+      dumbbell: ['dumbbell', 'strength'],
+      barbell: ['barbell', 'strength'],
+      kettlebell: ['kettlebell', 'strength'],
+      mobility: ['mobility', 'stretching'],
+      hiit: ['cardio', 'plyometrics'],
+      uncategorized: ['strength']
+    };
+
+    const targetCategories = normalizedTypes.flatMap(t => categoryMap[t] || categoryMap.strength);
+    const pool = libraryExercises.filter(ex => targetCategories.includes(ex.category));
+    const chosenPool = pool.length ? pool : libraryExercises;
+    const baseType = normalizedTypes[0] || 'strength';
+
+    const typeDefaults = (type: WorkoutType) => {
+      if (type === 'cardio') return { sets: 1, reps: 'Intervals', duration: '12-20 min' };
+      if (type === 'stretching' || type === 'flexibility' || type === 'mobility') return { sets: 2, reps: '30-45 sec', duration: '8-10 min' };
+      if (type === 'plyometrics' || type === 'hiit') return { sets: 3, reps: '8-10', duration: '40 sec' };
+      return { sets: 3, reps: '10-12', duration: '45 sec' };
+    };
+
+    return chosenPool.slice(0, count).map((ex, idx) => {
+      const defaults = typeDefaults(baseType as WorkoutType);
+      const muscles = [...ex.primaryMuscles, ...ex.secondaryMuscles].filter(Boolean);
+      const equipment = Array.isArray(ex.equipment) ? ex.equipment : ex.equipment ? [ex.equipment] : [];
+      const description =
+        ex.meta?.description ||
+        ex.exampleNote ||
+        (ex.instructions && ex.instructions.length ? ex.instructions[0] : 'Focus on control and good form.');
+
+      return {
+        name: ex.title || `Exercise ${idx + 1}`,
+        sets: defaults.sets,
+        reps: defaults.reps,
+        duration: ex.duration || defaults.duration,
+        description,
+        difficulty: normalizeLibraryDifficulty(ex.level),
+        muscleGroups: muscles,
+        equipment,
+        // Pass through helpful fields for the detail modal
+        instructions: ex.instructions,
+        meta: ex.meta,
+      } as Exercise;
+    });
+  }, [libraryExercises]);
+
   const getWorkoutTypeLabel = (types: WorkoutType[]) => {
     const formatSingle = (type: WorkoutType) => {
       switch (type) {
@@ -70,20 +163,6 @@ const WorkoutModal: React.FC<WorkoutModalProps> = ({
     if (types.length > 1) return types.map(formatSingle).join(' / ');
     return formatSingle(types[0]);
   };
-
-  // Keep local completed state in sync if workout prop changes
-  React.useEffect(() => {
-    setCompleted(workout.completed);
-    setLocalCompletedTypes(resolveWorkoutTypes(workout).filter(t => (workout.completedTypes || []).includes(t)));
-  }, [workout.completed]);
-
-  // Keep local editing snapshot in sync with incoming workout changes
-  React.useEffect(() => {
-    setEditingWorkout(workout);
-    const types = resolveWorkoutTypes(workout);
-    setSelectedType(types[0] || 'mixed');
-    setLocalCompletedTypes(types.filter(t => (workout.completedTypes || []).includes(t)));
-  }, [workout]);
 
   const formatDate = (dateString: string) => {
     const [year, month, day] = dateString.split('-').map(Number);
@@ -121,7 +200,6 @@ const WorkoutModal: React.FC<WorkoutModalProps> = ({
     return { label: key.charAt(0).toUpperCase() + key.slice(1), cls: `difficulty-${key.replace(/\s+/g, '-')}` };
   };
 
-  const currentWorkouts = showAlternative ? workout.alternativeWorkouts : workout.workouts;
   const [detailExercise, setDetailExercise] = React.useState<string | null>(null);
   const [detailExerciseObj, setDetailExerciseObj] = React.useState<any | null>(null);
 
@@ -154,16 +232,6 @@ const WorkoutModal: React.FC<WorkoutModalProps> = ({
         alternativeWorkouts: [...editingWorkout.alternativeWorkouts, exercise]
       });
     }
-  };
-
-  const handleTypeToggle = (type: WorkoutType, checked: boolean) => {
-    setEditingWorkout(prev => {
-      const current = resolveWorkoutTypes(prev);
-      if (checked && current.length >= 4 && !current.includes(type)) return prev;
-      let nextTypes = checked ? [...current, type] : current.filter(t => t !== type);
-      if (nextTypes.length === 0) nextTypes = [prev.type || 'mixed'];
-      return { ...prev, types: nextTypes, type: nextTypes[0] };
-    });
   };
 
   const handleExerciseFieldChange = (
@@ -248,7 +316,6 @@ const WorkoutModal: React.FC<WorkoutModalProps> = ({
   const typeList = resolveWorkoutTypes(workout);
   const primaryType = typeList[0] || 'strength';
   const typeLabel = getWorkoutTypeLabel(typeList);
-  const editingTypes = resolveWorkoutTypes(editingWorkout);
   const selectedTypeCompleted = localCompletedTypes.includes(selectedType);
   const overallCompleted = typeList.length > 0
     ? localCompletedTypes.length === typeList.length
@@ -258,6 +325,52 @@ const WorkoutModal: React.FC<WorkoutModalProps> = ({
   const today = new Date(); today.setHours(0,0,0,0);
   const isPastDay = workoutDateObj < today;
   const isTodayDay = workoutDateObj.getTime() === today.getTime();
+  const displayExercises = useMemo(() => {
+    const source = isEditing
+      ? (showAlternative ? editingWorkout.alternativeWorkouts : editingWorkout.workouts)
+      : (showAlternative ? workout.alternativeWorkouts : workout.workouts);
+    const safe = Array.isArray(source) ? source : [];
+    if (safe.length > 0) return safe;
+    return pickSuggestedExercises(typeList);
+  }, [
+    isEditing,
+    showAlternative,
+    editingWorkout.alternativeWorkouts,
+    editingWorkout.workouts,
+    workout.alternativeWorkouts,
+    workout.workouts,
+    pickSuggestedExercises,
+    typeList
+  ]);
+
+  // Keep local completed state in sync if workout prop changes
+  React.useEffect(() => {
+    setCompleted(workout.completed);
+    setLocalCompletedTypes(resolveWorkoutTypes(workout).filter(t => (workout.completedTypes || []).includes(t)));
+  }, [workout.completed]);
+
+  // Keep local editing snapshot in sync with incoming workout changes
+  React.useEffect(() => {
+    setEditingWorkout(workout);
+    const types = resolveWorkoutTypes(workout);
+    setSelectedType(types[0] || 'mixed');
+    setLocalCompletedTypes(types.filter(t => (workout.completedTypes || []).includes(t)));
+  }, [workout]);
+
+  React.useEffect(() => {
+    if (primaryType === 'rest') return;
+    const suggested = pickSuggestedExercises(resolveWorkoutTypes(workout));
+    if (!suggested.length) return;
+    setEditingWorkout(prev => {
+      const hasMain = Array.isArray(prev.workouts) && prev.workouts.length > 0;
+      const hasAlt = Array.isArray(prev.alternativeWorkouts) && prev.alternativeWorkouts.length > 0;
+      if (hasMain && hasAlt) return prev;
+      const next = { ...prev };
+      if (!hasMain) next.workouts = suggested;
+      if (!hasAlt) next.alternativeWorkouts = suggested.slice(0, Math.max(2, Math.min(4, suggested.length)));
+      return next;
+    });
+  }, [primaryType, pickSuggestedExercises, workout]);
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -376,10 +489,7 @@ const WorkoutModal: React.FC<WorkoutModalProps> = ({
                 </button>
               </div>              {/* Exercise List */}
               <div className="exercise-list">
-                {(isEditing ? 
-                  (showAlternative ? editingWorkout.alternativeWorkouts : editingWorkout.workouts) :
-                  currentWorkouts
-                ).map((exercise, index) => (
+                {displayExercises.map((exercise, index) => (
                   <div
                     key={index}
                     className="exercise-card"
@@ -553,83 +663,6 @@ const WorkoutModal: React.FC<WorkoutModalProps> = ({
           </div>
         )}
         
-        {/* Add Workout Day Section: Only show for non-rest days */}
-        {primaryType !== 'rest' && (
-          <div className="add-workout-section">
-            <h3>Select Date and Workout Types</h3>
-            <div className="date-picker-container">
-              <label htmlFor="workout-date">Date:</label>
-              <input
-                type="date"
-                id="workout-date"
-                className="date-picker"
-                value={editingWorkout.date}
-                onChange={(e) => setEditingWorkout({ ...editingWorkout, date: e.target.value })}
-              />
-            </div>
-            <div className="workout-type-container">
-              <label>Workout Types (choose up to 4):</label>
-              <div className="type-multi-select">
-                {(['cardio','olympic','plyometrics','powerlifting','strength','stretching','strongman','rest'] as WorkoutType[]).map((type) => {
-                  const checked = editingTypes.includes(type);
-                  return (
-                    <label key={type} className={`type-pill ${checked ? 'selected' : ''}`}>
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        onChange={(e) => handleTypeToggle(type, e.target.checked)}
-                      />
-                      {getWorkoutTypeLabel([type])}
-                    </label>
-                  );
-                })}
-              </div>
-              <small className="type-helper">First selected type becomes the primary color on the calendar.</small>
-            </div>
-            <button
-              className="add-workout-button"
-              onClick={handleSaveChanges}
-            >
-              Add Workout Day
-            </button>
-          </div>
-        )}
-
-        <style>
-          {`
-            .add-workout-section {
-              margin-top: 20px;
-              padding: 15px;
-              background-color: var(--light-blue);
-              border-radius: 8px;
-              box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            }
-            .date-picker-container, .workout-type-container {
-              margin-bottom: 15px;
-            }
-            .date-picker, .workout-type-selector {
-              width: 100%;
-              padding: 10px;
-              border: 1px solid var(--gray);
-              border-radius: 4px;
-              font-size: 16px;
-            }
-            .add-workout-button {
-              width: 100%;
-              padding: 10px;
-              background-color: var(--green);
-              color: white;
-              font-size: 16px;
-              border: none;
-              border-radius: 4px;
-              cursor: pointer;
-              transition: background-color 0.3s;
-            }
-            .add-workout-button:hover {
-              background-color: var(--dark-green);
-            }
-          `}
-        </style>
       </div>
     </div>
   );

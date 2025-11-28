@@ -20,17 +20,6 @@ const PLAN_KEY = 'fitbuddyai_my_plan';
 const EVENT_KEY = 'fitbuddyai-saved-library-updated';
 let inMemoryLibrary: SavedWorkout[] = [];
 
-const storageReady = () => {
-  try {
-    const probeKey = '__fitbuddyai_probe__';
-    localStorage.setItem(probeKey, '1');
-    localStorage.removeItem(probeKey);
-    return true;
-  } catch {
-    return false;
-  }
-};
-
 export const sanitizeWorkout = (item: SavedWorkout): SavedWorkout => {
   if (!item) return { title: 'Workout' };
   const safeTitle = item.title || 'Workout';
