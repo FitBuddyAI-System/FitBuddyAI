@@ -31,24 +31,25 @@ const PersonalLibraryPage: React.FC = () => {
     });
   };
 
+  const savedCountCopy = myPlan.length === 1 ? '1 saved workout' : `${myPlan.length} saved workouts`;
+  const emptyCopy = 'Nothing saved yet — add workouts from the library to see them here.';
+
   return (
     <div className="workouts-page">
       <div className="workouts-hero">
         <div className="hero-left">
           <h1>Saved Workouts</h1>
-          <p className="hero-sub">Workouts you’ve saved from the library.</p>
+          <p className="hero-sub">Everything you save in the Workout Library shows up here.</p>
         </div>
       </div>
 
       <section className="my-plan-section">
         <header className="my-plan-header">
-          <div>
-            <h2>My Saved Workouts</h2>
-            <p className="hero-sub">Remove items to keep your list curated.</p>
-          </div>
+          <p className="hero-sub">{myPlan.length ? `${savedCountCopy}. Remove items to keep your list curated.` : emptyCopy}</p>
+          <a className="btn-ghost" href="/workouts">Open Workout Library</a>
         </header>
         <div className="workouts-grid">
-          {myPlan.length === 0 && <div className="empty">No workouts saved yet. Head to the Workout Library to save some.</div>}
+          {myPlan.length === 0 && <div className="empty">{emptyCopy}</div>}
           {myPlan.map(w => (
             <article key={w.title} className="workout-card">
               <div className="card-media">

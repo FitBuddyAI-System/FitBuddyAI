@@ -339,25 +339,6 @@ const WorkoutsPage: React.FC = () => {
                       <span className={`category ${w.categoryClass || ''}`} data-cat={w.displayCategory}>{w.displayCategory}</span>
                     ) : null}
                   </div>
-              {((Array.isArray(w.primaryMuscles) && w.primaryMuscles.length > 0) || (Array.isArray(w.secondaryMuscles) && w.secondaryMuscles.length > 0)) && (
-                <div className="muscle-section">
-                  <div className="muscle-header">Muscles Exercised</div>
-                  <div className="muscle-list">
-                    {Array.isArray(w.primaryMuscles) && w.primaryMuscles.length > 0 && (
-                      <span className="muscle-badge primary" title={w.primaryMuscles.join(', ')}>
-                        <strong>Primary:</strong>
-                        <span className="muscle-text primary-text">{w.primaryMuscles.join(', ')}</span>
-                      </span>
-                    )}
-                    {Array.isArray(w.secondaryMuscles) && w.secondaryMuscles.length > 0 && (
-                      <span className="muscle-badge secondary" title={w.secondaryMuscles.join(', ')}>
-                        <strong>Secondary:</strong>
-                        <span className="muscle-text secondary-text">{w.secondaryMuscles.join(', ')}</span>
-                      </span>
-                    )}
-                  </div>
-                </div>
-              )}
             </div>
             <div className="card-footer">
               <button className="btn-ghost" onClick={(e) => { e.stopPropagation(); setSelected(w.title); }}>View</button>
@@ -383,6 +364,23 @@ const WorkoutsPage: React.FC = () => {
 };
 
 function WorkoutModal({ title, data, onClose, onAdd }: { title: string; data: Workout; onClose: () => void; onAdd?: () => void }) {
+  const formatDetailValue = (val: any) => {
+    if (val === undefined || val === null) return '—';
+    const text = Array.isArray(val) ? val.filter(Boolean).join(', ') : String(val);
+    if (!text.trim()) return '—';
+    return text.split(/[\s,_]+/).map(part => part.charAt(0).toUpperCase() + part.slice(1)).join(' ');
+  };
+
+  const categoryLabel = (data as any).displayCategory || data.category || '';
+  const categoryClass = (data as any).categoryClass || '';
+
+  const detailChips = [
+    { key: 'force', label: 'Force', value: formatDetailValue(data.force) },
+    { key: 'level', label: 'Level', value: formatDetailValue(data.level) },
+    { key: 'mechanic', label: 'Mechanic', value: formatDetailValue(data.mechanic) },
+    { key: 'equipment', label: 'Equipment', value: formatDetailValue(Array.isArray(data.equipment) ? data.equipment.join(', ') : data.equipment) }
+  ].filter(chip => chip.value !== '—');
+
   return (
     <div className="workouts-modal-overlay" role="dialog" aria-modal="true" aria-label={`${title} details`}>
       <div className="workouts-modal">
@@ -391,7 +389,26 @@ function WorkoutModal({ title, data, onClose, onAdd }: { title: string; data: Wo
             <h2>{title}</h2>
             <div className="meta-row">
               <span className={`difficulty ${(data as any).difficultyClass || ''}`}>{(data as any).displayDifficulty || data.difficulty || 'Varies'}</span>
-              <span className="duration">{data.duration}</span>
+              {categoryLabel ? (
+                <span className={`category-chip ${categoryClass || ''}`}>
+                  <span className="chip-dot" aria-hidden />
+                  <span className="chip-value">{categoryLabel}</span>
+                </span>
+              ) : null}
+              {data.duration ? (
+                <span className="meta-chip duration-chip">
+                  <strong>Time</strong>
+                  <span className="chip-value">{data.duration}</span>
+                </span>
+              ) : null}
+              <div className="meta-chip-group">
+                {detailChips.map(chip => (
+                  <span key={chip.key} className="meta-chip">
+                    <strong>{chip.label}</strong>
+                    <span className="chip-value">{chip.value}</span>
+                  </span>
+                ))}
+              </div>
             </div>
           </div>
           <button className="modal-close" onClick={onClose} aria-label="Close">
@@ -417,17 +434,6 @@ function WorkoutModal({ title, data, onClose, onAdd }: { title: string; data: Wo
           <div className="modal-info">
             <p className="long-desc">{data.meta?.description || data.exampleNote}</p>
 
-            <section className="details">
-              <div><strong>ID:</strong> {data.id || '—'}</div>
-              <div><strong>Force:</strong> {String(data.force ?? '—')}</div>
-              <div><strong>Level:</strong> {data.level || '—'}</div>
-              <div><strong>Mechanic:</strong> {data.mechanic || '—'}</div>
-              <div><strong>Equipment:</strong> {Array.isArray(data.equipment) ? data.equipment.join(', ') : data.equipment || '—'}</div>
-              <div><strong>Category:</strong> {data.category ? (
-                <span className={`category ${(data as any).categoryClass || ''}`} data-cat={(data as any).displayCategory || data.category}>{(data as any).displayCategory || data.category}</span>
-              ) : '—'}</div>
-            </section>
-
             {Array.isArray(data.instructions) && data.instructions.length > 0 && (
               <section className="instructions">
                 <h4>Instructions</h4>
@@ -437,27 +443,27 @@ function WorkoutModal({ title, data, onClose, onAdd }: { title: string; data: Wo
               </section>
             )}
 
-            <div className="muscle-grid">
-              {((Array.isArray(data.primaryMuscles) && data.primaryMuscles.length > 0) || (Array.isArray(data.secondaryMuscles) && data.secondaryMuscles.length > 0)) && (
-                <div className="muscle-section modal">
-                  <div className="muscle-header">Muscles Exercised</div>
-                  <div className="muscle-list">
-                    {Array.isArray(data.primaryMuscles) && (
-                      <div className="muscle-col">
-                        <strong>Primary Muscles</strong>
-                        <div>
-                          <span className="muscle-badge primary" title={data.primaryMuscles.join(', ')}>
-                            <span className="muscle-text primary-text">{data.primaryMuscles.join(', ')}</span>
-                          </span>
+              <div className="muscle-grid">
+                {((Array.isArray(data.primaryMuscles) && data.primaryMuscles.length > 0) || (Array.isArray(data.secondaryMuscles) && data.secondaryMuscles.length > 0)) && (
+                  <div className="muscle-section modal">
+                    <div className="muscle-header">Muscles Exercised</div>
+                    <div className="muscle-list">
+                      {Array.isArray(data.primaryMuscles) && data.primaryMuscles.length > 0 && (
+                        <div className="muscle-col">
+                          <strong>Primary Muscles</strong>
+                          <div>
+                            <span className="muscle-badge primary" title={data.primaryMuscles.join(', ')}>
+                              <span className="muscle-text primary-text">{data.primaryMuscles.join(', ')}</span>
+                            </span>
+                          </div>
                         </div>
-                      </div>
-                    )}
-                    {Array.isArray(data.secondaryMuscles) && (
-                      <div className="muscle-col">
-                        <strong>Secondary Muscles</strong>
-                        <div>
-                          <span className="muscle-badge secondary" title={data.secondaryMuscles.join(', ')}>
-                            <span className="muscle-text secondary-text">{data.secondaryMuscles.join(', ')}</span>
+                      )}
+                      {Array.isArray(data.secondaryMuscles) && data.secondaryMuscles.length > 0 && (
+                        <div className="muscle-col">
+                          <strong>Secondary Muscles</strong>
+                          <div>
+                            <span className="muscle-badge secondary" title={data.secondaryMuscles.join(', ')}>
+                              <span className="muscle-text secondary-text">{data.secondaryMuscles.join(', ')}</span>
                           </span>
                         </div>
                       </div>
