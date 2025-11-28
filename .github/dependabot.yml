@@ -25,7 +25,6 @@ updates:
       - "dependencies"
       - "automated"
     
-    # Group related updates to reduce PR noise
     groups:
       react-ecosystem:
         patterns:
@@ -56,15 +55,12 @@ updates:
           - "lucide-react"
           - "date-fns"
     
-    # Ignore specific packages that require manual testing
     ignore:
       - dependency-name: "node"
-        # Ignore Node.js updates (requires infrastructure planning)
       - dependency-name: "@supabase/supabase-js"
-        # Major version updates need database migration planning
         update-types: ["version-update:semver-major"]
 
-  # Security-focused updates (higher frequency)
+  # Security-focused updates
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
@@ -76,8 +72,7 @@ updates:
       - "we09532"
     assignees:
       - "we09532"
-    # Target a branch derived from main for security PRs to keep configs unique.
-    target-branch: "main-security"
+    target-branch: "main"
     commit-message:
       prefix: "security"
       include: "scope"
@@ -86,7 +81,6 @@ updates:
       - "critical"
       - "automated"
     
-    # Only security updates for this configuration (dependency-type filter kept)
     allow:
       - dependency-type: "direct"
       - dependency-type: "indirect"
@@ -102,8 +96,9 @@ updates:
     open-pull-requests-limit: 3
     reviewers:
       - "we09532"
-    # Use a separate branch for dev-only updates to avoid overlapping config keys.
-    target-branch: "main-dev"
+    assignees:
+      - "we09532"
+    target-branch: "main"
     commit-message:
       prefix: "deps(dev)"
       include: "scope"
@@ -111,6 +106,5 @@ updates:
       - "dev-dependencies"
       - "automated"
     
-    # Only development dependencies
     allow:
       - dependency-type: "development"
