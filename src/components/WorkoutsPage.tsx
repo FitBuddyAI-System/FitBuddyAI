@@ -339,25 +339,6 @@ const WorkoutsPage: React.FC = () => {
                       <span className={`category ${w.categoryClass || ''}`} data-cat={w.displayCategory}>{w.displayCategory}</span>
                     ) : null}
                   </div>
-              {((Array.isArray(w.primaryMuscles) && w.primaryMuscles.length > 0) || (Array.isArray(w.secondaryMuscles) && w.secondaryMuscles.length > 0)) && (
-                <div className="muscle-section">
-                  <div className="muscle-header">Muscles Exercised</div>
-                  <div className="muscle-list">
-                    {Array.isArray(w.primaryMuscles) && w.primaryMuscles.length > 0 && (
-                      <span className="muscle-badge primary" title={w.primaryMuscles.join(', ')}>
-                        <strong>Primary:</strong>
-                        <span className="muscle-text primary-text">{w.primaryMuscles.join(', ')}</span>
-                      </span>
-                    )}
-                    {Array.isArray(w.secondaryMuscles) && w.secondaryMuscles.length > 0 && (
-                      <span className="muscle-badge secondary" title={w.secondaryMuscles.join(', ')}>
-                        <strong>Secondary:</strong>
-                        <span className="muscle-text secondary-text">{w.secondaryMuscles.join(', ')}</span>
-                      </span>
-                    )}
-                  </div>
-                </div>
-              )}
             </div>
             <div className="card-footer">
               <button className="btn-ghost" onClick={(e) => { e.stopPropagation(); setSelected(w.title); }}>View</button>
