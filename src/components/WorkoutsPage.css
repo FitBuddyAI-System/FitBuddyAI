@@ -20,8 +20,8 @@
   font-size: 36px;
   margin: 0 0 6px 0;
   background: linear-gradient(90deg,var(--primary-green),var(--secondary-blue));
-  background-clip: text;
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 .hero-sub { margin:0; color:var(--text-medium); }

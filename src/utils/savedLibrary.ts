@@ -13,6 +13,7 @@ export type SavedWorkout = {
   meta?: { description?: string };
   difficulty?: string;
   duration?: string;
+  instructions?: string[];
 };
 
 const PLAN_KEY = 'fitbuddyai_my_plan';
@@ -34,6 +35,8 @@ export const sanitizeWorkout = (item: SavedWorkout): SavedWorkout => {
     meta: item.meta,
     difficulty: item.difficulty,
     duration: item.duration
+    ,
+    instructions: Array.isArray((item as any).instructions) ? (item as any).instructions : undefined
   };
 };
 
