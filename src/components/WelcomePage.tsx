@@ -156,7 +156,7 @@ const WelcomePage: React.FC = () => {
                 <div className="step-number">2</div>
                 <div className="step-content">
                   <h4>Get Your AI Plan</h4>
-                  <p>Our AI creates a personalized 30-day workout calendar tailored specifically for you.</p>
+                  <p>Our AI creates a personalized workout calendar tailored specifically for you.</p>
                 </div>
               </div>
               <div className="step">
@@ -174,7 +174,7 @@ const WelcomePage: React.FC = () => {
           <div className="container">
             <div className="final-cta-content">
               <h3>Ready to Transform Your Fitness?</h3>
-              <p>Join thousands of users who have already started their journey with Fatbuddy.</p>
+              <p>Start your journey with Fatbuddy Today.</p>
               <Link to="/questionnaire" className="btn btn-primary btn-large">
                 Get Started Now
               </Link>
