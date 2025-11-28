@@ -3,7 +3,6 @@ import './WorkoutsPage.css';
 import {
   loadSavedWorkouts,
   persistSavedWorkouts,
-  sanitizeWorkout,
   subscribeSavedWorkouts,
   SavedWorkout
 } from '../utils/savedLibrary';
