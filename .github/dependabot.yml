@@ -16,7 +16,7 @@ updates:
       - "we09532"
     assignees:
       - "we09532"
-    target-branch: "development"
+    target-branch: "main"
     commit-message:
       prefix: "deps"
       prefix-development: "deps(dev)"
@@ -76,7 +76,8 @@ updates:
       - "we09532"
     assignees:
       - "we09532"
-    target-branch: "development"
+    # Target a branch derived from main for security PRs to keep configs unique.
+    target-branch: "main-security"
     commit-message:
       prefix: "security"
       include: "scope"
@@ -85,25 +86,24 @@ updates:
       - "critical"
       - "automated"
     
-    # Only security updates for this configuration
+    # Only security updates for this configuration (dependency-type filter kept)
     allow:
       - dependency-type: "direct"
-        update-type: "security"
       - dependency-type: "indirect"
-        update-type: "security"
 
   # Development dependencies (less frequent)
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
       interval: "monthly"
-      day: 1
+      day: "monday"
       time: "10:00"
       timezone: "America/New_York"
     open-pull-requests-limit: 3
     reviewers:
       - "we09532"
-    target-branch: "development"
+    # Use a separate branch for dev-only updates to avoid overlapping config keys.
+    target-branch: "main-dev"
     commit-message:
       prefix: "deps(dev)"
       include: "scope"
