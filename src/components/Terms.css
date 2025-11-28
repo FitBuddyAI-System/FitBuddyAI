@@ -77,3 +77,54 @@
 .terms-modal{position:fixed;inset:0;background:rgba(0,0,0,0.48);display:flex;align-items:center;justify-content:center}
 .terms-modal-inner{background:#fff;padding:20px;border-radius:12px;max-width:720px;width:92%}
 .terms-close{position:absolute;right:18px;top:12px;border:none;background:none;font-size:28px}
+
+/* Dark mode adaptations */
+body.theme-dark .terms-page { color: #e9eef5; background: #0b111b; }
+body.theme-dark .terms-hero {
+  background: linear-gradient(135deg, #0f1729 0%, #0b1322 100%);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+body.theme-dark .hero-title { color: #f7f9fc; }
+body.theme-dark .hero-sub { color: rgba(233,238,245,0.7); }
+body.theme-dark .hero-logo { background: linear-gradient(135deg, #1ecb7b, #1e90cb); box-shadow: 0 10px 28px rgba(0,0,0,0.35); }
+
+body.theme-dark .terms-card {
+  background: #0f1624;
+  border: 1px solid #1f2a36;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.45);
+}
+body.theme-dark .terms-card h2 { color: #f7f9fc; }
+body.theme-dark .terms-card p { color: rgba(233,238,245,0.78); }
+
+body.theme-dark .terms-full {
+  background: #0b111b;
+  border-top: 1px solid #1f2a36;
+}
+body.theme-dark .terms-full-inner {
+  background: linear-gradient(180deg, #0f1624, #0c131f);
+  border: 1px solid #1f2a36;
+  box-shadow: 0 12px 38px rgba(0,0,0,0.5);
+}
+body.theme-dark .terms-full-inner h2,
+body.theme-dark .terms-full-inner h3 { color: #f7f9fc; }
+body.theme-dark .terms-full-inner p { color: rgba(233,238,245,0.78); }
+
+body.theme-dark .terms-cta-bottom {
+  background: #0b111b;
+}
+body.theme-dark .terms-checkbox { color: rgba(233,238,245,0.85); }
+body.theme-dark .terms-cta-inner .btn.btn-primary {
+  background: linear-gradient(135deg, #1ecb7b, #1e90cb);
+  border: 1px solid rgba(255,255,255,0.08);
+  color: #0b111b;
+  box-shadow: 0 12px 30px rgba(0,0,0,0.4);
+}
+body.theme-dark .accepted-btn {
+  background: #1a2334;
+  color: #8fa1be;
+  border-color: #243249;
+}
+
+body.theme-dark .tos-link { color: #5ad7a3; }
+body.theme-dark .tos-link::after { background: linear-gradient(90deg, #1ecb7b, #1e90cb); }
+body.theme-dark .tos-text { color: rgba(233,238,245,0.7); }

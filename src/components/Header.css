@@ -127,6 +127,12 @@
   box-shadow: 0 1px 6px rgba(0,0,0,0.28);
 }
 
+body:not(.theme-dark) .explore-menu-lines span {
+  background: #fff;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.2);
+}
+body:not(.theme-dark) .explore-button { color: #fff; }
+
 .explore-sr-text {
   position: absolute;
   width: 1px;

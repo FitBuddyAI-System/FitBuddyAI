@@ -179,7 +179,7 @@ const Header: React.FC<HeaderProps> = ({ profileVersion, userData }) => {
       case '/signup':
         return 'Sign Up';
       case '/chat':
-        return 'Chat with Buddy';
+        return 'Chat with AI Coach';
       default:
         return 'FitBuddyAI';
     }
@@ -255,6 +255,7 @@ const Header: React.FC<HeaderProps> = ({ profileVersion, userData }) => {
               <button onClick={() => { setExploreOpen(false); navigate('/blog'); }}>Blog</button>
               <button onClick={() => { setExploreOpen(false); navigate('/pricing'); }}>Pricing</button>
               <button onClick={() => { setExploreOpen(false); navigate('/shop'); }} className="dropdown-shop">Shop</button>
+              <button onClick={() => { setExploreOpen(false); navigate('/my-plan'); }}>My Plan</button>
               {isSignedIn && (
                 <div className="explore-footer">
                   <button onClick={() => { setExploreOpen(false); navigate('/profile/settings'); }}>Settings</button>
@@ -313,7 +314,7 @@ const Header: React.FC<HeaderProps> = ({ profileVersion, userData }) => {
               try { window.dispatchEvent(new CustomEvent('fitbuddyai-open-chat')); } catch {}
               navigate('/chat');
             }}
-            aria-label="Chat with Buddy"
+            aria-label="Chat with AI Coach"
           >
             <span className="sparkles-mobile-only"><Sparkles size={20} /></span>
             <span>Chat</span>

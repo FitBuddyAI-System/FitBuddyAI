@@ -34,6 +34,7 @@ import PrivacyPage from './components/PrivacyPage';
 import HelpCenter from './components/HelpCenter';
 import SettingsPage from './components/SettingsPage';
 import WorkoutsPage from './components/WorkoutsPage';
+import MyPlanPage from './components/MyPlanPage';
 
 function App() {
   const [userData, setUserData] = useState<any | null>(null);
@@ -354,6 +355,7 @@ function App() {
               : (isHydratingUser ? <LoadingPage /> : <Navigate to="/signin" replace />)
           } 
         />
+        <Route path="/my-plan" element={<MyPlanPage />} />
   <Route path="/chat" element={<AgreementGuard userData={userData}><GeminiChatPage userData={userData} /></AgreementGuard>} />
   <Route path="/admin" element={<AdminPage />} />
   <Route path="/help" element={<HelpCenter />} />
