@@ -82,6 +82,23 @@ const Header: React.FC<HeaderProps> = ({ profileVersion, userData }) => {
     };
   }, []);
 
+  // Toggle a body-level class when the explore drawer is open so we can
+  // apply page-wide blur while keeping the header visually sharp.
+  React.useEffect(() => {
+    try {
+      if (exploreOpen) {
+        document.body.classList.add('explore-open');
+      } else {
+        document.body.classList.remove('explore-open');
+      }
+    } catch (e) {
+      // ignore (server-side rendering / unavailable document)
+    }
+    return () => {
+      try { document.body.classList.remove('explore-open'); } catch (e) {}
+    };
+  }, [exploreOpen]);
+
   React.useEffect(() => {
     setExploreOpen(false);
   }, [location.pathname]);

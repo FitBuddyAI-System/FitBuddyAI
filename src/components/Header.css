@@ -32,12 +32,13 @@
 /* Header Styles */
 .app-header {  background: var(--gradient-primary);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
+  /* Remove backdrop blur for the header so it remains crisp */
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   position: sticky;
   top: 0;
-  z-index: 1000;
+  z-index: 2000;
   transition: all 0.3s ease;
 }
 
@@ -161,8 +162,10 @@ body:not(.theme-dark) .explore-button { color: #fff; }
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.35);
-  backdrop-filter: blur(2px);
-  z-index: 1100;
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(6px);
+  /* keep backdrop beneath header */
+  z-index: 1500;
 }
 
 .explore-drawer {
@@ -177,7 +180,8 @@ body:not(.theme-dark) .explore-button { color: #fff; }
   color: var(--text-dark, #111);
   box-shadow: 0 20px 60px rgba(0,0,0,0.35);
   border-radius: 0 16px 16px 0;
-  z-index: 1200;
+  /* Ensure the drawer sits above the header */
+  z-index: 1500;
   overflow-y: auto;
   border-right: 1px solid rgba(0,0,0,0.06);
   margin-left: 0;
@@ -308,6 +312,24 @@ body:not(.theme-dark) .explore-button { color: #fff; }
 .nav-dropdown.open .explore-backdrop { display: block; }
 .nav-dropdown.open .explore-drawer { display: block; }
 .nav-dropdown.open .explore-button { border-color: rgba(255,255,255,0.45); box-shadow: 0 12px 30px rgba(0,0,0,0.28); }
+
+/* When the explore drawer is open, blur the page content but keep the header sharp */
+body.explore-open .app-header {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+/* Strengthen the blur applied to the rest of the document (exclude header) by
+   using the backdrop on the explore backdrop element and ensuring the header
+   remains visually on top */
+body.explore-open .explore-backdrop {
+  display: block;
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+
+/* Ensure the drawer stays above header */
+body.explore-open .explore-drawer { z-index: 1600; }
 
 body.theme-dark .explore-button {
   background: linear-gradient(135deg, rgba(20, 29, 47, 0.9), rgba(26, 36, 54, 0.9));
