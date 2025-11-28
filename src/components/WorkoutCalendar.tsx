@@ -351,7 +351,7 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
           : [];
         return {
           ...workout,
-          type: (normalizedTypes[0] || workout.type || 'mixed') as WorkoutType,
+          type: (normalizedTypes[0] || workout.type || 'strength') as WorkoutType,
           types: normalizedTypes,
           completedTypes: normalizedCompletedTypes,
           completed: normalizedTypes.length > 0 ? normalizedCompletedTypes.length === normalizedTypes.length : !!workout.completed
@@ -403,20 +403,20 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
   // Determine the weekday index for the first day of the month (0 = Sun .. 6 = Sat)
   const monthStartIndex = monthStart.getDay();
 
+  const allowedSingleTypes: WorkoutType[] = ['strength', 'cardio', 'plyometrics', 'powerlifting', 'stretching', 'strongman', 'rest'] as WorkoutType[];
+
   const normalizeTypesExclusiveRest = (typesInput: (WorkoutType | string | null | undefined)[]): WorkoutType[] => {
-    const filtered = (typesInput || []).filter(Boolean) as WorkoutType[];
-    const unique = Array.from(new Set(filtered)) as WorkoutType[];
-    if (unique.includes('rest') && unique.length > 1) {
-      return ['rest'];
-    }
-    return unique.slice(0, 4) as WorkoutType[];
+    const filtered = (typesInput || [])
+      .map(t => (t === 'mixed' ? null : t))
+      .filter((t): t is WorkoutType => !!t && allowedSingleTypes.includes(t as WorkoutType));
+    if (filtered.includes('rest')) return ['rest'];
+    if (filtered.length === 0) return ['strength'];
+    return [filtered[0]];
   };
 
-  const mergeTypesWithRestGuard = (existingTypes: WorkoutType[], incomingType: WorkoutType): WorkoutType[] => {
-    const normalizedExisting = normalizeTypesExclusiveRest(existingTypes);
-    if (normalizedExisting.includes('rest')) return ['rest'];
-    if (incomingType === 'rest') return ['rest'];
-    return normalizeTypesExclusiveRest([...normalizedExisting, incomingType]);
+  const mergeTypesWithRestGuard = (_existingTypes: WorkoutType[], incomingType: WorkoutType): WorkoutType[] => {
+    // Enforce single-type days; replacing with the requested type (or rest)
+    return normalizeTypesExclusiveRest([incomingType]);
   };
 
   const formatDate = (dateInput: string | Date) => {
@@ -451,7 +451,7 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
 
   const getPrimaryType = (workout: DayWorkout): WorkoutType => {
     const types = resolveWorkoutTypes(workout);
-    return types[0] || 'mixed';
+    return types[0] || 'strength';
   };
 
   // Normalize to midnight and check if the target date has already passed
@@ -585,14 +585,18 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
         return 'strength';
       case 'cardio':
         return 'cardio';
-      case 'flexibility':
-        return 'flexibility';
+      case 'plyometrics':
+        return 'plyometrics';
+      case 'powerlifting':
+        return 'powerlifting';
+      case 'stretching':
+        return 'stretching';
+      case 'strongman':
+        return 'strongman';
       case 'rest':
         return 'rest';
-      case 'mixed':
-        return 'mixed';
       default:
-        return 'mixed';
+        return 'strength';
     }
   };
 
@@ -601,13 +605,15 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
       switch (type) {
         case 'strength': return 'Strength';
         case 'cardio': return 'Cardio';
-        case 'flexibility': return 'Flexibility';
         case 'rest': return 'Rest';
-        default: return 'Mixed';
+        case 'plyometrics': return 'Plyometrics';
+        case 'powerlifting': return 'Powerlifting';
+        case 'stretching': return 'Stretching';
+        case 'strongman': return 'Strongman';
+        default: return 'Strength';
       }
     };
-    if (!types || types.length === 0) return 'Mixed';
-    if (types.length > 1) return types.map(formatSingle).join(' / ');
+    if (!types || types.length === 0) return 'Strength';
     return formatSingle(types[0]);
   };
 
@@ -879,7 +885,7 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
     if (selectedWorkoutDate) {
       handleAddWorkoutDay(
         new Date(selectedWorkoutDate),
-        selectedWorkoutType as 'strength' | 'cardio' | 'flexibility' | 'rest' | 'mixed',
+        selectedWorkoutType as 'strength' | 'cardio' | 'plyometrics' | 'powerlifting' | 'stretching' | 'strongman' | 'rest',
         workoutPreferences
       );
       setSelectedWorkoutDate('');
@@ -959,7 +965,7 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
 
       try {
         // use first selected type when sending to AI; pass comments in savedAnswers.comments
-        const typeForAI = (batchTypes && batchTypes.length > 0) ? batchTypes.join(',') : 'mixed';
+        const typeForAI = (batchTypes && batchTypes.length > 0) ? batchTypes.join(',') : 'strength';
         const savedAnswersWithComments = { ...savedAnswers, batchComments };
         const others = updatedDaily.filter(d => d.date !== dateStr);
         const newDayRaw = await generateWorkoutForDay(effectiveUserData, savedAnswersWithComments, savedQuestions, dateStr, typeForAI, others, []);
@@ -973,13 +979,13 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
           const normalizedTypes = normalizeTypesExclusiveRest(
             Array.isArray(day?.types) && day?.types.length
               ? day.types.slice(0, 4)
-              : [((day?.type || 'mixed') as WorkoutType)]
+              : [((day?.type || 'strength') as WorkoutType)]
           );
           const workoutsArr = Array.isArray(day?.workouts) ? day.workouts : (Array.isArray(day?.exercises) ? day.exercises : []);
           const altArr = Array.isArray(day?.alternativeWorkouts) ? day.alternativeWorkouts : (Array.isArray(day?.alternativeExercises) ? day.alternativeExercises : []);
           return {
             date: dateStrLocal,
-            type: (normalizedTypes[0] || 'mixed') as WorkoutType,
+            type: (normalizedTypes[0] || 'strength') as WorkoutType,
             types: normalizedTypes as WorkoutType[],
             workouts: workoutsArr.map((w: any) => ({
               name: w?.name || w?.exercise || 'Exercise',
@@ -1022,7 +1028,7 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
   setLoadingDates([]);
   setSelectedForAdd([]);
   };
-  const handleAddWorkoutDay = async (date?: Date, workoutType?: 'strength' | 'cardio' | 'flexibility' | 'rest' | 'mixed', preferences?: any) => {
+  const handleAddWorkoutDay = async (date?: Date, workoutType?: 'strength' | 'cardio' | 'plyometrics' | 'powerlifting' | 'stretching' | 'strongman' | 'rest', preferences?: any) => {
     if (!workoutPlan) return;
 
     let targetDate: Date;
@@ -1058,7 +1064,7 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
       ...(effectiveUserData.preferences || []),
       ...(preferences?.muscleGroups || []),
       ...(preferences?.equipment || []),
-      `Workout type: ${workoutType || 'mixed'}`,
+      `Workout type: ${workoutType || 'strength'}`,
       `Duration: ${preferences?.duration || '30 min'}`
     ];
 
@@ -1069,10 +1075,10 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
 
     const generatedPlan = await generateWorkoutPlan(userDataWithPreferences, {}, []);
 
-    const normalizedTypes = normalizeTypesExclusiveRest([((workoutType || 'mixed') as WorkoutType)]);
+    const normalizedTypes = normalizeTypesExclusiveRest([((workoutType || 'strength') as WorkoutType)]);
     const newWorkout: DayWorkout = {
       date: dateString,
-      type: (normalizedTypes[0] || 'mixed') as 'strength' | 'cardio' | 'flexibility' | 'rest' | 'mixed',
+      type: (normalizedTypes[0] || 'strength') as 'strength' | 'cardio' | 'plyometrics' | 'powerlifting' | 'stretching' | 'strongman' | 'rest',
       types: normalizedTypes,
       workouts: generatedPlan.dailyWorkouts[0]?.workouts || [],
       alternativeWorkouts: [],
@@ -1118,7 +1124,7 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
 
     const normalizedWorkout: DayWorkout = {
       ...updatedWorkout,
-      type: (normalizedTypes[0] || updatedWorkout.type || 'mixed') as WorkoutType,
+      type: (normalizedTypes[0] || updatedWorkout.type || 'strength') as WorkoutType,
       types: normalizedTypes,
       completedTypes: normalizedCompletedTypes,
       completed: allComplete
@@ -1201,7 +1207,7 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
 
         return {
           date: dateStr,
-          type: (normalizedTypes[0] || day?.type || workout.type || 'mixed') as WorkoutType,
+          type: (normalizedTypes[0] || day?.type || workout.type || 'strength') as WorkoutType,
           types: normalizedTypes as WorkoutType[],
           completedTypes: Array.isArray(day?.completedTypes)
             ? (day.completedTypes as WorkoutType[]).filter((t: WorkoutType) => normalizedTypes.includes(t))
@@ -1993,7 +1999,7 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
                   <h4>Batch Add Workouts ({selectedForAdd.length} selected)</h4>
                   <label>Choose workout types (multi-select):</label>
                   <div className="batch-types">
-                    {['strength','cardio','flexibility','mixed','rest'].map(t => (
+                    {['strength','cardio','plyometrics','powerlifting','stretching','strongman','rest'].map(t => (
                       <label key={t} className={`batch-type ${batchTypes.includes(t) ? 'selected' : ''}`}>
                         <input type="checkbox" checked={batchTypes.includes(t)} onChange={(e) => {
                           setBatchTypes(prev => e.target.checked ? [...prev, t] : prev.filter(x => x !== t));
@@ -2098,8 +2104,11 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
                 >
                   <option value="strength">Strength</option>
                   <option value="cardio">Cardio</option>
-                  <option value="flexibility">Flexibility</option>
-                  <option value="mixed">Mixed</option>
+                  <option value="plyometrics">Plyometrics</option>
+                  <option value="powerlifting">Powerlifting</option>
+                  <option value="stretching">Stretching</option>
+                  <option value="strongman">Strongman</option>
+                  <option value="rest">Rest</option>
                 </select>
 
                 <label htmlFor="workout-duration">Duration:</label>
@@ -2171,8 +2180,10 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
                   >
                     <option value="strength">Strength</option>
                     <option value="cardio">Cardio</option>
-                    <option value="flexibility">Flexibility</option>
-                    <option value="mixed">Mixed</option>
+                    <option value="plyometrics">Plyometrics</option>
+                    <option value="powerlifting">Powerlifting</option>
+                    <option value="stretching">Stretching</option>
+                    <option value="strongman">Strongman</option>
                     <option value="rest">Rest</option>
                   </select>
                 </label>
@@ -2223,8 +2234,11 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
             >
               <option value="strength">Strength</option>
               <option value="cardio">Cardio</option>
-              <option value="flexibility">Flexibility</option>
-              <option value="mixed">Mixed</option>
+              <option value="plyometrics">Plyometrics</option>
+              <option value="powerlifting">Powerlifting</option>
+              <option value="stretching">Stretching</option>
+              <option value="strongman">Strongman</option>
+              <option value="rest">Rest</option>
             </select>
 
             <label htmlFor="workout-duration">Duration:</label>
