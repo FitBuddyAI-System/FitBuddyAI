@@ -1,5 +1,13 @@
 import React, { useMemo, useState } from 'react';
 import './WorkoutsPage.css';
+import confetti from 'canvas-confetti';
+import {
+  loadSavedWorkouts,
+  persistSavedWorkouts,
+  sanitizeWorkout,
+  subscribeSavedWorkouts,
+  SavedWorkout
+} from '../utils/savedLibrary';
 
 type Workout = {
   id?: string;
@@ -26,12 +34,20 @@ type Workout = {
   // UI helpers added at runtime
   displayDifficulty?: string;
   difficultyClass?: string;
+  displayCategory?: string;
+  categoryClass?: string;
+  searchText?: string;
+  categoryKey?: string;
+  difficultyKey?: string;
 };
 
 const WorkoutsPage: React.FC = () => {
   const [query, setQuery] = useState('');
   const [difficulty, setDifficulty] = useState<'All' | 'Easy' | 'Medium' | 'Hard'>('All');
+  const [categorySort, setCategorySort] = useState<string>('All');
   const [selected, setSelected] = useState<string | null>(null);
+  const [myPlan, setMyPlan] = useState<SavedWorkout[]>(() => loadSavedWorkouts());
+  const [saveNotice, setSaveNotice] = useState<string | null>(null);
 
   // Map JSON level values to UI difficulty labels
   const mapLevel = (lvl?: string) => {
@@ -55,6 +71,7 @@ const WorkoutsPage: React.FC = () => {
     if (!s) return 'uncategorized';
     return String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'uncategorized';
   };
+  const normalizeCategoryLabel = (s: string) => s.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-');
   const workouts = useMemo(() => {
     // Dynamically import all exercise JSON files under src/data/exercises
     // Using Vite's import.meta.glob with eager option to bundle them.
@@ -87,41 +104,95 @@ const WorkoutsPage: React.FC = () => {
       // Normalize and capitalize muscle names so UI can assume consistent casing
       const primaryMuscles = Array.isArray(data.primaryMuscles) ? data.primaryMuscles.map((m: string) => capitalizeWords(String(m))) : [];
       const secondaryMuscles = Array.isArray(data.secondaryMuscles) ? data.secondaryMuscles.map((m: string) => capitalizeWords(String(m))) : [];
+      const searchText = [
+        title,
+        data.exampleNote,
+        data.meta?.description,
+        primaryMuscles.join(' '),
+        secondaryMuscles.join(' '),
+        data.displayCategory || data.category,
+        Array.isArray(data.instructions) ? data.instructions.join(' ') : ''
+      ].filter(Boolean).join(' ').toLowerCase();
+      const categoryKey = normalizeCategoryLabel(displayCategory || data.category || 'uncategorized');
+      const difficultyKey = (displayDifficulty || '').toLowerCase();
 
-      return { title, ...data, images, displayDifficulty, difficultyClass, displayCategory, categoryClass, primaryMuscles, secondaryMuscles };
+      return { title, ...data, images, displayDifficulty, difficultyClass, displayCategory, categoryClass, primaryMuscles, secondaryMuscles, searchText, categoryKey, difficultyKey };
     });
+    // keep deterministic order once to avoid re-sorting during filters
+    items.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
     return items;
   }, []);
 
+  const getCategoryLabel = (w: Workout & { displayCategory?: string }) => {
+    const label = (w.displayCategory && w.displayCategory.trim())
+      || (w.category ? capitalizeWords(String(w.category)) : '')
+      || 'Uncategorized';
+    return label;
+  };
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
+    const difficultyKey = difficulty.toLowerCase();
+    const categoryKey = normalizeCategoryLabel(categorySort);
     return workouts.filter(w => {
-      if (difficulty !== 'All') {
-        const d = (w.displayDifficulty || '').toLowerCase();
-        if (difficulty.toLowerCase() !== d) return false;
-      }
+      if (difficulty !== 'All' && w.difficultyKey !== difficultyKey) return false;
+      if (categorySort !== 'All' && w.categoryKey !== categoryKey) return false;
       if (!q) return true;
-
-      const parts: string[] = [];
-      if (w.title) parts.push(w.title);
-      if (w.exampleNote) parts.push(w.exampleNote);
-      if (w.meta?.description) parts.push(w.meta.description);
-      if (Array.isArray(w.primaryMuscles)) parts.push(w.primaryMuscles.join(' '));
-      if (Array.isArray(w.secondaryMuscles)) parts.push(w.secondaryMuscles.join(' '));
-      if ((w as any).displayCategory) parts.push((w as any).displayCategory);
-      if (w.category) parts.push(String(w.category));
-      if (Array.isArray(w.instructions)) parts.push(w.instructions.join(' '));
-
-      const hay = parts.join(' ').toLowerCase();
-      return hay.includes(q);
+      return (w as any).searchText ? (w as any).searchText.includes(q) : false;
     });
-  }, [workouts, query, difficulty]);
+  }, [workouts, query, difficulty, categorySort]);
+
+  const categoryOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    workouts.forEach(w => {
+      const label = getCategoryLabel(w);
+      const key = normalizeCategoryLabel(label);
+      if (!map.has(key)) map.set(key, label);
+    });
+    const opts = Array.from(map.values()).sort((a, b) => a.localeCompare(b));
+    return ['All', ...opts];
+  }, [workouts]);
+
+  React.useEffect(() => {
+    const unsubscribe = subscribeSavedWorkouts((list) => setMyPlan(list));
+    return unsubscribe;
+  }, []);
+
+  const addToPlan = (item: Workout & { title: string }) => {
+    setMyPlan(prev => {
+      const exists = prev.some(p => p.title === item.title);
+      if (exists) {
+        setSaveNotice('Already saved to your workouts.');
+        return prev;
+      }
+      const next = persistSavedWorkouts([...prev, sanitizeWorkout(item)]);
+      setSaveNotice('Saved to your workouts!');
+      try {
+        confetti({
+          particleCount: 90,
+          spread: 65,
+          origin: { y: 0.6 }
+        });
+      } catch {}
+      window.setTimeout(() => setSaveNotice(null), 2600);
+      return next;
+    });
+  };
+
+  const removeFromPlan = (title: string) => {
+    setMyPlan(prev => {
+      const next = prev.filter(p => p.title !== title);
+      return persistSavedWorkouts(next);
+    });
+  };
+
+  const selectedWorkout = selected ? workouts.find(w => w.title === selected) : undefined;
 
   return (
     <div className="workouts-page">
       <div className="workouts-hero">
         <div className="hero-left">
-          <h1>Workouts Library</h1>
+          <h1>Workout Library</h1>
           <p className="hero-sub">Explore exercises, watch technique videos, and view trusted resources — curated for quick practice.</p>
         </div>
         <div className="hero-right">
@@ -134,20 +205,40 @@ const WorkoutsPage: React.FC = () => {
               aria-label="Search workouts"
             />
           </div>
-          <div className="filters">
-            {(['All', 'Easy', 'Medium', 'Hard'] as const).map(d => (
-              <button
-                key={d}
-                className={`filter-btn ${difficulty === d ? 'active' : ''}`}
-                onClick={() => setDifficulty(d)}
-                aria-pressed={difficulty === d}
+          <div className="filters-row">
+            <div className="filters">
+              {(['All', 'Easy', 'Medium', 'Hard'] as const).map(d => (
+                <button
+                  key={d}
+                  className={`filter-btn ${difficulty === d ? 'active' : ''}`}
+                  onClick={() => setDifficulty(d)}
+                  aria-pressed={difficulty === d}
+                >
+                  {d}
+                </button>
+              ))}
+            </div>
+            <div className="sort-control">
+              <label htmlFor="workout-sort">Sort by category</label>
+              <select
+                id="workout-sort"
+                value={categorySort}
+                onChange={e => setCategorySort(e.target.value)}
+                aria-label="Sort workouts by category"
               >
-                {d}
-              </button>
-            ))}
+                {categoryOptions.map(opt => (
+                  <option key={opt} value={opt}>{opt}</option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
       </div>
+      {saveNotice && (
+        <div className="save-notice" role="status">
+          {saveNotice}
+        </div>
+      )}
 
       <div className="workouts-grid">
         {filtered.length === 0 && (
@@ -198,23 +289,65 @@ const WorkoutsPage: React.FC = () => {
             </div>
             <div className="card-footer">
               <button className="btn-ghost" onClick={(e) => { e.stopPropagation(); setSelected(w.title); }}>View</button>
+              <button className="btn-ghost" onClick={(e) => { e.stopPropagation(); addToPlan(w); }}>Save Workout</button>
             </div>
           </article>
         ))}
       </div>
 
-      {selected && (
+      {selectedWorkout && (
         <WorkoutModal
-          title={selected}
-          data={workouts.find(w => w.title === selected)!}
+          title={selectedWorkout.title}
+          data={selectedWorkout}
           onClose={() => setSelected(null)}
+          onAdd={() => {
+            addToPlan(selectedWorkout);
+            setSelected(null);
+          }}
         />
       )}
+
+      <section className="my-plan-section">
+        <header className="my-plan-header">
+          <div>
+            <h2>Personal Library</h2>
+            <p className="hero-sub">Workouts you’ve saved. Click remove to keep it fresh.</p>
+          </div>
+        </header>
+        <div className="workouts-grid">
+          {myPlan.length === 0 && <div className="empty">No workouts added yet. Use “Save Workout” above.</div>}
+          {myPlan.map(w => (
+            <article key={w.title} className="workout-card">
+              <div className="card-media">
+                {w.images && w.images[0] ? (
+                  <img src={w.images[0]} alt={w.imageCaptions?.[0] || w.title} />
+                ) : (
+                  <div className="media-fallback">{w.title.charAt(0)}</div>
+                )}
+              </div>
+              <div className="card-body">
+                <h3 className="card-title">{w.title}</h3>
+                <div className="card-meta">
+                  <span className={`difficulty ${w.difficultyClass || 'varies'}`}>{w.displayDifficulty || 'Varies'}</span>
+                  {w.displayCategory ? (
+                    <span className={`category ${w.categoryClass || ''}`} data-cat={w.displayCategory}>{w.displayCategory}</span>
+                  ) : null}
+                </div>
+                <p className="card-desc">{w.exampleNote || w.meta?.description?.slice(0,120) || (w.instructions && w.instructions[0]) || 'No description available.'}</p>
+              </div>
+              <div className="card-footer">
+                <button className="btn-ghost" onClick={() => setSelected(w.title)}>View</button>
+                <button className="btn-ghost danger" onClick={() => removeFromPlan(w.title)}>Remove</button>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
     </div>
   );
 };
 
-function WorkoutModal({ title, data, onClose }: { title: string; data: Workout; onClose: () => void }) {
+function WorkoutModal({ title, data, onClose, onAdd }: { title: string; data: Workout; onClose: () => void; onAdd?: () => void }) {
   return (
     <div className="workouts-modal-overlay" role="dialog" aria-modal="true" aria-label={`${title} details`}>
       <div className="workouts-modal">
@@ -319,7 +452,7 @@ function WorkoutModal({ title, data, onClose }: { title: string; data: Workout; 
         </main>
 
         <footer className="modal-actions">
-          <button className="btn-primary" onClick={() => { /* placeholder for add to plan */ }}>Add to Plan</button>
+          <button className="btn-primary" onClick={onAdd}>Save Workout</button>
           <button className="btn-outline" onClick={onClose}>Close</button>
         </footer>
       </div>

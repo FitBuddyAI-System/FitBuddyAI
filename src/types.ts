@@ -12,7 +12,24 @@ export interface User {
   inventory?: any[];
 }
 
-export type WorkoutType = 'strength' | 'cardio' | 'flexibility' | 'rest' | 'mixed';
+export type WorkoutType =
+  | 'strength'
+  | 'cardio'
+  | 'plyometrics'
+  | 'powerlifting'
+  | 'olympic'
+  | 'stretching'
+  | 'strongman'
+  | 'rest'
+  | 'flexibility'
+  | 'mixed'
+  | 'bodyweight'
+  | 'dumbbell'
+  | 'barbell'
+  | 'kettlebell'
+  | 'mobility'
+  | 'hiit'
+  | 'uncategorized';
 
 export interface Exercise {
   name: string;

@@ -103,7 +103,7 @@
   --calendar-day-height: 150px;
   min-height: calc(100vh - 60px);
   background: linear-gradient(135deg, #f7f7f7 0%, #e8f5e8 100%);
-  padding: 20px;
+  padding: 40px 40px 44px;
   position: relative;
   z-index: 2; /* keep calendar content above global footer */
 }
@@ -737,7 +737,7 @@ body.theme-dark .day-total-time {
   border-radius: 12px;
   padding: 12px;
   text-align: center;
-  color: white;
+  color: var(--text-dark);
   font-weight: 600;
   font-size: 12px;
   display: flex;
@@ -748,6 +748,8 @@ body.theme-dark .day-total-time {
   transition: all 0.2s ease;
   position: relative;
   overflow: hidden;
+  background: rgba(30, 203, 123, 0.08);
+  border: 2px solid transparent;
 }
 
 .workout-progress-bar {
@@ -772,24 +774,33 @@ body.theme-dark .day-total-time {
   border: 1px solid var(--border-light);
 }
 
-.workout-indicator.strength {
-  background: linear-gradient(135deg, #ff6b6b, #ee5a52);
-}
+.workout-indicator.strength { border-color: #ff6b6b; background: rgba(255, 107, 107, 0.16); color: #b12222; }
+.workout-indicator.cardio { border-color: #26c6da; background: rgba(38, 198, 218, 0.14); color: #0f6f7d; }
+.workout-indicator.plyometrics { border-color: #ff8a00; background: rgba(255, 138, 0, 0.16); color: #a65a00; }
+.workout-indicator.powerlifting { border-color: #11c58f; background: rgba(17, 197, 143, 0.16); color: #0b7b5c; }
+.workout-indicator.olympic { border-color: #0ea5e9; background: rgba(14, 165, 233, 0.14); color: #0a6a9c; }
+.workout-indicator.stretching { border-color: #ffb3d6; background: rgba(255, 179, 214, 0.2); color: #8d3b63; }
+.workout-indicator.strongman { border-color: #ff7a18; background: rgba(255, 122, 24, 0.18); color: #9c4200; }
+.workout-indicator.rest { border-color: #9ca3af; background: rgba(156, 163, 175, 0.2); color: #4b5563; }
 
-.workout-indicator.cardio {
-  background: linear-gradient(135deg, #4ecdc4, #44a08d);
+/* Dark mode: lighten text inside day cards for better contrast */
+body.theme-dark .calendar-day,
+body.theme-dark .calendar-day .day-number {
+  color: #e8edf5;
 }
-
-.workout-indicator.flexibility {
-  background: linear-gradient(135deg, #a855f7, #9333ea);
+body.theme-dark .workout-indicator,
+body.theme-dark .workout-indicator.strength,
+body.theme-dark .workout-indicator.cardio,
+body.theme-dark .workout-indicator.plyometrics,
+body.theme-dark .workout-indicator.powerlifting,
+body.theme-dark .workout-indicator.stretching,
+body.theme-dark .workout-indicator.strongman,
+body.theme-dark .workout-indicator.rest {
+  color: #e8edf5;
 }
-
-.workout-indicator.mixed {
-  background: linear-gradient(135deg, #ffd93d, #ff9f1c);
-}
-
-.workout-indicator.rest {
-  background: linear-gradient(135deg, #b8b8b8, #999999);
+body.theme-dark .workout-duration {
+  color: #cfd8e5;
+  opacity: 0.95;
 }
 
 .workout-indicator.completed {
@@ -832,8 +843,11 @@ body.theme-dark .day-total-time {
 
 .workout-segments .segment.strength { background: linear-gradient(135deg, #ff6b6b, #ee5a52); }
 .workout-segments .segment.cardio { background: linear-gradient(135deg, #4ecdc4, #44a08d); }
-.workout-segments .segment.flexibility { background: linear-gradient(135deg, #a855f7, #9333ea); }
-.workout-segments .segment.mixed { background: linear-gradient(135deg, #ffd93d, #ff9f1c); }
+.workout-segments .segment.plyometrics { background: linear-gradient(135deg, #ff8a00, #ff6b1c); }
+.workout-segments .segment.powerlifting { background: linear-gradient(135deg, #11c58f, #0ba172); }
+.workout-segments .segment.olympic { background: linear-gradient(135deg, #0ea5e9, #0284c7); }
+.workout-segments .segment.stretching { background: linear-gradient(135deg, #ffb3d6, #f793c5); }
+.workout-segments .segment.strongman { background: linear-gradient(135deg, #ff7a18, #ff5714); }
 .workout-segments .segment.rest { background: linear-gradient(135deg, #b8b8b8, #999999); }
 
 body.theme-dark .workout-indicator.multi {
@@ -918,12 +932,14 @@ body.theme-dark .loader-overlay {
 .calendar-page {
   min-height: calc(100vh - 60px);
   background: linear-gradient(135deg, #f7f7f7 0%, #e8f5e8 100%);
-  padding: 20px;
+  padding: 28px 40px 36px;
 }
 
 .calendar-container {
-  max-width: 1400px;
-  margin: 0 auto;
+  max-width: 100%;
+  margin: 0;
+  padding: 0 32px;
+  box-sizing: border-box;
 }
 
 .calendar-header {
@@ -946,6 +962,19 @@ body.theme-dark .loader-overlay {
   color: var(--text-medium);
   line-height: 1.6;
   max-width: 500px;
+}
+
+.hero-card {
+  padding: 18px 20px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.03));
+  border-radius: 16px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.05);
+}
+body.theme-dark .hero-card {
+  background: rgba(12, 20, 31, 0.9);
+  border-color: #1f2a36;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.45);
 }
 
 .progress-stats {
@@ -1122,7 +1151,7 @@ body.theme-dark .loader-overlay {
   border-radius: 12px;
   padding: 12px;
   text-align: center;
-  color: white;
+  color: var(--text-dark);
   font-weight: 600;
   font-size: 12px;
   display: flex;
@@ -1132,27 +1161,18 @@ body.theme-dark .loader-overlay {
   transition: all 0.2s ease;
   position: relative;
   overflow: hidden;
+  background: rgba(30, 203, 123, 0.08);
+  border: 2px solid transparent;
 }
 
-.workout-indicator.strength {
-  background: linear-gradient(135deg, #ff6b6b, #ee5a52);
-}
-
-.workout-indicator.cardio {
-  background: linear-gradient(135deg, #4ecdc4, #44a08d);
-}
-
-.workout-indicator.flexibility {
-  background: linear-gradient(135deg, #a855f7, #9333ea);
-}
-
-.workout-indicator.mixed {
-  background: linear-gradient(135deg, #ffd93d, #ff9f1c);
-}
-
-.workout-indicator.rest {
-  background: linear-gradient(135deg, #b8b8b8, #999999);
-}
+.workout-indicator.strength { border-color: #ff6b6b; background: rgba(255, 107, 107, 0.16); color: #b12222; }
+.workout-indicator.cardio { border-color: #26c6da; background: rgba(38, 198, 218, 0.14); color: #0f6f7d; }
+.workout-indicator.plyometrics { border-color: #ff8a00; background: rgba(255, 138, 0, 0.16); color: #a65a00; }
+.workout-indicator.powerlifting { border-color: #11c58f; background: rgba(17, 197, 143, 0.16); color: #0b7b5c; }
+.workout-indicator.olympic { border-color: #0ea5e9; background: rgba(14, 165, 233, 0.14); color: #0a6a9c; }
+.workout-indicator.stretching { border-color: #ffb3d6; background: rgba(255, 179, 214, 0.2); color: #8d3b63; }
+.workout-indicator.strongman { border-color: #ff7a18; background: rgba(255, 122, 24, 0.18); color: #9c4200; }
+.workout-indicator.rest { border-color: #9ca3af; background: rgba(156, 163, 175, 0.2); color: #4b5563; }
 
 .workout-indicator.completed {
   opacity: 0.7;
@@ -1605,6 +1625,15 @@ body.theme-dark .loader-overlay {
 }
 
 /* Calendar legend styles */
+.calendar-layout {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 8px;
+  align-items: start;
+}
+
+.calendar-main { width: 100%; min-width: 0; }
+
 .calendar-legend {
   margin-top: 32px;
   padding: 24px;
@@ -1612,6 +1641,8 @@ body.theme-dark .loader-overlay {
   border-radius: 16px;
   box-shadow: 0 4px 20px var(--shadow-light, rgba(0, 0, 0, 0.08));
   border: 1px solid var(--border-light, rgba(0,0,0,0.08));
+  position: sticky;
+  top: 120px;
 }
 
 .calendar-legend.drop-target {
@@ -1638,9 +1669,8 @@ body.theme-dark .loader-overlay {
 
 .legend-items {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 16px;
-  justify-content: center;
 }
 
 .legend-item {
@@ -1676,13 +1706,11 @@ body.theme-dark .loader-overlay {
   background: linear-gradient(135deg, #4ecdc4, #26c6da);
 }
 
-.legend-color.flexibility {
-  background: linear-gradient(135deg, #a855f7, #9333ea);
-}
-
-.legend-color.mixed {
-  background: linear-gradient(135deg, #f59e0b, #d97706);
-}
+.legend-color.plyometrics { background: linear-gradient(135deg, #ff8a00, #ff6b1c); }
+.legend-color.powerlifting { background: linear-gradient(135deg, #11c58f, #0ba172); }
+.legend-color.stretching { background: linear-gradient(135deg, #ffb3d6, #f793c5); }
+.legend-color.strongman { background: linear-gradient(135deg, #ff7a18, #ff5714); }
+.legend-color.olympic { background: linear-gradient(135deg, #0ea5e9, #0284c7); }
 
 .legend-color.rest {
   background: linear-gradient(135deg, #6b7280, #4b5563);
@@ -1703,6 +1731,21 @@ body.theme-dark .legend-item {
 body.theme-dark .legend-item {
   background: #0b1320;
   border: 1px solid #1f2a36;
+}
+
+@media (max-width: 1024px) {
+  .calendar-layout {
+    grid-template-columns: 1fr;
+  }
+  .calendar-legend {
+    position: static;
+    top: auto;
+  }
+  .legend-items {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
 }
 
 .add-workout-btn {
@@ -1855,7 +1898,10 @@ body.theme-dark .legend-item {
 
 @media (max-width: 768px) {
   .calendar-page {
-    padding: 16px;
+    padding: 18px 16px 22px;
+  }
+  .calendar-container {
+    padding: 0 10px;
   }
   
   .calendar-header {

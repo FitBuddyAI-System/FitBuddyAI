@@ -168,6 +168,10 @@ const Header: React.FC<HeaderProps> = ({ profileVersion, userData }) => {
     switch (location.pathname) {
       case '/':
         return 'Welcome to FitBuddyAI';
+      case '/workouts':
+        return 'Workout Library';
+      case '/library':
+        return 'Saved Workouts';
       case '/questionnaire':
         return 'Fitness Assessment';
       case '/calendar':
@@ -179,7 +183,7 @@ const Header: React.FC<HeaderProps> = ({ profileVersion, userData }) => {
       case '/signup':
         return 'Sign Up';
       case '/chat':
-        return 'Chat with Buddy';
+        return 'Chat with AI Coach';
       default:
         return 'FitBuddyAI';
     }
@@ -239,7 +243,8 @@ const Header: React.FC<HeaderProps> = ({ profileVersion, userData }) => {
                 </div>
               </div>
               <button onClick={() => { setExploreOpen(false); navigate('/?intro=0'); }}>Home</button>
-              <button onClick={() => { setExploreOpen(false); navigate('/workouts'); }}>Workouts</button>
+              <button onClick={() => { setExploreOpen(false); navigate('/workouts'); }}>Workout Library</button>
+              <button onClick={() => { setExploreOpen(false); navigate('/library'); }}>Saved Workouts</button>
               <button onClick={() => { setExploreOpen(false); navigate('/questionnaire'); }}>Assessment</button>
               <button onClick={() => { setExploreOpen(false); navigate('/calendar'); }}>Calendar</button>
               <button
@@ -313,7 +318,7 @@ const Header: React.FC<HeaderProps> = ({ profileVersion, userData }) => {
               try { window.dispatchEvent(new CustomEvent('fitbuddyai-open-chat')); } catch {}
               navigate('/chat');
             }}
-            aria-label="Chat with Buddy"
+            aria-label="Chat with AI Coach"
           >
             <span className="sparkles-mobile-only"><Sparkles size={20} /></span>
             <span>Chat</span>

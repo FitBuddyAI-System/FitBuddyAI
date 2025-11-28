@@ -77,6 +77,29 @@
   box-shadow: 0 12px 30px rgba(30,203,123,0.2);
 }
 
+/* Dark mode */
+body.theme-dark .settings-page {
+  background: linear-gradient(135deg, #0b111b 0%, #0f1828 100%);
+}
+body.theme-dark .settings-card {
+  background: #0f1624;
+  color: var(--calendar-text);
+  border: 1px solid #1f2a36;
+  box-shadow: 0 18px 40px rgba(0,0,0,0.55);
+}
+body.theme-dark .settings-row {
+  background: rgba(255,255,255,0.03);
+  border-color: #1f2a36;
+}
+body.theme-dark .settings-header h1,
+body.theme-dark .settings-row h3 { color: #f4f7fb; }
+body.theme-dark .settings-subtitle,
+body.theme-dark .setting-help { color: rgba(233,238,245,0.7); }
+body.theme-dark .toggle-btn {
+  background: linear-gradient(135deg, #1ecb7b, #1e90cb);
+  box-shadow: 0 14px 30px rgba(0,0,0,0.45);
+}
+
 @media (max-width: 640px) {
   .settings-row {
     flex-direction: column;

@@ -643,7 +643,7 @@ const GeminiChatPage: React.FC<GeminiChatPageProps> = ({ userData }) => {
       
     } catch (e) {
       console.error('Gemini chat error', e);
-      setMessages(m => [...m, { role: 'assistant', text: 'Buddy is currently unavailable. Please try again later.' }]);
+      setMessages(m => [...m, { role: 'assistant', text: 'AI Coach is currently unavailable. Please try again later.' }]);
     } finally {
       setLoading(false);
     }
@@ -662,8 +662,8 @@ const GeminiChatPage: React.FC<GeminiChatPageProps> = ({ userData }) => {
       <div className="gemini-page">
       <div className="gemini-container">
         <header className="gemini-header">
-          <h1>Chat with Buddy</h1>
-          <p className="gemini-sub">Ask Buddy about your workouts, plan, or goals — Buddy knows your profile.</p>
+          <h1>Chat with AI Coach</h1>
+          <p className="gemini-sub">Ask your AI Coach about workouts, plans, or goals — it knows your profile.</p>
         </header>
 
         <div className="gemini-chat" ref={listRef} role="log" aria-live="polite">
@@ -698,7 +698,7 @@ const GeminiChatPage: React.FC<GeminiChatPageProps> = ({ userData }) => {
               <div className="logo" aria-hidden="true">
                 <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-dumbbell"><path d="m6.5 6.5 11 11"></path><path d="m21 21-1-1"></path><path d="m3 3 1 1"></path><path d="m18 22 4-4"></path><path d="m2 6 4-4"></path><path d="m3 10 7-7"></path><path d="m14 21 7-7"></path></svg>
               </div>
-              <div className="msg-text">Buddy is typing...</div>
+              <div className="msg-text">AI Coach is typing...</div>
             </div>
           )}
         </div>
@@ -708,7 +708,7 @@ const GeminiChatPage: React.FC<GeminiChatPageProps> = ({ userData }) => {
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={onKeyDown}
-            placeholder="Ask Buddy about your plan or goals..."
+            placeholder="Ask your AI Coach about your plan or goals..."
             aria-label="Ask Gemini"
           />
           <button className="send-btn" onClick={sendMessage} disabled={loading || !input.trim()} aria-label="Send message">Send</button>

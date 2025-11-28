@@ -26,28 +26,47 @@ const WorkoutModal: React.FC<WorkoutModalProps> = ({
   const [isEditing, setIsEditing] = useState(false);
   const [editingWorkout, setEditingWorkout] = useState<DayWorkout>(workout);
   const [completed, setCompleted] = useState(workout.completed);
+  const canonType = (t?: string | null): WorkoutType => {
+    const s = (t || '').toString().toLowerCase().trim();
+    if (s === 'rest') return 'rest';
+    if (s.includes('cardio')) return 'cardio';
+    if (s.includes('plyo')) return 'plyometrics';
+    if (s.includes('powerlift')) return 'powerlifting';
+    if (s.includes('olympic')) return 'olympic';
+    if (s.includes('stretch') || s.includes('flex') || s.includes('mobility')) return 'stretching';
+    if (s.includes('strongman')) return 'strongman';
+    if (s.includes('strength')) return 'strength';
+    return 'strength';
+  };
   const resolveWorkoutTypes = (target: DayWorkout): WorkoutType[] => {
     const raw = (target as any)?.types;
     const types = Array.isArray(raw) ? raw.filter(Boolean) : [];
     if (types.length === 0 && target.type) types.push(target.type);
-    return Array.from(new Set(types)).slice(0, 4) as WorkoutType[];
+    const normalized = types.map(t => canonType(t as string));
+    const unique = Array.from(new Set(normalized)).filter(Boolean) as WorkoutType[];
+    if (unique.includes('rest') && unique.length > 1) return ['rest'];
+    return unique.slice(0, 4) as WorkoutType[];
   };
 
   const [localCompletedTypes, setLocalCompletedTypes] = useState<WorkoutType[]>(resolveWorkoutTypes(workout).filter(t => (workout.completedTypes || []).includes(t)));
   const availableTypes = resolveWorkoutTypes(workout);
-  const [selectedType, setSelectedType] = useState<WorkoutType>(availableTypes[0] || 'mixed');
+  const [selectedType, setSelectedType] = useState<WorkoutType>(availableTypes[0] || 'strength');
 
   const getWorkoutTypeLabel = (types: WorkoutType[]) => {
     const formatSingle = (type: WorkoutType) => {
       switch (type) {
         case 'strength': return 'Strength';
         case 'cardio': return 'Cardio';
-        case 'flexibility': return 'Flexibility';
+        case 'plyometrics': return 'Plyometrics';
+        case 'powerlifting': return 'Powerlifting';
+        case 'olympic': return 'Olympic Weightlifting';
+        case 'stretching': return 'Stretching';
+        case 'strongman': return 'Strongman';
         case 'rest': return 'Rest';
-        default: return 'Mixed';
+        default: return 'Strength';
       }
     };
-    if (!types || types.length === 0) return 'Mixed';
+    if (!types || types.length === 0) return 'Strength';
     if (types.length > 1) return types.map(formatSingle).join(' / ');
     return formatSingle(types[0]);
   };
@@ -78,13 +97,17 @@ const WorkoutModal: React.FC<WorkoutModalProps> = ({
   };
 
   const getWorkoutTypeColor = (type: WorkoutType | string) => {
-    switch (type) {
+    const t = canonType(type as string);
+    switch (t) {
       case 'strength': return 'strength';
       case 'cardio': return 'cardio';
-      case 'flexibility': return 'flexibility';
+      case 'plyometrics': return 'plyometrics';
+      case 'powerlifting': return 'powerlifting';
+      case 'olympic': return 'olympic';
+      case 'stretching': return 'stretching';
+      case 'strongman': return 'strongman';
       case 'rest': return 'rest';
-      case 'mixed': return 'mixed';
-      default: return 'mixed';
+      default: return 'strength';
     }
   };
 
@@ -176,7 +199,7 @@ const WorkoutModal: React.FC<WorkoutModalProps> = ({
     const normalizedTypes = resolveWorkoutTypes(editingWorkout);
     const normalizedWorkout: DayWorkout = {
       ...editingWorkout,
-      type: (normalizedTypes[0] || editingWorkout.type || 'mixed') as WorkoutType,
+      type: (normalizedTypes[0] || editingWorkout.type || 'strength') as WorkoutType,
       types: normalizedTypes
     };
     if (onUpdateWorkout) {
@@ -196,7 +219,7 @@ const WorkoutModal: React.FC<WorkoutModalProps> = ({
       alert('You can only complete or undo today\'s workout.');
       return;
     }
-    const type = selectedType || availableTypes[0];
+    const type = selectedType || availableTypes[0] || 'strength';
     if (!localCompletedTypes.includes(type)) {
       confetti({
         particleCount: 100,
@@ -223,7 +246,7 @@ const WorkoutModal: React.FC<WorkoutModalProps> = ({
   };
 
   const typeList = resolveWorkoutTypes(workout);
-  const primaryType = typeList[0] || 'mixed';
+  const primaryType = typeList[0] || 'strength';
   const typeLabel = getWorkoutTypeLabel(typeList);
   const editingTypes = resolveWorkoutTypes(editingWorkout);
   const selectedTypeCompleted = localCompletedTypes.includes(selectedType);
@@ -547,7 +570,7 @@ const WorkoutModal: React.FC<WorkoutModalProps> = ({
             <div className="workout-type-container">
               <label>Workout Types (choose up to 4):</label>
               <div className="type-multi-select">
-                {(['strength','cardio','flexibility','mixed','rest'] as WorkoutType[]).map((type) => {
+                {(['cardio','olympic','plyometrics','powerlifting','strength','stretching','strongman','rest'] as WorkoutType[]).map((type) => {
                   const checked = editingTypes.includes(type);
                   return (
                     <label key={type} className={`type-pill ${checked ? 'selected' : ''}`}>

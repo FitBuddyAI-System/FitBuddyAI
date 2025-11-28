@@ -274,7 +274,7 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
       let updatedWorkouts = workoutPlan.dailyWorkouts.map(workout => {
         const hasNoExercises = !workout.workouts || workout.workouts.length === 0;
         const hasNoTime = !workout.totalTime || workout.totalTime.toString().trim().startsWith('0');
-        if (workout.type === 'mixed' && hasNoExercises && hasNoTime) {
+        if ((workout.type as string) === 'mixed' && hasNoExercises && hasNoTime) {
           const rest = {
             ...workout,
             type: 'rest' as const,
@@ -343,20 +343,20 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
         console.warn('Failed to populate missing rest days from weeklyStructure:', err);
       }
 
-      // Enforce that Rest days never mix with other categories
-      updatedWorkouts = updatedWorkouts.map(workout => {
-        const normalizedTypes = resolveWorkoutTypes(workout);
-          const normalizedCompletedTypes = Array.isArray(workout.completedTypes)
-            ? (workout.completedTypes as WorkoutType[]).filter((t: WorkoutType) => normalizedTypes.includes(t))
-            : [];
-        return {
-          ...workout,
-          type: (normalizedTypes[0] || workout.type || 'mixed') as WorkoutType,
-          types: normalizedTypes,
-          completedTypes: normalizedCompletedTypes,
-          completed: normalizedTypes.length > 0 ? normalizedCompletedTypes.length === normalizedTypes.length : !!workout.completed
-        };
-      });
+// Enforce that Rest days never mix with other categories
+updatedWorkouts = updatedWorkouts.map(workout => {
+  const normalizedTypes = resolveWorkoutTypes(workout);
+  const normalizedCompletedTypes = Array.isArray(workout.completedTypes)
+    ? (workout.completedTypes as WorkoutType[]).filter((t: WorkoutType) => normalizedTypes.includes(t))
+    : [];
+  return {
+    ...workout,
+    type: (normalizedTypes[0] || workout.type || 'mixed') as WorkoutType,
+    types: normalizedTypes,
+    completedTypes: normalizedCompletedTypes,
+    completed: normalizedTypes.length > 0 ? normalizedCompletedTypes.length === normalizedTypes.length : !!workout.completed
+  };
+});
 
       if (JSON.stringify(updatedWorkouts) !== JSON.stringify(workoutPlan.dailyWorkouts)) {
         // Persist normalized plan immediately so UI reflects rest-days for empty/mixed or missing entries
@@ -389,6 +389,16 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
   const monthDays = eachDayOfInterval({ start: monthStart, end: monthEnd });
+
+  const legendCategories: Array<{ type: WorkoutType; label: string; colorClass: string; title: string }> = [
+    { type: 'strength', label: 'Strength Training', colorClass: 'strength', title: 'Drag onto a date to generate a strength workout' },
+    { type: 'cardio', label: 'Cardio', colorClass: 'cardio', title: 'Drag onto a date to generate a cardio workout' },
+    { type: 'plyometrics', label: 'Plyometrics', colorClass: 'plyometrics', title: 'Drag onto a date to generate a plyometrics workout' },
+    { type: 'powerlifting', label: 'Powerlifting', colorClass: 'powerlifting', title: 'Drag onto a date to generate a powerlifting workout' },
+    { type: 'stretching', label: 'Stretching', colorClass: 'stretching', title: 'Drag onto a date to generate a stretching session' },
+    { type: 'strongman', label: 'Strongman', colorClass: 'strongman', title: 'Drag onto a date to generate a strongman workout' },
+    { type: 'rest', label: 'Rest Day', colorClass: 'rest', title: 'Drag onto a date to add a rest day' },
+  ];
 
   // Determine the weekday index for the first day of the month (0 = Sun .. 6 = Sat)
   const monthStartIndex = monthStart.getDay();
@@ -570,31 +580,53 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
   };
 
   const getWorkoutTypeColor = (type: WorkoutType | string | undefined) => {
-    switch (type) {
-      case 'strength':
-        return 'strength';
-      case 'cardio':
-        return 'cardio';
-      case 'flexibility':
-        return 'flexibility';
-      case 'rest':
-        return 'rest';
-      case 'mixed':
-        return 'mixed';
-      default:
-        return 'mixed';
-    }
+    const colorMap: Record<WorkoutType, string> = {
+      strength: 'strength',
+      cardio: 'cardio',
+      plyometrics: 'plyometrics',
+      powerlifting: 'powerlifting',
+      olympic: 'olympic',
+      stretching: 'stretching',
+      strongman: 'strongman',
+      rest: 'rest',
+      flexibility: 'stretching', // reuse stretching palette
+      mixed: 'mixed',
+      bodyweight: 'mixed',
+      dumbbell: 'mixed',
+      barbell: 'mixed',
+      kettlebell: 'mixed',
+      mobility: 'mixed',
+      hiit: 'mixed',
+      uncategorized: 'mixed'
+    };
+
+    if (!type) return 'mixed';
+    return colorMap[type as WorkoutType] || 'mixed';
   };
 
   const getWorkoutTypeLabel = (types: WorkoutType[]) => {
     const formatSingle = (type: WorkoutType) => {
-      switch (type) {
-        case 'strength': return 'Strength';
-        case 'cardio': return 'Cardio';
-        case 'flexibility': return 'Flexibility';
-        case 'rest': return 'Rest';
-        default: return 'Mixed';
-      }
+      const labelMap: Partial<Record<WorkoutType, string>> = {
+        strength: 'Strength',
+        cardio: 'Cardio',
+        plyometrics: 'Plyometrics',
+        powerlifting: 'Powerlifting',
+        olympic: 'Olympic',
+        stretching: 'Stretching',
+        strongman: 'Strongman',
+        rest: 'Rest',
+        flexibility: 'Flexibility',
+        mixed: 'Mixed',
+        bodyweight: 'Bodyweight',
+        dumbbell: 'Dumbbell',
+        barbell: 'Barbell',
+        kettlebell: 'Kettlebell',
+        mobility: 'Mobility',
+        hiit: 'HIIT',
+        uncategorized: 'Uncategorized'
+      };
+      if (labelMap[type]) return labelMap[type] as string;
+      return type.charAt(0).toUpperCase() + type.slice(1);
     };
     if (!types || types.length === 0) return 'Mixed';
     if (types.length > 1) return types.map(formatSingle).join(' / ');
@@ -1736,6 +1768,32 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
           </div>
         </div>
 
+        <div className="calendar-layout">
+          <aside
+            className={`calendar-legend${isLegendDropTarget ? ' drop-target' : ''}`}
+            onDragOver={handleLegendDragOver}
+            onDrop={handleLegendDrop}
+            onDragLeave={handleLegendDragLeave}
+          >
+            <h3>Workout Types</h3>
+            <div className="legend-items">
+              {legendCategories.map(item => (
+                <div
+                  key={item.type}
+                  className="legend-item"
+                  draggable
+                  onDragStart={(e) => handleLegendDragStart(e, item.type)}
+                  onDragEnd={handleLegendDragEnd}
+                  title={item.title}
+                >
+                  <div className={`legend-color ${item.colorClass}`}></div>
+                  <span>{item.label}</span>
+                </div>
+              ))}
+            </div>
+          </aside>
+
+          <div className="calendar-main">
         {/* Calendar Navigation */}
         <div className="calendar-nav">
           <button
@@ -1908,65 +1966,6 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
           {/* trailing empty cells are no longer necessary because grid placement uses start-N classes */}
         </div>
 
-        {/* Legend */}
-        <div
-          className={`calendar-legend${isLegendDropTarget ? ' drop-target' : ''}`}
-          onDragOver={handleLegendDragOver}
-          onDrop={handleLegendDrop}
-          onDragLeave={handleLegendDragLeave}
-        >
-          <h3>Workout Types</h3>
-          <div className="legend-items">
-            <div
-              className="legend-item"
-              draggable
-              onDragStart={(e) => handleLegendDragStart(e, 'strength')}
-              onDragEnd={handleLegendDragEnd}
-              title="Drag onto a date to generate a strength workout"
-            >
-              <div className="legend-color strength"></div>
-              <span>Strength Training</span>
-            </div>
-            <div
-              className="legend-item"
-              draggable
-              onDragStart={(e) => handleLegendDragStart(e, 'cardio')}
-              onDragEnd={handleLegendDragEnd}
-              title="Drag onto a date to generate a cardio workout"
-            >
-              <div className="legend-color cardio"></div>
-              <span>Cardio</span>
-            </div>
-            <div
-              className="legend-item"
-              draggable
-              onDragStart={(e) => handleLegendDragStart(e, 'flexibility')}
-              onDragEnd={handleLegendDragEnd}
-              title="Drag onto a date to generate a flexibility workout"
-            >
-              <div className="legend-color flexibility"></div>
-              <span>Flexibility</span>
-            </div>
-            <div
-              className="legend-item"
-              draggable
-              onDragStart={(e) => handleLegendDragStart(e, 'mixed')}
-              onDragEnd={handleLegendDragEnd}
-              title="Drag onto a date to generate a mixed workout"
-            >
-              <div className="legend-color mixed"></div>
-              <span>Mixed</span>
-            </div>
-            <div
-              className="legend-item"
-              draggable
-              onDragStart={(e) => handleLegendDragStart(e, 'rest')}
-              onDragEnd={handleLegendDragEnd}
-              title="Drag onto a date to add a rest day"
-            >
-              <div className="legend-color rest"></div>
-              <span>Rest Day</span>
-            </div>
           </div>
         </div>
       </div>      {/* Workout Modal */}

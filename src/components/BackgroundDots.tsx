@@ -25,8 +25,22 @@ const BackgroundDots: React.FC = () => {
     const animate = !prefersReduced;
     const dotCount = isMobile ? 450 : 1600;
 
+    const computeHeight = () => {
+      const doc = document.documentElement;
+      const body = document.body;
+      const scrollH = Math.max(
+        window.innerHeight,
+        doc?.scrollHeight || 0,
+        body?.scrollHeight || 0,
+        doc?.clientHeight || 0,
+        body?.clientHeight || 0,
+        canvas.parentElement?.scrollHeight || 0
+      );
+      return scrollH || window.innerHeight;
+    };
+
     let width = window.innerWidth;
-    let height = window.innerHeight;
+    let height = computeHeight();
     const dpr = window.devicePixelRatio || 1;
 
     canvas.width = width * dpr;
@@ -98,14 +112,25 @@ const BackgroundDots: React.FC = () => {
       mouseRef.current.active = false;
     };
     const handleResize = () => {
-      width = window.innerWidth;
-      height = window.innerHeight;
+      const newWidth = window.innerWidth;
+      const newHeight = computeHeight();
+      const scaleX = newWidth / width;
+      const scaleY = newHeight / height;
+      width = newWidth;
+      height = newHeight;
       canvas.width = width * dpr;
       canvas.height = height * dpr;
       canvas.style.width = `${width}px`;
       canvas.style.height = `${height}px`;
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.scale(dpr, dpr);
+      // Scale dots to fit the new canvas size so coverage remains full-height
+      for (const d of dots) {
+        d.baseX *= scaleX;
+        d.baseY *= scaleY;
+        d.x = d.baseX;
+        d.y = d.baseY;
+      }
     };
 
     window.addEventListener('mousemove', handleMove);
