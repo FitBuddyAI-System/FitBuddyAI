@@ -278,13 +278,7 @@ const WorkoutsPage: React.FC = () => {
             </div>
             <div className="card-footer">
               <button className="btn-ghost" onClick={(e) => { e.stopPropagation(); setSelected(w.title); }}>View</button>
-              <button
-                className="btn-ghost add"
-                onClick={(e) => { e.stopPropagation(); addToPlan(w as any); }}
-              >
-                Add to My Plan
-              </button>
-              <a className="btn-link" href={w.resources?.[0]?.url || '#'} target="_blank" rel="noreferrer" onClick={(e)=>e.stopPropagation()}>Resources</a>
+              <button className="btn-ghost" onClick={(e) => { e.stopPropagation(); addToPlan(w); }}>Add to Plan</button>
             </div>
           </article>
         ))}

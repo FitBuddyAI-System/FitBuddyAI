@@ -1,3 +1,6 @@
+/* Ensure footer is visible even if a user-agent or external stylesheet hides it */
+.fb-footer{display: block !important}
+
 .fb-footer{
   background: linear-gradient(135deg, var(--background-white, #f0fbf6) 0%, var(--background-light, #e8f5ff) 100%);
   border-top: 1px solid var(--border-light, rgba(0,0,0,0.04));
