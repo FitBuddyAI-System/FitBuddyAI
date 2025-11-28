@@ -294,7 +294,7 @@ function App() {
   })();
 
   return (
-    <div className={`App ${effectiveThemeClass}`} style={{ paddingBottom: '120px' }}>
+    <div className={`App ${effectiveThemeClass}`}>
       <Header userData={userData} profileVersion={profileVersion} theme={effectiveThemeClass} />
       <AgreementBanner userData={userData} />
       <Routes>
