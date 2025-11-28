@@ -276,7 +276,7 @@ const Header: React.FC<HeaderProps> = ({ profileVersion, userData }) => {
               <button onClick={() => { setExploreOpen(false); navigate('/nutrition'); }}>Nutrition</button>
               <button onClick={() => { setExploreOpen(false); navigate('/blog'); }}>Blog</button>
               <button onClick={() => { setExploreOpen(false); navigate('/pricing'); }}>Pricing</button>
-              <button onClick={() => { setExploreOpen(false); navigate('/shop'); }} className="dropdown-shop">Shop</button>
+              <button onClick={() => { setExploreOpen(false); navigate('/shop'); }} >Shop</button>
               {isSignedIn && (
                 <div className="explore-footer">
                   <button onClick={() => { setExploreOpen(false); navigate('/profile/settings'); }}>Settings</button>

@@ -99,7 +99,16 @@ export const subscribeSavedWorkouts = (onUpdate: (list: SavedWorkout[]) => void)
   const handleEvent = (e: Event) => {
     const detailList = (e as CustomEvent)?.detail;
     if (Array.isArray(detailList)) {
-      onUpdate(detailList.map(sanitizeWorkout));
+      try {
+        const sanitized = (detailList as any[]).map(sanitizeWorkout);
+        // Avoid triggering updates if the incoming list matches our current in-memory list
+        const current = loadSavedWorkouts();
+        const equal = sanitized.length === current.length && sanitized.every((s, i) => JSON.stringify(s) === JSON.stringify(current[i]));
+        if (!equal) onUpdate(sanitized);
+      } catch (e) {
+        // fallback to default behavior
+        onUpdate((detailList as any[]).map(sanitizeWorkout));
+      }
     } else {
       handle();
     }
