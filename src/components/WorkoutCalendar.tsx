@@ -268,6 +268,24 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
     return () => mo.disconnect();
   }, [workoutPlan, selectedDay, currentDate, loadingDates]);
 
+  // Apply runtime CSS variable --multi-gradient from data attribute to avoid inline JSX styles
+  useEffect(() => {
+    const applyGradient = () => {
+      try {
+        document.querySelectorAll('.workout-indicator[data-multi-gradient]').forEach(el => {
+          const v = el.getAttribute('data-multi-gradient');
+          if (v) (el as HTMLElement).style.setProperty('--multi-gradient', v);
+        });
+      } catch (e) {
+        // ignore
+      }
+    };
+    applyGradient();
+    const mo2 = new MutationObserver(applyGradient);
+    mo2.observe(document.body, { childList: true, subtree: true });
+    return () => mo2.disconnect();
+  }, [workoutPlan, selectedDay, currentDate, loadingDates]);
+
   useEffect(() => {
     if (workoutPlan) {
       // 1) Normalize any 'mixed' entries that are empty -> convert to explicit rest days
@@ -1939,7 +1957,7 @@ updatedWorkouts = updatedWorkouts.map(workout => {
                   {!isStreakCompleteDay && workout ? (
                     <div
                       className={`workout-indicator ${isMultiType ? 'multi' : getWorkoutTypeColor(primaryType)} ${workout.completed ? 'completed' : ''}`}
-                      style={isMultiType && multiGradient ? { ['--multi-gradient' as any]: multiGradient } : undefined}
+                        data-multi-gradient={isMultiType && multiGradient ? multiGradient : undefined}
                       draggable={!showEditMenu && !isPastDay}
                       onDragStart={(e) => handleDragStart(e, workout)}
                       onDragEnd={handleDragEnd}

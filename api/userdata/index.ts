@@ -1,7 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
 import jwt from 'jsonwebtoken';
-import fs from 'fs';
-import path from 'path';
 // filesystem fallback removed — use Supabase to verify admin role
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
@@ -38,7 +36,6 @@ function checkAdminToken(req: any) {
 export default async function handler(req: any, res: any) {
   if (applyCors(req, res)) return;
   const action = String(req.query.action || req.query?.[0] || '').toLowerCase();
-  const isVercel = Boolean(process.env.VERCEL);
 
   try {
     // sanitize helper: remove keys with null or undefined values from an object
@@ -532,7 +529,6 @@ export default async function handler(req: any, res: any) {
         }
         try { res.setHeader('x-userdata-source', 'supabase'); } catch (e) {}
         // No payload column selected here — use explicit columns only
-        const storedPayload = null;
         const storedCols: any = { questionnaire_progress: data?.questionnaire_progress ?? null, workout_plan: data?.workout_plan ?? null, accepted_terms: data?.accepted_terms ?? null, accepted_privacy: data?.accepted_privacy ?? null, chat_history: data?.chat_history ?? null, username: data?.username ?? null, avatar: data?.avatar ?? null };
         const normalizeVal = (v: any) => {
           if (v === null || v === undefined) return null;
@@ -573,7 +569,6 @@ export default async function handler(req: any, res: any) {
       const { data, error } = await supabase.from('fitbuddyai_userdata').select('accepted_terms, accepted_privacy, chat_history').eq('user_id', userId).single();
       if (error && error.code !== 'PGRST116') return res.status(500).json({ error: error.message || 'Fetch failed' });
       // No legacy `payload` column selected here
-      const payloadFromDb = null;
       const cols = { accepted_terms: data?.accepted_terms ?? null, accepted_privacy: data?.accepted_privacy ?? null, chat_history: data?.chat_history ?? null };
       if (cols.accepted_terms !== null || cols.accepted_privacy !== null || cols.chat_history !== null) {
         return res.status(200).json({ payload: sanitizePayload(cols) || null });
