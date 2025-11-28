@@ -168,6 +168,10 @@ const Header: React.FC<HeaderProps> = ({ profileVersion, userData }) => {
     switch (location.pathname) {
       case '/':
         return 'Welcome to FitBuddyAI';
+      case '/workouts':
+        return 'Workout Library';
+      case '/library':
+        return 'Saved Workouts';
       case '/questionnaire':
         return 'Fitness Assessment';
       case '/calendar':
@@ -239,7 +243,8 @@ const Header: React.FC<HeaderProps> = ({ profileVersion, userData }) => {
                 </div>
               </div>
               <button onClick={() => { setExploreOpen(false); navigate('/?intro=0'); }}>Home</button>
-              <button onClick={() => { setExploreOpen(false); navigate('/workouts'); }}>Workouts</button>
+              <button onClick={() => { setExploreOpen(false); navigate('/workouts'); }}>Workout Library</button>
+              <button onClick={() => { setExploreOpen(false); navigate('/library'); }}>Saved Workouts</button>
               <button onClick={() => { setExploreOpen(false); navigate('/questionnaire'); }}>Assessment</button>
               <button onClick={() => { setExploreOpen(false); navigate('/calendar'); }}>Calendar</button>
               <button

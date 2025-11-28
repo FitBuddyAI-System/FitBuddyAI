@@ -35,6 +35,7 @@ import HelpCenter from './components/HelpCenter';
 import SettingsPage from './components/SettingsPage';
 import WorkoutsPage from './components/WorkoutsPage';
 import MyPlanPage from './components/MyPlanPage';
+import PersonalLibraryPage from './components/PersonalLibraryPage';
 
 function App() {
   const [userData, setUserData] = useState<any | null>(null);
@@ -299,6 +300,7 @@ function App() {
       <Routes>
         <Route path="/" element={<WelcomePage />} />
         <Route path="/workouts" element={<WorkoutsPage />} />
+        <Route path="/library" element={<PersonalLibraryPage />} />
         <Route path="/profile" element={<ProfilePage userData={userData} onProfileUpdate={(user) => { setUserData(user); setProfileVersion(v => v + 1); }} profileVersion={profileVersion} />} />
         <Route path="/profile/settings" element={<SettingsPage theme={effectiveThemeClass} onToggleTheme={toggleTheme} />} />
         <Route path="/loading" element={<LoadingPage />} />
