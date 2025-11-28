@@ -49,9 +49,10 @@ const POWERUPS = [
 interface ShopPageProps {
   user: any;
   onPurchase: (item: any) => void;
+  onRedeemStreakSaver: () => string | null;
 }
 
-const ShopPage: React.FC<ShopPageProps> = ({ user, onPurchase }) => {
+const ShopPage: React.FC<ShopPageProps> = ({ user, onPurchase, onRedeemStreakSaver }) => {
   const [selectedTab, setSelectedTab] = useState<'avatars' | 'powerups'>('avatars');
   const [purchasing, setPurchasing] = useState<string | null>(null);
   const [query, setQuery] = useState('');
@@ -210,6 +211,11 @@ const ShopPage: React.FC<ShopPageProps> = ({ user, onPurchase }) => {
     }, 0);
   };
 
+  const handleRedeemClick = () => {
+    const message = onRedeemStreakSaver ? onRedeemStreakSaver() : null;
+    if (message) alert(message);
+  };
+
   const streakSaverCount = getInventoryCount('streak-saver');
 
   return (
@@ -221,7 +227,7 @@ const ShopPage: React.FC<ShopPageProps> = ({ user, onPurchase }) => {
           <h1 className="shop-title gradient-text">FitBuddyAI Shop</h1>
           <div className="shop-energy">
             <div className={`energy-pill ${energyPulse ? 'pulse' : ''}`} aria-live="polite">
-              <span className="energy-value">⚡ {user.energy}</span>
+              <span className="energy-value shop-balance-text">Balence: {user?.energy ?? 0}</span>
               <div className="energy-meter" aria-hidden>
                 <div className={`fill ${energyFillClass}`} />
               </div>
@@ -298,6 +304,16 @@ const ShopPage: React.FC<ShopPageProps> = ({ user, onPurchase }) => {
                     </button>
                   );
                 })}
+              </div>
+              <div className="streak-saver-footer">
+                <button
+                  className="streak-redeem-btn"
+                  disabled={streakSaverCount === 0}
+                  onClick={handleRedeemClick}
+                >
+                  Redeem a streak saver
+                </button>
+                <span className="streak-saver-available">{streakSaverCount} available</span>
               </div>
             </div>
           </div>
