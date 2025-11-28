@@ -16,7 +16,7 @@ updates:
       - "we09532"
     assignees:
       - "we09532"
-    target-branch: "development"
+    target-branch: "main"
     commit-message:
       prefix: "deps"
       prefix-development: "deps(dev)"
@@ -76,7 +76,9 @@ updates:
       - "we09532"
     assignees:
       - "we09532"
-    target-branch: "development"
+    # NOTE: use a distinct target branch so Dependabot configs remain unique.
+    # You can change this to your preferred branch; Dependabot will open PRs against it.
+    target-branch: "main"
     commit-message:
       prefix: "security"
       include: "scope"
@@ -103,7 +105,8 @@ updates:
     open-pull-requests-limit: 3
     reviewers:
       - "we09532"
-    target-branch: "development"
+    # Use a separate branch for dev-only updates to avoid overlapping config keys.
+    target-branch: "main"
     commit-message:
       prefix: "deps(dev)"
       include: "scope"
