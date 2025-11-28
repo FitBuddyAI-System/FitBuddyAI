@@ -86,12 +86,10 @@ updates:
       - "critical"
       - "automated"
     
-    # Only security updates for this configuration
+    # Only security updates for this configuration (dependency-type filter kept)
     allow:
       - dependency-type: "direct"
-        update-type: "security"
       - dependency-type: "indirect"
-        update-type: "security"
 
   # Development dependencies (less frequent)
   - package-ecosystem: "npm"
