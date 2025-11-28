@@ -393,17 +393,9 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
   const legendCategories: Array<{ type: WorkoutType; label: string; colorClass: string; title: string }> = [
     { type: 'strength', label: 'Strength Training', colorClass: 'strength', title: 'Drag onto a date to generate a strength workout' },
     { type: 'cardio', label: 'Cardio', colorClass: 'cardio', title: 'Drag onto a date to generate a cardio workout' },
-    { type: 'bodyweight', label: 'Bodyweight', colorClass: 'bodyweight', title: 'Drag onto a date to generate a bodyweight workout' },
-    { type: 'dumbbell', label: 'Dumbbell', colorClass: 'dumbbell', title: 'Drag onto a date to generate a dumbbell workout' },
-    { type: 'barbell', label: 'Barbell', colorClass: 'barbell', title: 'Drag onto a date to generate a barbell workout' },
-    { type: 'kettlebell', label: 'Kettlebell', colorClass: 'kettlebell', title: 'Drag onto a date to generate a kettlebell workout' },
     { type: 'plyometrics', label: 'Plyometrics', colorClass: 'plyometrics', title: 'Drag onto a date to generate a plyometrics workout' },
     { type: 'powerlifting', label: 'Powerlifting', colorClass: 'powerlifting', title: 'Drag onto a date to generate a powerlifting workout' },
-    { type: 'mobility', label: 'Mobility', colorClass: 'mobility', title: 'Drag onto a date to generate a mobility session' },
     { type: 'stretching', label: 'Stretching', colorClass: 'stretching', title: 'Drag onto a date to generate a stretching session' },
-    { type: 'hiit', label: 'HIIT', colorClass: 'hiit', title: 'Drag onto a date to generate a HIIT workout' },
-    { type: 'mixed', label: 'Mixed', colorClass: 'mixed', title: 'Drag onto a date to generate a mixed workout' },
-    { type: 'flexibility', label: 'Flexibility', colorClass: 'flexibility', title: 'Drag onto a date to generate a flexibility workout' },
     { type: 'strongman', label: 'Strongman', colorClass: 'strongman', title: 'Drag onto a date to generate a strongman workout' },
     { type: 'rest', label: 'Rest Day', colorClass: 'rest', title: 'Drag onto a date to add a rest day' },
   ];
