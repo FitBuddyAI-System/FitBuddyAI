@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Calendar, User, Flame, Sparkles, Home, Dumbbell } from 'lucide-react';
+import { Calendar, User, Flame, Sparkles, Home } from 'lucide-react';
 import { loadQuestionnaireProgress, clearUserData, clearQuestionnaireProgress, clearWorkoutPlan, loadAssessmentData } from '../services/localStorage';
 import './Header.css';
 import { backupAndDeleteSensitive } from '../services/cloudBackupService';

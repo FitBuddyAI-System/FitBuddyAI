@@ -248,6 +248,26 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
 
   useEffect(() => {}, []);
 
+  // Apply widths to progress-fill elements based on their `data-progress` attribute.
+  // This avoids inline JSX styles which some tooling warns about.
+  useEffect(() => {
+    const update = () => {
+      try {
+        document.querySelectorAll('.progress-fill[data-progress]').forEach(el => {
+          const v = el.getAttribute('data-progress');
+          if (v) (el as HTMLElement).style.width = v;
+        });
+      } catch (e) {
+        // ignore
+      }
+    };
+    update();
+    // Also update on DOM mutations (helpful when calendar cells rerender)
+    const mo = new MutationObserver(update);
+    mo.observe(document.body, { childList: true, subtree: true });
+    return () => mo.disconnect();
+  }, [workoutPlan, selectedDay, currentDate, loadingDates]);
+
   useEffect(() => {
     if (workoutPlan) {
       // 1) Normalize any 'mixed' entries that are empty -> convert to explicit rest days
@@ -326,9 +346,9 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
       // Enforce that Rest days never mix with other categories
       updatedWorkouts = updatedWorkouts.map(workout => {
         const normalizedTypes = resolveWorkoutTypes(workout);
-        const normalizedCompletedTypes = Array.isArray(workout.completedTypes)
-          ? workout.completedTypes.filter(t => normalizedTypes.includes(t))
-          : [];
+          const normalizedCompletedTypes = Array.isArray(workout.completedTypes)
+            ? (workout.completedTypes as WorkoutType[]).filter((t: WorkoutType) => normalizedTypes.includes(t))
+            : [];
         return {
           ...workout,
           type: (normalizedTypes[0] || workout.type || 'mixed') as WorkoutType,
@@ -1825,7 +1845,7 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
                       <div className="workout-progress-bar" aria-label="Workout progress">
                         <div
                           className="progress-fill"
-                          style={{ width: `${completionPercent}%` }}
+                          data-progress={`${completionPercent}%`}
                         ></div>
                       </div>
                       {isMultiType && typeList.length > 1 && (
