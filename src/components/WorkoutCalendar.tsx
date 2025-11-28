@@ -393,17 +393,9 @@ updatedWorkouts = updatedWorkouts.map(workout => {
   const legendCategories: Array<{ type: WorkoutType; label: string; colorClass: string; title: string }> = [
     { type: 'strength', label: 'Strength Training', colorClass: 'strength', title: 'Drag onto a date to generate a strength workout' },
     { type: 'cardio', label: 'Cardio', colorClass: 'cardio', title: 'Drag onto a date to generate a cardio workout' },
-    { type: 'bodyweight', label: 'Bodyweight', colorClass: 'bodyweight', title: 'Drag onto a date to generate a bodyweight workout' },
-    { type: 'dumbbell', label: 'Dumbbell', colorClass: 'dumbbell', title: 'Drag onto a date to generate a dumbbell workout' },
-    { type: 'barbell', label: 'Barbell', colorClass: 'barbell', title: 'Drag onto a date to generate a barbell workout' },
-    { type: 'kettlebell', label: 'Kettlebell', colorClass: 'kettlebell', title: 'Drag onto a date to generate a kettlebell workout' },
     { type: 'plyometrics', label: 'Plyometrics', colorClass: 'plyometrics', title: 'Drag onto a date to generate a plyometrics workout' },
     { type: 'powerlifting', label: 'Powerlifting', colorClass: 'powerlifting', title: 'Drag onto a date to generate a powerlifting workout' },
-    { type: 'mobility', label: 'Mobility', colorClass: 'mobility', title: 'Drag onto a date to generate a mobility session' },
     { type: 'stretching', label: 'Stretching', colorClass: 'stretching', title: 'Drag onto a date to generate a stretching session' },
-    { type: 'hiit', label: 'HIIT', colorClass: 'hiit', title: 'Drag onto a date to generate a HIIT workout' },
-    { type: 'mixed', label: 'Mixed', colorClass: 'mixed', title: 'Drag onto a date to generate a mixed workout' },
-    { type: 'flexibility', label: 'Flexibility', colorClass: 'flexibility', title: 'Drag onto a date to generate a flexibility workout' },
     { type: 'strongman', label: 'Strongman', colorClass: 'strongman', title: 'Drag onto a date to generate a strongman workout' },
     { type: 'rest', label: 'Rest Day', colorClass: 'rest', title: 'Drag onto a date to add a rest day' },
   ];
@@ -588,31 +580,53 @@ updatedWorkouts = updatedWorkouts.map(workout => {
   };
 
   const getWorkoutTypeColor = (type: WorkoutType | string | undefined) => {
-    switch (type) {
-      case 'strength':
-        return 'strength';
-      case 'cardio':
-        return 'cardio';
-      case 'flexibility':
-        return 'flexibility';
-      case 'rest':
-        return 'rest';
-      case 'mixed':
-        return 'mixed';
-      default:
-        return 'mixed';
-    }
+    const colorMap: Record<WorkoutType, string> = {
+      strength: 'strength',
+      cardio: 'cardio',
+      plyometrics: 'plyometrics',
+      powerlifting: 'powerlifting',
+      olympic: 'olympic',
+      stretching: 'stretching',
+      strongman: 'strongman',
+      rest: 'rest',
+      flexibility: 'stretching', // reuse stretching palette
+      mixed: 'mixed',
+      bodyweight: 'mixed',
+      dumbbell: 'mixed',
+      barbell: 'mixed',
+      kettlebell: 'mixed',
+      mobility: 'mixed',
+      hiit: 'mixed',
+      uncategorized: 'mixed'
+    };
+
+    if (!type) return 'mixed';
+    return colorMap[type as WorkoutType] || 'mixed';
   };
 
   const getWorkoutTypeLabel = (types: WorkoutType[]) => {
     const formatSingle = (type: WorkoutType) => {
-      switch (type) {
-        case 'strength': return 'Strength';
-        case 'cardio': return 'Cardio';
-        case 'flexibility': return 'Flexibility';
-        case 'rest': return 'Rest';
-        default: return 'Mixed';
-      }
+      const labelMap: Partial<Record<WorkoutType, string>> = {
+        strength: 'Strength',
+        cardio: 'Cardio',
+        plyometrics: 'Plyometrics',
+        powerlifting: 'Powerlifting',
+        olympic: 'Olympic',
+        stretching: 'Stretching',
+        strongman: 'Strongman',
+        rest: 'Rest',
+        flexibility: 'Flexibility',
+        mixed: 'Mixed',
+        bodyweight: 'Bodyweight',
+        dumbbell: 'Dumbbell',
+        barbell: 'Barbell',
+        kettlebell: 'Kettlebell',
+        mobility: 'Mobility',
+        hiit: 'HIIT',
+        uncategorized: 'Uncategorized'
+      };
+      if (labelMap[type]) return labelMap[type] as string;
+      return type.charAt(0).toUpperCase() + type.slice(1);
     };
     if (!types || types.length === 0) return 'Mixed';
     if (types.length > 1) return types.map(formatSingle).join(' / ');
