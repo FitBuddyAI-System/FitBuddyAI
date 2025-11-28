@@ -10,8 +10,8 @@ interface FooterProps {
 export default function Footer({ themeMode = 'auto', onChangeThemeMode }: FooterProps) {
   const cur = themeMode || 'auto';
   return (
-    <footer className="fb-footer">
-      <div className="fb-footer-inner">
+    <footer className="fitbuddy-footer">
+      <div className="fitbuddy-footer-inner">
         <div className="fb-brand">
           <div className="fb-logo"><Dumbbell size={28} color="#fff" /></div>
           <div>
