@@ -95,14 +95,20 @@ router.post('/api/userdata/save', async (req, res) => {
     if (fitbuddyai_workout_plan !== undefined) upsertRow.workout_plan = fitbuddyai_workout_plan;
     if (req.body && Object.prototype.hasOwnProperty.call(req.body, 'streak')) upsertRow.streak = req.body.streak;
 
-    const { error } = await supabase.from('fitbuddyai_userdata').upsert(upsertRow, { onConflict: 'user_id' });
-    if (error) {
-      console.error('[userDataStore] Supabase upsert error for userId', userId, error);
-      return res.status(500).json({ error: error.message || 'Supabase upsert failed' });
+    // Log the exact payload we're attempting to upsert so we can debug missing columns
+    console.log('[userDataStore] upsert payload for userId', userId, upsertRow);
+
+    // Ask Supabase to return the inserted/updated row so we can confirm persisted values (including `streak`)
+    const { data: upsertedRows, error: upsertError } = await supabase.from('fitbuddyai_userdata').upsert(upsertRow, { onConflict: 'user_id', returning: 'representation' });
+    if (upsertError) {
+      console.error('[userDataStore] Supabase upsert error for userId', userId, upsertError);
+      return res.status(500).json({ error: upsertError.message || 'Supabase upsert failed' });
     }
 
-    // Return canonical stored object only
-    return res.json({ success: true, stored: { questionnaire_progress: upsertRow.questionnaire_progress ?? null, workout_plan: upsertRow.workout_plan ?? null, accepted_terms: upsertRow.accepted_terms ?? null, accepted_privacy: upsertRow.accepted_privacy ?? null, chat_history: upsertRow.chat_history ?? null, streak: upsertRow.streak ?? null } });
+    const storedRow = Array.isArray(upsertedRows) && upsertedRows.length ? upsertedRows[0] : upsertRow;
+
+    // Return canonical stored object with values returned from Supabase when available
+    return res.json({ success: true, stored: { questionnaire_progress: storedRow.questionnaire_progress ?? upsertRow.questionnaire_progress ?? null, workout_plan: storedRow.workout_plan ?? upsertRow.workout_plan ?? null, accepted_terms: storedRow.accepted_terms ?? upsertRow.accepted_terms ?? null, accepted_privacy: storedRow.accepted_privacy ?? upsertRow.accepted_privacy ?? null, chat_history: storedRow.chat_history ?? upsertRow.chat_history ?? null, streak: storedRow.streak ?? upsertRow.streak ?? null } });
   } catch (e) {
     console.error('[userDataStore] supabase upsert exception', e);
     return res.status(500).json({ error: e?.message || 'Supabase upsert exception' });
@@ -118,8 +124,8 @@ router.post('/api/userdata/load', async (req, res) => {
     return res.status(500).json({ error: 'Supabase not configured; user data storage disabled in local server.' });
   }
     try {
-      // Select explicit canonical columns (no legacy `payload` column in current schema).
-      const { data, error } = await supabase.from('fitbuddyai_userdata').select('questionnaire_progress, workout_plan, chat_history, accepted_terms, accepted_privacy').eq('user_id', userId).limit(1).maybeSingle();
+      // Select explicit canonical columns (include `streak` so clients can see it on load).
+      const { data, error } = await supabase.from('fitbuddyai_userdata').select('questionnaire_progress, workout_plan, chat_history, accepted_terms, accepted_privacy, streak').eq('user_id', userId).limit(1).maybeSingle();
     if (error) {
       console.error('[userDataStore] Supabase fetch error for userId', userId, error);
       return res.status(500).json({ error: error.message || 'Supabase fetch failed' });
@@ -135,6 +141,8 @@ router.post('/api/userdata/load', async (req, res) => {
           accepted_terms: data.accepted_terms ?? null,
           accepted_privacy: data.accepted_privacy ?? null,
           chat_history: ch
+          ,
+          streak: data.streak ?? null
         };
         return res.json({ stored });
       }

@@ -780,16 +780,11 @@ updatedWorkouts = updatedWorkouts.map(workout => {
       try {
         window.dispatchEvent(new CustomEvent('fitbuddyai-user-updated', { detail: nextUser }));
       } catch {}
-      // Also persist streak to server for signed-in users
-      try {
-        const userId = existingUser.id || existingUser?.data?.id || existingUser?.sub || null;
-        if (userId) {
-          // Send minimal payload to server to update streak column
-          import('../services/apiAuth').then(m => m.attachAuthHeaders({ method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId, streak }) })).then(init => {
-            fetch('/api/userdata/save', init).catch(() => {});
-          }).catch(() => {});
-        }
-      } catch (e) {}
+      // Persisting streak to server is handled by the scheduled cloud backup
+      // (saveUserData calls `scheduleBackup()` which batches and sends the
+      // unified payload including `fitbuddyai_workout_plan` and `streak`).
+      // Avoid sending an immediate minimal single-field POST here because
+      // that can cause partial upserts which overwrite other columns with null.
     } catch (err) {
       console.warn('Failed to update streak:', err);
     }

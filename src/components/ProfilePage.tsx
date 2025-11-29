@@ -20,7 +20,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onProfileUpdate }) 
   // Remove stats state, always use user for stats
   const [editMode, setEditMode] = useState(false);
   const [editUsername, setEditUsername] = useState(user?.username || '');
-  const [editAvatar, setEditAvatar] = useState(user?.avatar || '/images/fitbuddyai_head.png');
+  const [editAvatar, setEditAvatar] = useState(user?.avatar || '/images/fitbuddy_head.png');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
@@ -53,7 +53,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onProfileUpdate }) 
         <div className="profile-card fade-in-bounce">
           <div className="profile-avatar-bg">
             <img
-              src="/images/fitbuddyai_head.png"
+              src="/images/fitbuddy_head.png"
               alt="User Avatar"
               className="avatar"
               data-testid="profile-avatar"
@@ -77,7 +77,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onProfileUpdate }) 
     'https://api.dicebear.com/7.x/bottts/svg?seed=Duolingo',
   ];
   const premadeAvatars = [
-    '/images/fitbuddyai_head.png',
+    '/images/fitbuddy_head.png',
     ...shopAvatars,
     'https://api.dicebear.com/7.x/bottts/svg?seed=FitBuddyAI2',
     'https://api.dicebear.com/7.x/bottts/svg?seed=FitBuddyAI3',
@@ -91,7 +91,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onProfileUpdate }) 
 
   const handleEdit = () => {
     setEditUsername(user?.username || '');
-    setEditAvatar(user?.avatar || '/images/fitbuddyai_head.png');
+    setEditAvatar(user?.avatar || '/images/fitbuddy_head.png');
     setEditMode(true);
     setError('');
   };

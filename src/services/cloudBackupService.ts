@@ -34,6 +34,11 @@ export async function backupUserDataToServer(userId: string) {
             if (safe.accepted_terms !== undefined) payload.accepted_terms = safe.accepted_terms;
             if (safe.accepted_privacy !== undefined) payload.accepted_privacy = safe.accepted_privacy;
             if (safe.chat_history !== undefined && payload.chat_history === undefined) payload.chat_history = safe.chat_history;
+            // include streak if present on the stored user object or inside wrapper.data
+            try {
+              const possibleStreak = (safe && typeof safe === 'object') ? (safe.streak ?? (safe.data && safe.data.streak)) : undefined;
+              if (typeof possibleStreak === 'number') payload.streak = possibleStreak;
+            } catch (e) {}
           }
         } catch {}
       }
@@ -58,16 +63,18 @@ export function beaconBackupUserData(userId: string) {
     if (fitbuddyai_questionnaire_progress != null) payload.fitbuddyai_questionnaire_progress = fitbuddyai_questionnaire_progress;
     if (fitbuddyai_workout_plan != null) payload.fitbuddyai_workout_plan = fitbuddyai_workout_plan;
     if (fitbuddyai_assessment_data != null) payload.fitbuddyai_assessment_data = fitbuddyai_assessment_data;
-    // Include acceptance flags if present in unified user_data
+    // Include acceptance flags and streak if present in unified user_data
     try {
-  const rawUser = sessionStorage.getItem('fitbuddyai_user_data') || localStorage.getItem('fitbuddyai_user_data');
+      const rawUser = sessionStorage.getItem('fitbuddyai_user_data') || localStorage.getItem('fitbuddyai_user_data');
       if (rawUser) {
         try {
           const parsed = JSON.parse(rawUser);
-          if (parsed && typeof parsed === 'object') {
-            if (parsed.accepted_terms !== undefined) payload.accepted_terms = parsed.accepted_terms;
-            if (parsed.accepted_privacy !== undefined) payload.accepted_privacy = parsed.accepted_privacy;
-            if (parsed.chat_history !== undefined && payload.chat_history === undefined) payload.chat_history = parsed.chat_history;
+            if (parsed && typeof parsed === 'object') {
+              if (parsed.accepted_terms !== undefined) payload.accepted_terms = parsed.accepted_terms;
+              if (parsed.accepted_privacy !== undefined) payload.accepted_privacy = parsed.accepted_privacy;
+              if (parsed.chat_history !== undefined && payload.chat_history === undefined) payload.chat_history = parsed.chat_history;
+              const possibleStreak = (parsed && typeof parsed === 'object') ? (parsed.streak ?? (parsed.data && parsed.data.streak)) : undefined;
+              if (typeof possibleStreak === 'number') payload.streak = possibleStreak;
           }
         } catch {}
       }
@@ -155,7 +162,22 @@ export async function restoreUserDataFromServer(userId: string) {
       }
     }
   } catch (e) {}
-  console.log('[cloudBackupService] restoreUserDataFromServer -> wrote keys from payload:', Object.keys(payload));
+    // If server returned a streak field, merge it into stored user payload and notify the app
+    try {
+      if (typeof payload.streak !== 'undefined') {
+        try {
+          const storedUserRaw = sessionStorage.getItem('fitbuddyai_user_data') || localStorage.getItem('fitbuddyai_user_data');
+          const storedWrapper = storedUserRaw ? JSON.parse(storedUserRaw) : null;
+          const existing = storedWrapper?.data || storedWrapper || {};
+          const merged = { ...(existing || {}), streak: payload.streak };
+          const wrapper = storedWrapper && storedWrapper.timestamp ? { ...storedWrapper, data: merged } : { data: merged, timestamp: Date.now() };
+          try { sessionStorage.setItem('fitbuddyai_user_data', JSON.stringify(wrapper)); } catch {}
+          try { localStorage.setItem('fitbuddyai_user_data', JSON.stringify(wrapper)); } catch {}
+          try { window.dispatchEvent(new CustomEvent('fitbuddyai-user-updated', { detail: merged })); } catch {}
+        } catch (e) {}
+      }
+    } catch (e) {}
+    console.log('[cloudBackupService] restoreUserDataFromServer -> wrote keys from payload:', Object.keys(payload));
   } catch (err) {
     // Optionally log or handle error
   }
