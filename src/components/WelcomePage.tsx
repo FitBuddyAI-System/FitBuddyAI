@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Target, Calendar, Zap, Dumbbell } from 'lucide-react';
 import './WelcomePage.css';
+import { loadUserData } from '../services/localStorage';
 // Footer is now rendered site-wide in `App.tsx`
 import IntroBubbles from './IntroBubbles';
 import BackgroundDots from './BackgroundDots';
@@ -26,6 +27,7 @@ const WelcomePage: React.FC = () => {
   const shouldShowIntro = introParam === null || introParam === '1';
   const [showIntro, setShowIntro] = useState(shouldShowIntro);
   const [mainVisible, setMainVisible] = useState(!shouldShowIntro);
+  const [currentUser, setCurrentUser] = useState<any>(() => loadUserData());
   // When intro=0 we still render the main content but avoid entrance animations
   const shouldAnimateLogo = introParam !== '0';
   const hideIntroTimer = useRef<number | null>(null);
@@ -40,6 +42,13 @@ const WelcomePage: React.FC = () => {
         clearTimeout(failSafeTimer.current);
       }
     };
+  }, []);
+
+  // Keep user state in sync with storage (cross-tab or sign-in changes)
+  useEffect(() => {
+    const handleStorage = () => setCurrentUser(loadUserData());
+    window.addEventListener('storage', handleStorage);
+    try { const bc = new BroadcastChannel('fitbuddyai'); bc.onmessage = () => handleStorage(); return () => { bc.close(); window.removeEventListener('storage', handleStorage); }; } catch(e) { return () => window.removeEventListener('storage', handleStorage); }
   }, []);
 
   // When intro finishes, remove ?intro from URL
@@ -86,8 +95,8 @@ const WelcomePage: React.FC = () => {
               <p>Get personalized workout plans powered by AI, track your progress, and achieve your fitness goals with fun, gamified experience.</p>
             </div>
             <div className="cta-section fade-in-up">
-              <Link to="/questionnaire" className="btn btn-primary btn-large">
-                Start Your Journey
+              <Link to={currentUser && (currentUser.id || currentUser?.data?.id) ? '/calendar' : '/questionnaire'} className="btn btn-primary btn-large" data-discover="true">
+                {currentUser && (currentUser.id || currentUser?.data?.id) ? 'Continue Your Journey' : 'Start Your Journey'}
               </Link>
               <p className="cta-subtitle">Free • Personalized • AI-Powered</p>
             </div>

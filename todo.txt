@@ -16,7 +16,7 @@ Tasks:
 ✅- Make Energy start out at 100 when user joins 
 ✅  - on question 24, if the user does not click it, they cannot move to the next question
 ✅  - on the last question of the assesment, you have to click the generate my plan button twice
-    - make start your journey button on the front page say contune your journey when the user is logged in
+✅  - make start your journey button on the front page say contune your journey when the user is logged in
     - fix mobile site layout
     - update readme.md for all the new features and how to use them
 ✅ - add a button for the shop on the homescreen
