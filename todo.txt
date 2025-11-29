@@ -22,6 +22,10 @@ Tasks:
 ✅ - add a button for the shop on the homescreen
     - make user-greeting in header have the user's response summarized by AI then put there
     - Add a Public PGP key to Security.md
+    - Fix Calender Cutoff
+⚠️ - Change all alert messages to toast notifs and add toast notifs where needed
+    - Workout Library add a reverse organization feature (bottom to top)
+    - Workout Library put top 5-10 most used workouts on top of list (Most commonly used workout section?)
     
  Suggestions:
     -Add a way for users to suggest new workouts/add them?

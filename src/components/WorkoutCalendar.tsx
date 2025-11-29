@@ -526,7 +526,7 @@ updatedWorkouts = updatedWorkouts.map(workout => {
     const [y, m, d] = workoutDate.split('-').map(Number);
     const target = new Date(y, m - 1, d);
     if (!isDateToday(target)) {
-      alert('You can only complete or undo today\'s workout.');
+      window.showFitBuddyNotification?.({ title: 'Only Today', message: "You can only complete or undo today's workout.", variant: 'warning' });
       return;
     }
     const updatedWorkouts = workoutPlan.dailyWorkouts.map(workout => {
@@ -845,7 +845,7 @@ updatedWorkouts = updatedWorkouts.map(workout => {
       targetDate = new Date();
     }
     if (isDateInPast(targetDate)) {
-      alert('You cannot add or change workouts on past dates.');
+      window.showFitBuddyNotification?.({ title: 'Invalid Date', message: 'You cannot add or change workouts on past dates.', variant: 'error' });
       return;
     }
     const dateString = format(targetDate, 'yyyy-MM-dd');
@@ -957,7 +957,7 @@ updatedWorkouts = updatedWorkouts.map(workout => {
   const handleConfirmSelection = () => {
     console.debug('[WorkoutCalendar] handleConfirmSelection', { selectedForAddLength: selectedForAdd.length });
     if (selectedForAdd.length === 0) {
-      alert('Please select at least one date before confirming.');
+      window.showFitBuddyNotification?.({ title: 'No Dates Selected', message: 'Please select at least one date before confirming.', variant: 'warning' });
       return;
     }
     setAddMode(false);
@@ -969,7 +969,7 @@ updatedWorkouts = updatedWorkouts.map(workout => {
   const handleBatchGenerate = async () => {
     if (!workoutPlan) return;
     if (selectedForAdd.length === 0) {
-      alert('Please select at least one date.');
+      window.showFitBuddyNotification?.({ title: 'No Dates', message: 'Please select at least one date.', variant: 'warning' });
       return;
     }
 
@@ -1071,7 +1071,7 @@ updatedWorkouts = updatedWorkouts.map(workout => {
       const today = new Date();
       today.setHours(0,0,0,0);
       if (targetDate < today) {
-        alert('You cannot add workouts to a past date.');
+        window.showFitBuddyNotification?.({ title: 'Invalid Date', message: 'You cannot add workouts to a past date.', variant: 'error' });
         return;
       }
 
@@ -1131,7 +1131,7 @@ updatedWorkouts = updatedWorkouts.map(workout => {
       const [y, m, d] = updatedWorkout.date.split('-').map(Number);
       const target = new Date(y, m - 1, d);
       if (isDateInPast(target)) {
-        alert('You cannot change workouts on past dates.');
+        window.showFitBuddyNotification?.({ title: 'Invalid Date', message: 'You cannot change workouts on past dates.', variant: 'error' });
         return;
       }
     } catch {/* ignore parse errors */}
@@ -1172,7 +1172,7 @@ updatedWorkouts = updatedWorkouts.map(workout => {
     const [y, m, d] = workout.date.split('-').map(Number);
     const targetDate = new Date(y, m - 1, d);
     if (isDateInPast(targetDate)) {
-      alert('You cannot change workouts on past dates.');
+      window.showFitBuddyNotification?.({ title: 'Invalid Date', message: 'You cannot change workouts on past dates.', variant: 'error' });
       return;
     }
     // close modal and set loading state
@@ -1307,7 +1307,7 @@ updatedWorkouts = updatedWorkouts.map(workout => {
     const today = new Date();
     today.setHours(0,0,0,0);
     if (selected < today) {
-      alert('You cannot add workouts to a past date.');
+      window.showFitBuddyNotification?.({ title: 'Invalid Date', message: 'You cannot add workouts to a past date.', variant: 'error' });
       setLoadingDate(null);
       return;
     }
@@ -1503,7 +1503,7 @@ updatedWorkouts = updatedWorkouts.map(workout => {
 
     // Block adding brand-new days on past dates
     if (legendType && isDateInPast(targetDate)) {
-      alert('You can only add workouts to today or a future date.');
+      window.showFitBuddyNotification?.({ title: 'Invalid Date', message: 'You can only add workouts to today or a future date.', variant: 'error' });
       setIsDragging(false);
       setDraggedLegendType(null);
       setDragOverDate(null);
@@ -1519,7 +1519,7 @@ updatedWorkouts = updatedWorkouts.map(workout => {
       const [sy, sm, sd] = sourceDateString.split('-').map(Number);
       const sourceDate = new Date(sy, sm - 1, sd);
       if (isDateInPast(sourceDate) || isDateInPast(targetDateObj)) {
-        alert('You cannot move workouts on past dates.');
+        window.showFitBuddyNotification?.({ title: 'Invalid Date', message: 'You cannot move workouts on past dates.', variant: 'error' });
         setIsDragging(false);
         setDraggedWorkout(null);
         setDraggedLegendType(null);
@@ -1704,7 +1704,7 @@ updatedWorkouts = updatedWorkouts.map(workout => {
 
     setShowEditMenu(false);
     setDeleteMode(false);
-    alert('Calendar has been cleared!');
+    window.showFitBuddyNotification?.({ title: 'Cleared', message: 'Calendar has been cleared!', variant: 'success' });
   };
 
 
@@ -1712,7 +1712,7 @@ updatedWorkouts = updatedWorkouts.map(workout => {
   const handleConfirmDeletion = () => {
     if (!workoutPlan) return;
     if (selectedForDeletion.length === 0) {
-      alert('Please select at least one date to delete.');
+      window.showFitBuddyNotification?.({ title: 'No Dates Selected', message: 'Please select at least one date to delete.', variant: 'warning' });
       return;
     }
     const updated = workoutPlan.dailyWorkouts.filter(w => !selectedForDeletion.includes(w.date));

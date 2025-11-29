@@ -3,6 +3,8 @@ import ReactDOM from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
 import { BrowserRouter } from 'react-router-dom';
+// Notification popup (mounts a global manager and exposes `window.showFitBuddyNotification`)
+import './components/NotificationPopup';
 
 // Attach a global beforeunload handler to try to save user data when the tab is closed.
 // We import the backup function lazily so this module doesn't increase bundle size unnecessarily.

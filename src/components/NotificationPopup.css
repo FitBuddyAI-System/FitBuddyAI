@@ -1,0 +1,101 @@
+:root {
+  --fb-primary: #1ecb7b;
+  --fb-accent: #1e90cb;
+  --fb-warn: #ffb347;
+  --fb-danger: #ff6b6b;
+  --fb-surface: rgba(255,255,255,0.98); /* more opaque on light */
+  --fb-text: #222;
+  --fb-message-opacity: 0.88; /* increase message opacity */
+  --fb-close-opacity: 0.65;
+}
+
+.fb-notice-wrap {
+  position: fixed;
+  right: 18px;
+  bottom: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  z-index: 9999;
+  pointer-events: none;
+}
+
+.fb-notice {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 300px;
+  max-width: 420px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  box-shadow: 0 18px 60px rgba(2,6,23,0.30);
+  background: linear-gradient(90deg, rgba(255,255,255,0.98), var(--fb-surface));
+  color: var(--fb-text);
+  transform-origin: bottom right;
+  animation: fb-notice-pop .18s cubic-bezier(.2,.9,.2,1) both;
+}
+
+.fb-notice .fb-notice-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg,var(--fb-primary),var(--fb-accent));
+  color: white;
+}
+
+.fb-notice .fb-notice-body { flex: 1 1 auto; min-width: 0; }
+.fb-notice .fb-notice-title { font-weight: 800; margin-bottom: 2px; }
+
+.fb-notice .fb-notice-message { font-size: 14px; color: rgba(0,0,0,var(--fb-message-opacity)); }
+
+.fb-notice .fb-notice-close { background: transparent; border: none; color: rgba(0,0,0,var(--fb-close-opacity)); cursor: pointer; font-size: 14px; }
+
+/* Variants */
+.fb-notice.success { background: linear-gradient(90deg, rgba(30,203,123,0.14), rgba(30,203,123,0.04)); border: 1px solid rgba(30,203,123,0.18); }
+.fb-notice.info { background: linear-gradient(90deg, rgba(30,144,203,0.12), rgba(30,144,203,0.04)); border: 1px solid rgba(30,144,203,0.18); }
+.fb-notice.warning { background: linear-gradient(90deg, rgba(255,179,71,0.12), rgba(255,179,71,0.04)); border: 1px solid rgba(255,179,71,0.18); }
+.fb-notice.error { background: linear-gradient(90deg, rgba(255,107,107,0.12), rgba(255,107,107,0.04)); border: 1px solid rgba(255,107,107,0.18); }
+
+/* Dark mode support: prefers-color-scheme and explicit .dark body class */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fb-surface: rgba(18,18,20,0.94);
+    --fb-text: #f3f4f6;
+    --fb-message-opacity: 0.95;
+    --fb-close-opacity: 0.8;
+  }
+  .fb-notice {
+    box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+    background: linear-gradient(90deg, rgba(24,24,28,0.96), rgba(18,18,20,0.94));
+    color: var(--fb-text);
+  }
+  .fb-notice .fb-notice-icon { background: linear-gradient(135deg,var(--fb-primary),var(--fb-accent)); }
+  .fb-notice.success { border: 1px solid rgba(30,203,123,0.22); }
+  .fb-notice.info { border: 1px solid rgba(30,144,203,0.22); }
+  .fb-notice.warning { border: 1px solid rgba(255,179,71,0.22); }
+  .fb-notice.error { border: 1px solid rgba(255,107,107,0.22); }
+  .fb-notice .fb-notice-message { color: rgba(255,255,255,var(--fb-message-opacity)); }
+  .fb-notice .fb-notice-close { color: rgba(255,255,255,var(--fb-close-opacity)); }
+  .fb-notice .fb-notice-title { color: var(--fb-text); }
+  .fb-notice .fb-notice-body { color: var(--fb-text); }
+}
+
+body.dark .fb-notice {
+  box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+  background: linear-gradient(90deg, rgba(24,24,28,0.96), rgba(18,18,20,0.94));
+  color: var(--fb-text);
+}
+
+body.dark .fb-notice .fb-notice-message { color: rgba(255,255,255,var(--fb-message-opacity)); }
+body.dark .fb-notice .fb-notice-close { color: rgba(255,255,255,var(--fb-close-opacity)); }
+body.dark .fb-notice .fb-notice-title { color: var(--fb-text); }
+body.dark .fb-notice .fb-notice-body { color: var(--fb-text); }
+
+@keyframes fb-notice-pop {
+  from { transform: translateY(6px) scale(.99); opacity: 0; }
+  to { transform: translateY(0) scale(1); opacity: 1; }
+}

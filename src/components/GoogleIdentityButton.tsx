@@ -44,7 +44,7 @@ const GoogleIdentityButton: React.FC = () => {
               await signInWithGoogle();
             } catch (e) {
               console.warn('[GoogleIdentityButton] signInWithGoogle failed', e);
-              window.alert('Google sign-in failed. Check console for details.');
+              window.showFitBuddyNotification?.({ title: 'Sign-in Failed', message: 'Google sign-in failed. Check console for details.', variant: 'error' });
             }
           }}
         >
@@ -67,7 +67,12 @@ const GoogleIdentityButton: React.FC = () => {
   if (!clientId) {
     return (
       <div className="google-fallback">
-        <button className="btn btn-google" onClick={() => window.alert('Google sign-in is not configured. Please set VITE_GOOGLE_CLIENT_ID in your .env and register the OAuth client in Google Cloud Console.')}>Continue with Google</button>
+        <button
+          className="btn btn-google"
+          onClick={() => window.showFitBuddyNotification?.({ title: 'Sign-in Unavailable', message: 'Google sign-in is not configured. Please set VITE_GOOGLE_CLIENT_ID in your .env and register the OAuth client in Google Cloud Console.', variant: 'warning' })}
+        >
+          Continue with Google
+        </button>
       </div>
     );
   }
@@ -134,7 +139,12 @@ const GoogleIdentityButton: React.FC = () => {
       {/* Fallback for environments without GSI script */}
       {!window.google && (
         <div className="google-fallback">
-          <button className="btn btn-google" onClick={() => window.alert('Google sign-in is not available. Try enabling Supabase OAuth or add VITE_GOOGLE_CLIENT_ID to your .env')}>Continue with Google</button>
+          <button
+            className="btn btn-google"
+            onClick={() => window.showFitBuddyNotification?.({ title: 'Sign-in Unavailable', message: 'Google sign-in is not available. Try enabling Supabase OAuth or add VITE_GOOGLE_CLIENT_ID to your .env', variant: 'warning' })}
+          >
+            Continue with Google
+          </button>
         </div>
       )}
     </div>

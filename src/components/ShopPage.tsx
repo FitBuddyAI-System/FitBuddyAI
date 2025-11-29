@@ -137,11 +137,11 @@ const ShopPage: React.FC<ShopPageProps> = ({ user, onPurchase, onRedeemStreakSav
   // Fetch user after purchase
   const handlePurchase = async (item: any) => {
     if (!user?.id) {
-      alert('Please sign in to purchase items.');
+      window.showFitBuddyNotification?.({ title: 'Sign In Required', message: 'Please sign in to purchase items.', variant: 'warning' });
       return;
     }
     if (user.energy < item.price) {
-      alert('Not enough energy!');
+      window.showFitBuddyNotification?.({ title: 'Not Enough Energy', message: 'Not enough energy!', variant: 'warning' });
       return;
     }
     setPurchasing(item.id);
@@ -168,7 +168,7 @@ const ShopPage: React.FC<ShopPageProps> = ({ user, onPurchase, onRedeemStreakSav
         window.dispatchEvent(new Event('storage'));
       } catch (e) {
         console.warn('Failed to process streak saver purchase:', e);
-        alert('Purchase failed.');
+        window.showFitBuddyNotification?.({ title: 'Purchase Failed', message: 'Purchase failed.', variant: 'error' });
       } finally {
         setPurchasing(null);
       }
@@ -190,7 +190,7 @@ const ShopPage: React.FC<ShopPageProps> = ({ user, onPurchase, onRedeemStreakSav
       onPurchase(item);
       window.dispatchEvent(new Event('storage'));
     } else {
-      alert('Purchase failed.');
+      window.showFitBuddyNotification?.({ title: 'Purchase Failed', message: 'Purchase failed.', variant: 'error' });
     }
   };
 
@@ -213,7 +213,7 @@ const ShopPage: React.FC<ShopPageProps> = ({ user, onPurchase, onRedeemStreakSav
 
   const handleRedeemClick = () => {
     const message = onRedeemStreakSaver ? onRedeemStreakSaver() : null;
-    if (message) alert(message);
+    if (message) window.showFitBuddyNotification?.({ title: 'Notice', message, variant: 'info' });
   };
 
   const streakSaverCount = getInventoryCount('streak-saver');

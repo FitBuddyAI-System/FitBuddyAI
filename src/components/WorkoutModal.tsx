@@ -284,7 +284,7 @@ const WorkoutModal: React.FC<WorkoutModalProps> = ({
 
   const handleComplete = () => {
     if (!isTodayDay) {
-      alert('You can only complete or undo today\'s workout.');
+      window.showFitBuddyNotification?.({ title: 'Only Today', message: "You can only complete or undo today's workout.", variant: 'warning' });
       return;
     }
     const type = selectedType || availableTypes[0] || 'strength';
