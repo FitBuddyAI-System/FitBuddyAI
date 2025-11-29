@@ -92,6 +92,7 @@ body.theme-dark .sort-control select { color: #e9eef5; }
 .difficulty { padding:6px 8px; border-radius:8px; font-weight:700; font-size:12px; }
 .difficulty.easy { background: linear-gradient(90deg,#2ecc71,#27ae60); color:#022; }
 .difficulty.medium { background: linear-gradient(90deg,#ffd166,#ffb347); color:#3b1b00; }
+.difficulty.intermediate { background: linear-gradient(90deg,#2ecc71,#27ae60); color:#022; }
 .difficulty.hard { background: linear-gradient(90deg,#ff6b6b,#ee5252); color:#fff; }
 .duration { color:var(--text-medium); font-size:13px; }
 .category {
@@ -175,6 +176,12 @@ body.theme-dark .sort-control select { color: #e9eef5; }
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* Ensure muscle names are shown capitalized */
+.muscle-text.primary-text,
+.muscle-text.secondary-text {
+  text-transform: capitalize;
 }
 
 /* Layout behavior: primary grows/wraps; secondary will move to next line if primary uses available space */
@@ -338,7 +345,7 @@ body:not(.theme-dark) .btn-ghost:hover {
   background: rgba(255,255,255,0.9);
   box-shadow: 0 0 0 2px rgba(255,255,255,0.28);
 }
-.category-chip .chip-value { color: #fff; }
+.category-chip .chip-value { color: #fff; text-transform: capitalize; }
 .category-chip.strength,
 .category-chip.strength-training { --cat-chip: linear-gradient(135deg, #ff6b6b, #ff5252); }
 .category-chip.cardio { --cat-chip: linear-gradient(135deg, #4ecdc4, #26c6da); }
@@ -387,6 +394,13 @@ body:not(.theme-dark) .btn-ghost:hover {
 .modal-info .instructions ol { margin-bottom: 0; }
 .modal-info .muscle-section.modal { margin-top: 12px; }
 
+/* Ensure ordered list numbers inside instructions are visible and not clipped */
+.modal-info .instructions ol {
+  list-style-position: outside;
+  padding-left: 1.25rem; /* shift content right so numbers are not cut off */
+  margin-left: 0;
+}
+
 .meta-grid { display:grid; grid-template-columns: repeat(2,1fr); gap:10px; margin-top:16px; }
 .meta-item { background: var(--bg-light); padding:10px; border-radius:10px; font-size:13px; border:1px solid var(--border-light); display:flex; flex-direction:column; gap:6px; }
 .meta-item strong { text-transform:capitalize; font-size:12px; color:var(--text-medium); }
@@ -395,6 +409,27 @@ body:not(.theme-dark) .btn-ghost:hover {
 .modal-actions { display:flex; gap:12px; justify-content:flex-end; padding:16px 20px; border-top: 1px solid rgba(0,0,0,0.04); background: linear-gradient(180deg, rgba(0,0,0,0.02), transparent); }
 .btn-primary { background: linear-gradient(90deg,var(--primary-green),var(--secondary-blue)); color:white; padding:12px 18px; border-radius:12px; border:none; cursor:pointer; font-weight:700; }
 .btn-outline { background:transparent; border:1px solid rgba(0,0,0,0.08); padding:10px 16px; border-radius:12px; cursor:pointer; }
+
+/* Danger / Remove button styles */
+.btn-remove {
+  /* used on ghost buttons: red text, subtle red hover */
+  color: #c53030;
+  background: transparent;
+  border: 2px solid rgba(197,83,83,0.12);
+  box-shadow: none;
+}
+.btn-remove:hover {
+  background: rgba(197,83,83,0.06);
+  transform: translateY(-2px);
+}
+
+.btn-danger {
+  /* primary red variant used for modal Remove action */
+  background: linear-gradient(90deg, #ff6b6b, #ee5252);
+  color: #fff;
+  border: 1px solid #ee5252;
+}
+.btn-danger:hover { background: linear-gradient(90deg, #e55353, #dd4444); }
 
 .my-plan-section { margin-top: 36px; }
 .my-plan-section h2 { margin: 0 0 6px 0; }

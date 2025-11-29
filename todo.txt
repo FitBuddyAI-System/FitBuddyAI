@@ -1,7 +1,14 @@
+
+Key:
+⚠️ - In Progress
+✅ - Done
+❌ - Canceled/Will Not Be Implemented
+
+Tasks:
 ✅ - Make Assement and Calender Plans rely on server storage instead of local storage
-   - Fix the color of the nav-button (s) on the Calender
+✅- Fix the color of the nav-button (s) on the Calender
 ✅ - Somehow modify the creation and generation of plans to be more reliable
-     - Add a shop for the gems
+⚠️ - Add a shop for the gems (shop added, but functionality is not 100%)
 ✅  - Add functionality for the select to add button on the calener menu
 ✅  - Remove Name question and functionality
 ✅  - Change all Name vars to Username
@@ -12,12 +19,15 @@
     - make start your journey button on the front page say contune your journey when the user is logged in
     - fix mobile site layout
     - update readme.md for all the new features and how to use them
-    - add a button for the shop on the homescreen
+✅ - add a button for the shop on the homescreen
     
+ Suggestions:
+    -Add a way for users to suggest new workouts/add them?
 
-    What Dakota needs to do:
+ What Dakota needs to do:
     - Fix all of the .json data for the workouts (add videos, make the descriptions better, fill in the blanks, etc.)
     - Generate some images for the shop
-    
 
-    What William needs to do: 
+What William needs to do: 
+
+What Zade needs to do:

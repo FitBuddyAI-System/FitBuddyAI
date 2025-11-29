@@ -36,7 +36,7 @@ export const removeSavedName = (name: string) => {
 };
 
 export const subscribeSavedNames = (cb: (list: string[]) => void) => {
-  const handler = (e?: Event) => cb(loadSavedNames());
+  const handler = () => cb(loadSavedNames());
   const evHandler = (e: Event) => {
     const detail = (e as CustomEvent)?.detail;
     if (Array.isArray(detail)) cb(detail.map(String)); else handler();

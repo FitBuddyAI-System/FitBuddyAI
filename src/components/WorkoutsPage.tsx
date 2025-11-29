@@ -1,8 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import './WorkoutsPage.css';
-import confetti from 'canvas-confetti';
 // savedLibrary types unused here; using saved-names storage for saved list
-import { loadSavedNames, addSavedName, subscribeSavedNames, persistSavedNames } from '../utils/savedNames';
+import { loadSavedNames, addSavedName, subscribeSavedNames, persistSavedNames, removeSavedName } from '../utils/savedNames';
 import { loadAssessmentData } from '../services/localStorage';
 
 type Workout = {
@@ -59,6 +58,20 @@ const WorkoutsPage: React.FC = () => {
       return s.charAt(0).toUpperCase() + s.slice(1);
     }
     return 'Varies';
+  };
+
+  const removeFromPlan = (item: Workout & { title: string }) => {
+    setMySavedNames(prev => {
+      if (!prev.includes(item.title)) {
+        setSaveNotice('That workout is not in your saved list.');
+        window.setTimeout(() => setSaveNotice(null), 2600);
+        return prev;
+      }
+      const next = removeSavedName(item.title);
+      setSaveNotice('Removed from your workouts.');
+      window.setTimeout(() => setSaveNotice(null), 2600);
+      return next;
+    });
   };
   const capitalizeWords = (s?: string) => {
     if (!s) return '';
@@ -152,21 +165,21 @@ const WorkoutsPage: React.FC = () => {
   }, []);
 
   const addToPlan = (item: Workout & { title: string }) => {
-    // Add only the workout name to the new saved-names list
+    // Add only the workout name to the new saved-names list (no confetti)
     setMySavedNames(prev => {
       if (prev.includes(item.title)) {
         setSaveNotice('Already saved to your workouts.');
+        window.setTimeout(() => setSaveNotice(null), 2600);
         return prev;
       }
       const next = addSavedName(item.title);
       setSaveNotice('Saved to your workouts!');
-      try { confetti({ particleCount: 90, spread: 65, origin: { y: 0.6 } }); } catch {}
       window.setTimeout(() => setSaveNotice(null), 2600);
       return next;
     });
   };
 
-  // removeFromPlan was intentionally removed because it was not referenced anywhere in this component.
+  
 
   const selectedWorkout = selected ? workouts.find(w => w.title === selected) : undefined;
 
@@ -333,7 +346,11 @@ const WorkoutsPage: React.FC = () => {
             </div>
             <div className="card-footer">
               <button className="btn-ghost" onClick={(e) => { e.stopPropagation(); setSelected(w.title); }}>View</button>
-              <button className="btn-ghost" onClick={(e) => { e.stopPropagation(); addToPlan(w); }}>Save Workout</button>
+              {mySavedNames.includes(w.title) ? (
+                <button className="btn-ghost danger" onClick={(e) => { e.stopPropagation(); removeFromPlan(w); }}>Remove</button>
+              ) : (
+                <button className="btn-ghost" onClick={(e) => { e.stopPropagation(); addToPlan(w); }}>Save Workout</button>
+              )}
             </div>
           </article>
         ))}
@@ -344,8 +361,13 @@ const WorkoutsPage: React.FC = () => {
           title={selectedWorkout.title}
           data={selectedWorkout}
           onClose={() => setSelected(null)}
+          isSaved={mySavedNames.includes(selectedWorkout.title)}
           onAdd={() => {
-            addToPlan(selectedWorkout);
+            if (mySavedNames.includes(selectedWorkout.title)) {
+              removeFromPlan(selectedWorkout);
+            } else {
+              addToPlan(selectedWorkout);
+            }
             setSelected(null);
           }}
         />
@@ -354,7 +376,7 @@ const WorkoutsPage: React.FC = () => {
   );
 };
 
-function WorkoutModal({ title, data, onClose, onAdd }: { title: string; data: Workout; onClose: () => void; onAdd?: () => void }) {
+function WorkoutModal({ title, data, onClose, onAdd, isSaved }: { title: string; data: Workout; onClose: () => void; onAdd?: () => void; isSaved?: boolean }) {
   const formatDetailValue = (val: any) => {
     if (val === undefined || val === null) return '—';
     const text = Array.isArray(val) ? val.filter(Boolean).join(', ') : String(val);
@@ -367,7 +389,6 @@ function WorkoutModal({ title, data, onClose, onAdd }: { title: string; data: Wo
 
   const detailChips = [
     { key: 'force', label: 'Force', value: formatDetailValue(data.force) },
-    { key: 'level', label: 'Level', value: formatDetailValue(data.level) },
     { key: 'mechanic', label: 'Mechanic', value: formatDetailValue(data.mechanic) },
     { key: 'equipment', label: 'Equipment', value: formatDetailValue(Array.isArray(data.equipment) ? data.equipment.join(', ') : data.equipment) }
   ].filter(chip => chip.value !== '—');
@@ -484,7 +505,7 @@ function WorkoutModal({ title, data, onClose, onAdd }: { title: string; data: Wo
         </main>
 
         <footer className="modal-actions">
-          <button className="btn-primary" onClick={onAdd}>Save Workout</button>
+          <button className={isSaved ? 'btn-ghost danger' : 'btn-primary'} onClick={onAdd}>{isSaved ? 'Remove Workout' : 'Save Workout'}</button>
           <button className="btn-outline" onClick={onClose}>Close</button>
         </footer>
       </div>
