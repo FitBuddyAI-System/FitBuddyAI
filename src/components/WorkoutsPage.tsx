@@ -1,13 +1,8 @@
 import React, { useMemo, useState } from 'react';
 import './WorkoutsPage.css';
 import confetti from 'canvas-confetti';
-import {
-  loadSavedWorkouts,
-  persistSavedWorkouts,
-  sanitizeWorkout,
-  subscribeSavedWorkouts,
-  SavedWorkout
-} from '../utils/savedLibrary';
+// savedLibrary types unused here; using saved-names storage for saved list
+import { loadSavedNames, addSavedName, subscribeSavedNames, persistSavedNames } from '../utils/savedNames';
 import { loadAssessmentData } from '../services/localStorage';
 
 type Workout = {
@@ -47,7 +42,7 @@ const WorkoutsPage: React.FC = () => {
   const [difficulty, setDifficulty] = useState<'All' | 'Easy' | 'Medium' | 'Hard'>('All');
   const [categorySort, setCategorySort] = useState<string>('all');
   const [selected, setSelected] = useState<string | null>(null);
-  const [myPlan, setMyPlan] = useState<SavedWorkout[]>(() => loadSavedWorkouts());
+  const [mySavedNames, setMySavedNames] = useState<string[]>(() => loadSavedNames());
   const [saveNotice, setSaveNotice] = useState<string | null>(null);
   const [aiSaving, setAiSaving] = useState(false);
 
@@ -152,26 +147,20 @@ const WorkoutsPage: React.FC = () => {
   }, [workouts, categoryBuckets, query, difficulty, categorySort]);
 
   React.useEffect(() => {
-    const unsubscribe = subscribeSavedWorkouts((list) => setMyPlan(list));
-    return unsubscribe;
+    const unsub = subscribeSavedNames((list) => setMySavedNames(list));
+    return unsub;
   }, []);
 
   const addToPlan = (item: Workout & { title: string }) => {
-    setMyPlan(prev => {
-      const exists = prev.some(p => p.title === item.title);
-      if (exists) {
+    // Add only the workout name to the new saved-names list
+    setMySavedNames(prev => {
+      if (prev.includes(item.title)) {
         setSaveNotice('Already saved to your workouts.');
         return prev;
       }
-      const next = persistSavedWorkouts([...prev, sanitizeWorkout(item)]);
+      const next = addSavedName(item.title);
       setSaveNotice('Saved to your workouts!');
-      try {
-        confetti({
-          particleCount: 90,
-          spread: 65,
-          origin: { y: 0.6 }
-        });
-      } catch {}
+      try { confetti({ particleCount: 90, spread: 65, origin: { y: 0.6 } }); } catch {}
       window.setTimeout(() => setSaveNotice(null), 2600);
       return next;
     });
@@ -232,15 +221,17 @@ const WorkoutsPage: React.FC = () => {
       window.setTimeout(() => {
         const picks = pickWorkoutsFromAssessment(assessment);
         let added = 0;
-        setMyPlan(prev => {
+        // Persist only names using the new saved-names approach
+        setMySavedNames(prev => {
           const next = [...prev];
           picks.forEach(p => {
-            if (!next.some(n => n.title === p.title)) {
-              next.push(sanitizeWorkout(p));
+            if (!next.includes(p.title)) {
+              next.push(p.title);
               added += 1;
             }
           });
-          return persistSavedWorkouts(next);
+          try { persistSavedNames(next); } catch (e) {}
+          return next;
         });
         setSaveNotice(added > 0 ? `Saved ${added} workouts from your assessment.` : 'Those workouts are already saved.');
         setAiSaving(false);
@@ -258,7 +249,7 @@ const WorkoutsPage: React.FC = () => {
         <div className="hero-left">
           <h1>
             Workout Library
-            <span className="saved-count" aria-hidden="true"> ({myPlan.length} saved)</span>
+            <span className="saved-count" aria-hidden="true"> ({mySavedNames.length} saved)</span>
           </h1>
           <p className="hero-sub">Explore exercises, watch technique videos, and view trusted resources — curated for quick practice.</p>
           <div className="ai-save-row">
