@@ -169,7 +169,22 @@ function App() {
   if (savedWorkoutPlan) { setWorkoutPlan(savedWorkoutPlan); setPlanVersion(v => v + 1); }
     };
     window.addEventListener('fitbuddyai-login', handleLogin);
-    return () => window.removeEventListener('fitbuddyai-login', handleLogin);
+    // Listen for direct user updates (e.g., streak changes) from other components
+    const handleUserUpdated = (e: any) => {
+      try {
+        const payload = e?.detail;
+        if (!payload) return;
+        setUserData(payload);
+        setProfileVersion(v => v + 1);
+      } catch (err) {
+        // ignore
+      }
+    };
+    window.addEventListener('fitbuddyai-user-updated', handleUserUpdated as EventListener);
+    return () => {
+      window.removeEventListener('fitbuddyai-login', handleLogin);
+      window.removeEventListener('fitbuddyai-user-updated', handleUserUpdated as EventListener);
+    };
   }, []);
 
   // Listen for localStorage changes to fitbuddyai_user_data and update userData state

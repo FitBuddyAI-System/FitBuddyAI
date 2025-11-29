@@ -285,6 +285,7 @@ const WorkoutModal: React.FC<WorkoutModalProps> = ({
   const handleComplete = () => {
     if (!isTodayDay) {
       window.showFitBuddyNotification?.({ title: 'Only Today', message: "You can only complete or undo today's workout.", variant: 'warning' });
+      console.debug('[WorkoutModal] handleComplete prevented - not today', { workoutDate: workout.date });
       return;
     }
     const type = selectedType || availableTypes[0] || 'strength';
@@ -310,6 +311,7 @@ const WorkoutModal: React.FC<WorkoutModalProps> = ({
     if (onUpdateWorkout) {
       onUpdateWorkout({ ...workout, completed: isAllComplete, completedTypes: nextCompleted });
     }
+    try { console.debug('[WorkoutModal] calling onComplete', { date: workout.date, type }); } catch {}
     onComplete(type);
   };
 
@@ -320,11 +322,29 @@ const WorkoutModal: React.FC<WorkoutModalProps> = ({
   const overallCompleted = typeList.length > 0
     ? localCompletedTypes.length === typeList.length
     : completed;
-  const [year, month, day] = workout.date.split('-').map(Number);
-  const workoutDateObj = new Date(year, month - 1, day);
-  const today = new Date(); today.setHours(0,0,0,0);
-  const isPastDay = workoutDateObj < today;
-  const isTodayDay = workoutDateObj.getTime() === today.getTime();
+  const normalizeToYMD = (input: string | Date) => {
+    try {
+      let d: Date;
+      if (typeof input === 'string') {
+        if (input.includes('T')) {
+          d = new Date(input);
+        } else if (input.includes('-')) {
+          const parts = input.split('-').map(Number);
+          d = new Date(parts[0], (parts[1] || 1) - 1, parts[2] || 1);
+        } else {
+          d = new Date(input);
+        }
+      } else {
+        d = new Date(input);
+      }
+      d.setHours(0,0,0,0);
+      return d.toISOString().split('T')[0];
+    } catch (e) { return '' }
+  };
+  const workoutYMD = normalizeToYMD(workout.date);
+  const todayYMD = normalizeToYMD(new Date());
+  const isPastDay = workoutYMD < todayYMD;
+  const isTodayDay = workoutYMD === todayYMD;
   const displayExercises = useMemo(() => {
     const source = isEditing
       ? (showAlternative ? editingWorkout.alternativeWorkouts : editingWorkout.workouts)

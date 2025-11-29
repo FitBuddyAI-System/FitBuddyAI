@@ -523,6 +523,7 @@ updatedWorkouts = updatedWorkouts.map(workout => {
   };
 
   const handleCompleteWorkout = (workoutDate: string, type?: WorkoutType) => {
+    try { console.debug('[WorkoutCalendar] handleCompleteWorkout called', { workoutDate, type }); } catch {}
     const [y, m, d] = workoutDate.split('-').map(Number);
     const target = new Date(y, m - 1, d);
     if (!isDateToday(target)) {
@@ -560,7 +561,19 @@ updatedWorkouts = updatedWorkouts.map(workout => {
 
     const updatedPlan = { ...workoutPlan, dailyWorkouts: updatedWorkouts };
     onUpdatePlan(updatedPlan);
+    try { console.debug('[WorkoutCalendar] updated plan prepared, invoking onUpdatePlan and updateStreakCounter', { updatedPlanCount: updatedPlan.dailyWorkouts.length }); } catch {}
+    // Persist plan immediately to localStorage to ensure JSON reflects the change
+    try {
+      import('../services/localStorage').then(m => {
+        try { m.saveWorkoutPlan(updatedPlan); } catch (e) { console.warn('saveWorkoutPlan failed', e); }
+      }).catch(e => { console.warn('Dynamic import failed for saveWorkoutPlan', e); });
+    } catch (err) {
+      console.warn('Failed to schedule immediate plan save:', err);
+    }
     updateStreakCounter(updatedWorkouts);
+    try { console.debug('[WorkoutCalendar] updateStreakCounter called'); } catch {}
+    // Give a short in-app confirmation when a workout is toggled
+    try { window.showFitBuddyNotification?.({ title: 'Workout Updated', message: 'Marked workout completion status.', variant: 'success' }); } catch {}
     const refreshedDay = updatedWorkouts.find(w => w.date === workoutDate);
     if (refreshedDay) setSelectedDay(refreshedDay);
   };
@@ -753,15 +766,30 @@ updatedWorkouts = updatedWorkouts.map(workout => {
   const updateStreakCounter = (dailyWorkouts: DayWorkout[]) => {
     try {
       const streak = computeStreak(dailyWorkouts);
-      const existingUser = loadUserData();
+      // Prefer the userData prop (current session) before falling back to storage
+      const existingUser = (userData && typeof userData === 'object') ? userData : loadUserData();
       if (!existingUser) return;
-      const nextUser = { ...existingUser, streak };
+      const nextUser = { ...(existingUser || {}), streak };
       saveUserData({ data: nextUser });
       // Broadcast to any listeners that streak changed
       try {
         const ev = new CustomEvent('fitbuddyai-streak-updated', { detail: { streak } });
         window.dispatchEvent(ev);
       } catch {}
+      // Also dispatch a unified user-update event so the top-level App can refresh immediately
+      try {
+        window.dispatchEvent(new CustomEvent('fitbuddyai-user-updated', { detail: nextUser }));
+      } catch {}
+      // Also persist streak to server for signed-in users
+      try {
+        const userId = existingUser.id || existingUser?.data?.id || existingUser?.sub || null;
+        if (userId) {
+          // Send minimal payload to server to update streak column
+          import('../services/apiAuth').then(m => m.attachAuthHeaders({ method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId, streak }) })).then(init => {
+            fetch('/api/userdata/save', init).catch(() => {});
+          }).catch(() => {});
+        }
+      } catch (e) {}
     } catch (err) {
       console.warn('Failed to update streak:', err);
     }
