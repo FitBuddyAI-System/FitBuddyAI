@@ -20,6 +20,8 @@ Tasks:
     - fix mobile site layout
     - update readme.md for all the new features and how to use them
 ✅ - add a button for the shop on the homescreen
+    - make user-greeting in header have the user's response summarized by AI then put there
+    - Add a Public PGP key to Security.md
     
  Suggestions:
     -Add a way for users to suggest new workouts/add them?
