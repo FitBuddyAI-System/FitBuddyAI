@@ -17,9 +17,11 @@ import EmailVerifyPage from './components/EmailVerifyPage';
 
 
 
-import { WorkoutPlan } from './types';
+import { WorkoutPlan, DayWorkout } from './types';
 import { loadUserData, loadWorkoutPlan, saveUserData, saveWorkoutPlan, clearUserData } from './services/localStorage';
 import { fetchUserById } from './services/authService';
+import { format } from 'date-fns';
+import { getPrimaryType, isWorkoutCompleteForStreak, resolveWorkoutTypes } from './utils/streakUtils';
 
 
 import NotFoundPage from './components/NotFoundPage';
@@ -280,6 +282,108 @@ function App() {
     // Optionally: show a toast or animation
   };
 
+  const handleRedeemStreakSaver = (): string | null => {
+    if (!userData) return 'Sign in to redeem streak savers.';
+    const inventory = Array.isArray(userData.inventory) ? [...userData.inventory] : [];
+    const saverIndex = inventory.findIndex((entry) => String(entry?.id || '').startsWith('streak-saver'));
+    if (saverIndex < 0) return 'You do not own any streak savers.';
+    const saverEntry = inventory[saverIndex];
+    const availableQty = Number(saverEntry?.quantity ?? saverEntry?.count ?? 0);
+    if (availableQty <= 0) return 'No streak savers are ready to redeem.';
+    if (!workoutPlan) return 'Create or load a workout plan before redeeming a streak saver.';
+
+    const parseCalendarDate = (dateStr: string) => {
+      const [year, month, day] = dateStr.split('-').map(Number);
+      return new Date(year, (month || 1) - 1, day || 1);
+    };
+
+    const completedEntries = workoutPlan.dailyWorkouts
+      .map((workout) => ({ workout, date: parseCalendarDate(workout.date) }))
+      .filter(({ workout }) => isWorkoutCompleteForStreak(workout))
+      .sort((a, b) => b.date.getTime() - a.date.getTime());
+
+    if (completedEntries.length < 2) {
+      return 'You need at least two completed streaks before a saver can bridge them.';
+    }
+
+    const MS_PER_DAY = 24 * 60 * 60 * 1000;
+    let gapDate: Date | null = null;
+    let gapReferenceWorkout: DayWorkout | null = null;
+    for (let i = 0; i < completedEntries.length - 1; i += 1) {
+      const later = completedEntries[i];
+      const earlier = completedEntries[i + 1];
+      const gapDays = Math.round((later.date.getTime() - earlier.date.getTime()) / MS_PER_DAY);
+      if (gapDays === 2) {
+        gapDate = new Date(earlier.date.getTime() + MS_PER_DAY);
+        gapReferenceWorkout = later.workout;
+        break;
+      }
+    }
+
+    if (!gapDate) {
+      return 'No recent streaks are separated by a single missed day.';
+    }
+
+    const gapDateString = format(gapDate, 'yyyy-MM-dd');
+    const gapIndex = workoutPlan.dailyWorkouts.findIndex((workout) => workout.date === gapDateString);
+    const existingGapWorkout = gapIndex >= 0 ? workoutPlan.dailyWorkouts[gapIndex] : null;
+    const fillType = gapReferenceWorkout
+      ? getPrimaryType(gapReferenceWorkout)
+      : (existingGapWorkout ? getPrimaryType(existingGapWorkout) : 'strength');
+    let normalizedTypes = existingGapWorkout ? resolveWorkoutTypes(existingGapWorkout) : [];
+    if (normalizedTypes.length === 0) normalizedTypes = [fillType];
+    const completedTypes = normalizedTypes.length ? normalizedTypes : [fillType];
+
+    const cloneWorkouts = (list?: DayWorkout['workouts']) =>
+      list?.map((entry) => ({ ...entry, muscleGroups: entry?.muscleGroups ? [...entry.muscleGroups] : [], equipment: entry?.equipment ? [...entry.equipment] : [] })) ?? [];
+    const cloneAlternatives = (list?: DayWorkout['alternativeWorkouts']) =>
+      list?.map((entry) => ({ ...entry, muscleGroups: entry?.muscleGroups ? [...entry.muscleGroups] : [], equipment: entry?.equipment ? [...entry.equipment] : [] })) ?? [];
+
+    const clonedWorkouts = cloneWorkouts(existingGapWorkout?.workouts);
+    const workouts = clonedWorkouts.length
+      ? clonedWorkouts
+      : [{
+          name: 'Streak Saver Boost',
+          description: 'Bridged a missed day to keep your streak intact.',
+          difficulty: 'intermediate',
+          duration: '5 min',
+          muscleGroups: [],
+          equipment: []
+        }];
+
+    const updatedGapWorkout: DayWorkout = {
+      date: gapDateString,
+      workouts,
+      alternativeWorkouts: cloneAlternatives(existingGapWorkout?.alternativeWorkouts),
+      completed: true,
+      totalTime: existingGapWorkout?.totalTime || '5 min',
+      type: normalizedTypes[0] || fillType,
+      types: normalizedTypes,
+      completedTypes,
+    };
+
+    const updatedDailyWorkouts = [...workoutPlan.dailyWorkouts];
+    if (gapIndex >= 0) {
+      updatedDailyWorkouts[gapIndex] = updatedGapWorkout;
+    } else {
+      updatedDailyWorkouts.push(updatedGapWorkout);
+    }
+    const sortedDailyWorkouts = updatedDailyWorkouts.slice().sort((a, b) => a.date.localeCompare(b.date));
+    const updatedPlan = { ...workoutPlan, dailyWorkouts: sortedDailyWorkouts };
+    setWorkoutPlan(updatedPlan);
+    setPlanVersion((v) => v + 1);
+
+    const nextInventory = [...inventory];
+    if (availableQty <= 1) {
+      nextInventory.splice(saverIndex, 1);
+    } else {
+      nextInventory[saverIndex] = { ...saverEntry, quantity: availableQty - 1 };
+    }
+    setUserData({ ...userData, inventory: nextInventory });
+
+    return `Redeemed a streak saver to bridge ${format(gapDate, 'MMMM d')}.`;
+  };
+
   // compute effective theme class for passing to components
   const effectiveThemeClass = ((): 'theme-light' | 'theme-dark' => {
     try {
@@ -353,7 +457,7 @@ function App() {
           path="/shop"
           element={
             userData?.id
-              ? <ShopPage user={userData || { energy: 0, inventory: [] }} onPurchase={handleShopPurchase} />
+              ? <ShopPage user={userData || { energy: 0, inventory: [] }} onPurchase={handleShopPurchase} onRedeemStreakSaver={handleRedeemStreakSaver} />
               : (isHydratingUser ? <LoadingPage /> : <Navigate to="/signin" replace />)
           } 
         />

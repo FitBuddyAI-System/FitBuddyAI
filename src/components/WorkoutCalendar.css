@@ -800,10 +800,16 @@ body.theme-dark .workout-indicator.strength,
 body.theme-dark .workout-indicator.cardio,
 body.theme-dark .workout-indicator.plyometrics,
 body.theme-dark .workout-indicator.powerlifting,
+body.theme-dark .workout-indicator.olympic,
 body.theme-dark .workout-indicator.stretching,
 body.theme-dark .workout-indicator.strongman,
 body.theme-dark .workout-indicator.rest {
   color: #e8edf5;
+}
+body.theme-dark .workout-indicator.olympic {
+  border-color: #f5c400;
+  background: rgba(245, 196, 0, 0.24);
+  color: #fff;
 }
 body.theme-dark .workout-duration {
   color: #cfd8e5;
@@ -1182,7 +1188,7 @@ body.theme-dark .hero-card {
 .workout-indicator.cardio { border-color: #26c6da; background: rgba(38, 198, 218, 0.14); color: #0f6f7d; }
 .workout-indicator.plyometrics { border-color: #ff8a00; background: rgba(255, 138, 0, 0.16); color: #a65a00; }
 .workout-indicator.powerlifting { border-color: #11c58f; background: rgba(17, 197, 143, 0.16); color: #0b7b5c; }
-.workout-indicator.olympic { border-color: #0ea5e9; background: rgba(14, 165, 233, 0.14); color: #0a6a9c; }
+.workout-indicator.olympic { border-color: #f5c400; background: rgba(245, 196, 0, 0.24); color: #6d5200; }
 .workout-indicator.stretching { border-color: #ffb3d6; background: rgba(255, 179, 214, 0.2); color: #8d3b63; }
 .workout-indicator.strongman { border-color: #ff7a18; background: rgba(255, 122, 24, 0.18); color: #9c4200; }
 .workout-indicator.rest { border-color: #9ca3af; background: rgba(156, 163, 175, 0.2); color: #4b5563; }

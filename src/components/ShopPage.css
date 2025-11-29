@@ -103,6 +103,11 @@ body.theme-dark .inventory-value {
   font-weight: 700;
   color: var(--color-primary, #1ecb7b);
 }
+.shop-balance-text {
+  font-size: 1.9rem;
+  letter-spacing: 0.01em;
+  text-align: center;
+}
 .shop-tabs {
   position: relative;
   display: flex;
@@ -543,6 +548,42 @@ body.theme-dark .inventory-value {
   gap: 12px;
   margin-top: 12px;
 }
+.streak-saver-footer {
+  margin-top: 18px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+.streak-redeem-btn {
+  flex: 1;
+  min-width: 220px;
+  border: none;
+  border-radius: 18px;
+  padding: 14px 18px;
+  font-weight: 700;
+  font-size: 1rem;
+  color: #fff;
+  background: linear-gradient(90deg, #f97316, #fb923c);
+  box-shadow: 0 10px 24px rgba(251, 146, 60, 0.32);
+  cursor: pointer;
+  transition: transform .16s ease, box-shadow .16s ease;
+}
+.streak-redeem-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+.streak-redeem-btn:not(:disabled):hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 32px rgba(251, 146, 60, 0.4);
+}
+.streak-saver-available {
+  font-weight: 700;
+  color: #9b5500;
+  white-space: nowrap;
+}
 .streak-saver-btn {
   background: transparent;
   border: 2px solid rgba(251, 146, 60, 0.9);
@@ -591,6 +632,10 @@ body.theme-dark .streak-saver-card {
   background: linear-gradient(135deg, #2d1a00, #1b1205);
   border-color: #fb923c;
 }
+body.theme-dark .streak-redeem-btn {
+  background: linear-gradient(90deg, #f97316, #fb923c);
+  color: #fff;
+}
 body.theme-dark .streak-saver-btn {
   background: transparent;
   border-color: rgba(251, 146, 60, 0.9);
@@ -611,6 +656,9 @@ body.theme-dark .streak-saver-btn:hover:not(:disabled) {
 }
 body.theme-dark .option-price {
   color: #fb923c;
+}
+body.theme-dark .streak-saver-available {
+  color: #ffd48b;
 }
 .shop-card {
   background: linear-gradient(180deg, #ffffff 0%, #fbfffd 100%);
@@ -711,10 +759,11 @@ body.theme-dark .option-price {
 }
 .energy-pill {
   display: inline-flex;
+  flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
   padding: 8px 12px;
-  border-radius: 999px;
+  border-radius: 36px;
   background: linear-gradient(90deg, rgba(30,203,123,0.08), rgba(30,144,203,0.05));
   color: #0b6b3a;
   font-weight: 700;

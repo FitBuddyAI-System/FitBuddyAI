@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ChevronLeft, ChevronRight, Calendar, Play, Check, Clock, Target, Edit3, Plus, Settings, Save, X, Trash2, Dumbbell, Flame } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay } from 'date-fns';
 import { WorkoutPlan, DayWorkout, WorkoutType } from '../types';
+import { getPrimaryType, isWorkoutCompleteForStreak, normalizeTypesExclusiveRest, resolveWorkoutTypes } from '../utils/streakUtils';
 import { UserData } from '../services/aiService';
 import WorkoutModal from './WorkoutModal';
 import './WorkoutCalendar.css';
@@ -422,31 +423,6 @@ updatedWorkouts = updatedWorkouts.map(workout => {
   // Determine the weekday index for the first day of the month (0 = Sun .. 6 = Sat)
   const monthStartIndex = monthStart.getDay();
 
-  const normalizeTypeValue = (value: WorkoutType | string | null | undefined): WorkoutType | null => {
-    if (!value) return null;
-    const raw = value.toString().toLowerCase().trim();
-    if (raw.includes('olympic')) return 'olympic';
-    if (raw.includes('cardio')) return 'cardio';
-    if (raw.includes('plyo')) return 'plyometrics';
-    if (raw.includes('power')) return 'powerlifting';
-    if (raw.includes('stretch') || raw.includes('flex') || raw.includes('mobility')) return 'stretching';
-    if (raw.includes('strong')) return 'strongman';
-    if (raw.includes('rest')) return 'rest';
-    if (raw.includes('strength')) return 'strength';
-    return raw as WorkoutType;
-  };
-
-  const normalizeTypesExclusiveRest = (typesInput: (WorkoutType | string | null | undefined)[]): WorkoutType[] => {
-    const filtered = (typesInput || [])
-      .map(normalizeTypeValue)
-      .filter(Boolean) as WorkoutType[];
-    const unique = Array.from(new Set(filtered)) as WorkoutType[];
-    if (unique.includes('rest') && unique.length > 1) {
-      return ['rest'];
-    }
-    return unique.slice(0, 4) as WorkoutType[];
-  };
-
   const mergeTypesWithRestGuard = (existingTypes: WorkoutType[], incomingType: WorkoutType): WorkoutType[] => {
     const normalizedExisting = normalizeTypesExclusiveRest(existingTypes);
     if (normalizedExisting.includes('rest')) return ['rest'];
@@ -477,17 +453,6 @@ updatedWorkouts = updatedWorkouts.map(workout => {
   };
 
   // Normalize per-day types to an array (max 4, de-duped) for rendering and logic
-  const resolveWorkoutTypes = (workout: DayWorkout): WorkoutType[] => {
-    const raw = (workout as any)?.types;
-    const types = Array.isArray(raw) ? raw.filter(Boolean) : [];
-    if (types.length === 0 && workout.type) types.push(workout.type);
-    return normalizeTypesExclusiveRest(types as WorkoutType[]);
-  };
-
-  const getPrimaryType = (workout: DayWorkout): WorkoutType => {
-    const types = resolveWorkoutTypes(workout);
-    return types[0] || 'mixed';
-  };
 
   // Normalize to midnight and check if the target date has already passed
   const isDateInPast = (date: Date) => {
@@ -686,7 +651,7 @@ updatedWorkouts = updatedWorkouts.map(workout => {
       if (labelMap[type]) return labelMap[type] as string;
       return type.charAt(0).toUpperCase() + type.slice(1);
     };
-    if (!types || types.length === 0) return 'Mixed';
+    if (!types || types.length === 0) return 'Strength';
     if (types.length > 1) return types.map(formatSingle).join(' / ');
     return formatSingle(types[0]);
   };
@@ -763,16 +728,6 @@ updatedWorkouts = updatedWorkouts.map(workout => {
     // Default: assume 30 minutes per type if no explicit durations are present
     const defaultMinutes = 30 * safeTypeCount;
     return formatMinutes(defaultMinutes);
-  };
-
-  const isWorkoutCompleteForStreak = (workout?: DayWorkout | null): boolean => {
-    if (!workout) return false;
-    const primary = getPrimaryType(workout);
-    if (primary === 'rest') return false;
-    const types = resolveWorkoutTypes(workout);
-    if (types.length === 0) return !!workout.completed;
-    const completedTypes = (workout.completedTypes || []).filter(t => types.includes(t));
-    return completedTypes.length === types.length || !!workout.completed;
   };
 
   const computeStreak = (dailyWorkouts: DayWorkout[], targetDate?: Date): number => {
