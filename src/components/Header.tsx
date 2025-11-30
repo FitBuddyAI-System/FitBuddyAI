@@ -19,6 +19,8 @@ const Header: React.FC<HeaderProps> = ({ profileVersion, userData }) => {
   const [exploreOpen, setExploreOpen] = React.useState(false);
   const exploreRef = React.useRef<HTMLDivElement | null>(null);
   const [motivationMessage, setMotivationMessage] = React.useState<string | null>(null);
+  // Track the last time we updated the greeting to avoid rapid churn
+  const lastGreetingUpdateRef = React.useRef<number>(0);
   // Try-on preview state (temporary avatar shown when user tries an avatar)
   const [tryOnAvatar, setTryOnAvatar] = React.useState<string | null>(null);
 
@@ -124,6 +126,15 @@ const Header: React.FC<HeaderProps> = ({ profileVersion, userData }) => {
       }
     };
     const motivation = resolveMotivation();
+    const now = Date.now();
+    // Throttle greeting updates to at most once every 15 seconds
+    const THROTTLE_MS = 15000;
+    if (now - (lastGreetingUpdateRef.current || 0) < THROTTLE_MS) {
+      // skip updating motivationMessage to avoid UI churn
+      return;
+    }
+    // update timestamp and message
+    lastGreetingUpdateRef.current = now;
     if (!motivation) {
       setMotivationMessage(`Hello, ${name}! 👋`);
       return;
