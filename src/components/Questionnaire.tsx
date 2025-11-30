@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, User, Target, Clock, Dumbbell, Heart, Calendar, RefreshCw, Star } from 'lucide-react';
 import { UserData } from '../services/aiService';
-import { WorkoutPlan } from '../types';
+import { WorkoutPlan, DayWorkout } from '../types';
 import { generateWorkoutPlan, getAIResponse } from '../services/aiService';
 import { 
   saveQuestionnaireProgress, 
@@ -292,6 +292,94 @@ const questions: Question[] = [
     icon: <Heart size={32} />
   }
 ];
+
+const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+const toIsoDateString = (date: Date): string => {
+  const padded = (value: number) => String(value).padStart(2, '0');
+  return `${date.getFullYear()}-${padded(date.getMonth() + 1)}-${padded(date.getDate())}`;
+};
+
+const normalizeToIsoDate = (value?: string | Date | null): string => {
+  if (!value) return '';
+  if (value instanceof Date) {
+    if (Number.isNaN(value.getTime())) return '';
+    return toIsoDateString(value);
+  }
+  const text = String(value).trim();
+  if (!text) return '';
+  const [firstSegment] = text.split('T');
+  if (ISO_DATE_RE.test(firstSegment)) return firstSegment;
+  const parsed = new Date(text);
+  if (!Number.isNaN(parsed.getTime())) return toIsoDateString(parsed);
+  return '';
+};
+
+const shouldPreservePriorDay = (day: DayWorkout, cutoffIso: string): boolean => {
+  const dayIso = normalizeToIsoDate(day.date);
+  if (!dayIso) return false;
+  if (day.completed) return true;
+  return dayIso <= cutoffIso;
+};
+
+const mergeRegeneratedPlanWithHistory = (plan: WorkoutPlan): WorkoutPlan => {
+  const storedPlan = loadWorkoutPlan() as WorkoutPlan | null;
+  if (!storedPlan?.dailyWorkouts?.length) return plan;
+  const cutoffIso = normalizeToIsoDate(new Date());
+  if (!cutoffIso) return plan;
+  const priorDays = storedPlan.dailyWorkouts
+    .map((day) => {
+      if (!day) return null;
+      const iso = normalizeToIsoDate(day.date);
+      if (!iso) return null;
+      return { ...day, date: iso } as DayWorkout;
+    })
+    .filter((day): day is DayWorkout => Boolean(day));
+  if (!priorDays.length) return plan;
+
+  const priorMap = new Map<string, DayWorkout>();
+  priorDays.forEach((day) => {
+    if (day.date) priorMap.set(day.date, day);
+  });
+
+  const normalizedNewDays = plan.dailyWorkouts.map((day) => {
+    const isoDate = normalizeToIsoDate(day.date) || day.date;
+    const normalizedDay = { ...day, date: isoDate };
+    const prior = isoDate ? priorMap.get(isoDate) : undefined;
+    if (prior && shouldPreservePriorDay(prior, cutoffIso)) {
+      return { ...prior };
+    }
+    return normalizedDay;
+  });
+
+  const newDates = new Set(normalizedNewDays.map((day) => day.date));
+  const extraDays = priorDays
+    .filter((day) => !!day.date && !newDates.has(day.date))
+    .map((day) => ({ ...day }));
+
+  const combined = [...normalizedNewDays, ...extraDays];
+  const uniqueByDate = new Map<string, DayWorkout>();
+  combined.forEach((day) => {
+    if (!day?.date) return;
+    if (!uniqueByDate.has(day.date)) {
+      uniqueByDate.set(day.date, day);
+    }
+  });
+
+  const sortedDays = Array.from(uniqueByDate.values()).sort((a, b) => a.date.localeCompare(b.date));
+  if (!sortedDays.length) return plan;
+
+  const startDate = sortedDays[0].date || plan.startDate;
+  const endDate = sortedDays[sortedDays.length - 1].date || plan.endDate;
+
+  return {
+    ...plan,
+    startDate,
+    endDate,
+    totalDays: sortedDays.length,
+    dailyWorkouts: sortedDays
+  };
+};
 
 const MenuScreen: React.FC<{ onRegenerate: () => void; onEditResponses: () => void; onGoToCalendar: () => void }> = ({ onRegenerate, onEditResponses, onGoToCalendar }) => {
 
@@ -1307,6 +1395,8 @@ const Questionnaire: React.FC<QuestionnaireProps> = ({ onComplete }) => {
         newPlan = { id: `merged-plan-${Date.now()}`, name: chunks[0]?.name || 'Merged Plan', description: chunks[0]?.description || '', startDate: chunks[0]?.startDate || start2, endDate: chunks[chunks.length - 1]?.endDate || merged[merged.length - 1]?.date || start2, totalDays: merged.length, weeklyStructure: chunks[0]?.weeklyStructure || [], dailyWorkouts: merged };
       }
       console.log('New plan generated:', newPlan);
+      const mergedPlan = mergeRegeneratedPlanWithHistory(newPlan);
+      console.log('Regenerated plan after preserving prior exercises:', mergedPlan.dailyWorkouts.length, 'days');
       // Persist completed state
       setIsCompleted(true);
       setShowCompletionOptions(true);
@@ -1330,14 +1420,14 @@ const Questionnaire: React.FC<QuestionnaireProps> = ({ onComplete }) => {
             // Ensure saved account record takes precedence over questionnaire-generated values
             if (signedIn) {
               const finalUser = { ...(currentUser as any), ...signedIn };
-              onComplete(finalUser, newPlan);
+              onComplete(finalUser, mergedPlan);
             } else {
               const { id, token, access_token, jwt, sub, ...sanitized } = (currentUser as any) || {};
-              onComplete(sanitized as UserData, newPlan);
+              onComplete(sanitized as UserData, mergedPlan);
             }
           } catch (err) {
             const { id, token, access_token, jwt, sub, ...sanitized } = (currentUser as any) || {};
-            onComplete(sanitized as UserData, newPlan);
+            onComplete(sanitized as UserData, mergedPlan);
           }
       navigate('/calendar');
     } catch (err) {
