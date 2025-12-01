@@ -252,6 +252,59 @@ app.post('/api/user/update', (req, res) => {
   }
 });
 
+// Accept user-submitted workout suggestions. Stored in Supabase when configured,
+// otherwise appended to a local `suggestions.json` file in the dev server folder.
+app.post('/api/suggestions', async (req, res) => {
+  try {
+    const body = req.body || {};
+    const title = String(body.title || '').trim();
+    const description = String(body.description || '').trim();
+    const exercises = Array.isArray(body.exercises) ? body.exercises : (typeof body.exercises === 'string' ? String(body.exercises).split('\n').map(s=>s.trim()).filter(Boolean) : []);
+    const userId = body.userId || null;
+    if (!title) return res.status(400).json({ message: 'Title required.' });
+
+    const entry = {
+      id: uuidv4(),
+      user_id: userId,
+      title,
+      description,
+      exercises,
+      created_at: new Date().toISOString()
+    };
+
+    if (supabase) {
+      try {
+        const insert = { user_id: entry.user_id, title: entry.title, description: entry.description, exercises: entry.exercises, created_at: entry.created_at };
+        const { data, error } = await supabase.from('workout_suggestions').insert(insert).select().maybeSingle();
+        if (error) {
+          console.error('[authServer] suggestions insert error', error);
+          return res.status(500).json({ message: 'Failed to save suggestion.' });
+        }
+        return res.json({ ok: true, suggestion: data || insert });
+      } catch (e) {
+        console.warn('[authServer] suggestions supabase error', e);
+        return res.status(500).json({ message: 'Failed to save suggestion.' });
+      }
+    }
+
+    // Fallback: persist to local file for dev convenience
+    try {
+      const suggestionsFile = path.join(__dirname, 'suggestions.json');
+      let arr = [];
+      try { arr = JSON.parse(fs.readFileSync(suggestionsFile, 'utf8') || '[]'); } catch (e) { arr = []; }
+      arr.push(entry);
+      fs.writeFileSync(suggestionsFile, JSON.stringify(arr, null, 2), 'utf8');
+      return res.json({ ok: true, suggestion: entry });
+    } catch (e) {
+      console.error('[authServer] failed to persist suggestion locally', e);
+      return res.status(500).json({ message: 'Failed to save suggestion.' });
+    }
+  } catch (err) {
+    console.error('[authServer] /api/suggestions error', err);
+    return res.status(500).json({ message: 'Server error.' });
+  }
+});
+
 app.post('/api/user/apply-action', (req, res) => {
   try {
     const auth = String(req.headers.authorization || '');

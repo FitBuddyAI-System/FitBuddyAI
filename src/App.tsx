@@ -38,6 +38,7 @@ import SettingsPage from './components/SettingsPage';
 import WorkoutsPage from './components/WorkoutsPage';
 import MyPlanPage from './components/MyPlanPage';
 import PersonalLibraryPage from './components/PersonalLibraryPage';
+import SuggestWorkout from './components/SuggestWorkout';
 
 function App() {
   const [userData, setUserData] = useState<any | null>(null);
@@ -480,6 +481,7 @@ function App() {
   <Route path="/chat" element={<AgreementGuard userData={userData}><GeminiChatPage userData={userData} /></AgreementGuard>} />
   <Route path="/admin" element={<AdminPage />} />
   <Route path="/help" element={<HelpCenter />} />
+  <Route path="/suggest-workout" element={<SuggestWorkout userData={userData} />} />
   <Route path="/terms" element={<TermsPage />} />
   <Route path="/privacy" element={<PrivacyPage />} />
         <Route path="/signin" element={<SignInPage />} />

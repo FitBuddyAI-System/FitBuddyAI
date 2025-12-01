@@ -105,7 +105,8 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onProfileUpdate }) 
     setSaving(true);
     setError('');
     try {
-      const res = await fetch('/api/user?action=update', {
+      const updatePath = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.DEV) ? '/api/user/update' : '/api/user?action=update';
+      const res = await fetch(updatePath, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: user.id, username: editUsername, avatar: editAvatar })
@@ -132,6 +133,15 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onProfileUpdate }) 
   setUser(fallbackUser);
   onProfileUpdate(fallbackUser);
   setEditMode(false);
+  // Attempt to update Supabase auth metadata for the current session even when server is unavailable
+  try {
+    const displayName = fallbackUser?.username;
+    if (displayName && supabase && typeof supabase.auth?.updateUser === 'function') {
+      await supabase.auth.updateUser({ data: { display_name: displayName, username: displayName } });
+    }
+  } catch (e) {
+    console.warn('[ProfilePage] failed to update supabase user metadata (fallback)', e && (e as any).message || String(e));
+  }
   setError('Saved locally (session) — server unavailable.');
       }
     } catch (e: any) {
@@ -143,6 +153,15 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onProfileUpdate }) 
       setUser(fallbackUser);
       onProfileUpdate(fallbackUser);
       setEditMode(false);
+      // Attempt to update Supabase auth metadata for the current session even on network error
+      try {
+        const displayName = fallbackUser?.username;
+        if (displayName && supabase && typeof supabase.auth?.updateUser === 'function') {
+          await supabase.auth.updateUser({ data: { display_name: displayName, username: displayName } });
+        }
+      } catch (e) {
+        console.warn('[ProfilePage] failed to update supabase user metadata (network fallback)', e && (e as any).message || String(e));
+      }
       setError('Saved locally (network error).');
     } finally {
       setSaving(false);
