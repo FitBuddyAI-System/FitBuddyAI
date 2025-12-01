@@ -47,6 +47,30 @@ const extractJSONBlock = (raw: string): string | null => {
   return stripped || null;
 };
 
+const normalizeEquipmentValue = (value?: string | null): string => {
+  if (!value) return '';
+  return value.toString().trim().replace(/\s+/g, ' ').toLowerCase();
+};
+
+const buildEquipmentContext = (equipmentList: string[] = []) => {
+  const cleaned = Array.from(new Set(
+    (equipmentList || [])
+      .map(item => item?.toString().trim().replace(/\s+/g, ' '))
+      .filter(Boolean)
+  ));
+  const allowedSet = new Set<string>();
+  cleaned.forEach(item => {
+    const normalized = normalizeEquipmentValue(item);
+    if (normalized) allowedSet.add(normalized);
+  });
+  allowedSet.add('bodyweight');
+  allowedSet.add('no equipment');
+  if (allowedSet.has('no equipment (bodyweight only)')) {
+    allowedSet.add('bodyweight');
+  }
+  return { cleaned, allowedSet };
+};
+
 // Deterministic fallback plan used when the AI response is empty or non-JSON.
 const buildFallbackPlan = (userData: UserData, answers: Record<string, any>): WorkoutPlan => {
   const start = answers.startDate || new Date().toISOString().split('T')[0];
@@ -172,9 +196,15 @@ export const generateWorkoutPlan = async (
     null,
     2
   );
+  const equipmentContext = buildEquipmentContext(userData.equipment || []);
+  const equipmentInstructionsText = equipmentContext.cleaned.length
+    ? `Equipment from Question 17: ${equipmentContext.cleaned.join(', ')}. Only use these items when specifying required equipment inside workouts (bodyweight is always allowed). Do NOT introduce or require any other equipment.`
+    : 'Question 17 indicates no equipment is available, so generate bodyweight-only workouts and do not reference other equipment.';
   const answersContext = JSON.stringify(answers, null, 2);
   const instructions = `Please strictly adhere to the following JSON schema without adding any extra text, markdown, or code fences. Ensure all required fields are present and match the specified types. For the 'type' field in dailyWorkouts, use only one of the following values: 'strength', 'cardio', 'flexibility', 'rest', or 'mixed'.`;
   const fullPrompt = `${instructions}
+
+${equipmentInstructionsText}
 
 Schema:
 ${planSchema}
@@ -294,6 +324,24 @@ const parseAIResponse = (responseText: string, userData: UserData): WorkoutPlan 
       if (!parsedResponse.dailyWorkouts) {
         throw new Error('Parsed response missing dailyWorkouts');
       }
+      const equipmentContext = buildEquipmentContext(userData.equipment || []);
+      const allowedEquipmentSet = equipmentContext.allowedSet;
+      const filterEquipmentList = (items: any): string[] => {
+        if (!items) return [];
+        const entries = Array.isArray(items) ? items : [items];
+        const seen = new Set<string>();
+        const result: string[] = [];
+        for (const entry of entries) {
+          const text = String(entry ?? '').trim();
+          if (!text) continue;
+          const normalized = normalizeEquipmentValue(text);
+          if (!normalized || !allowedEquipmentSet.has(normalized)) continue;
+          if (seen.has(normalized)) continue;
+          seen.add(normalized);
+          result.push(text);
+        }
+        return result;
+      };
       const dailyWorkouts = parsedResponse.dailyWorkouts.map((day: any) => ({
         date: day.date,
         totalTime: day.totalTime || '',
@@ -317,7 +365,7 @@ const parseAIResponse = (responseText: string, userData: UserData): WorkoutPlan 
             description,
             difficulty: validDifficulty,
             muscleGroups: w.muscleGroups || [],
-            equipment: w.equipment || [],
+            equipment: filterEquipmentList(w.equipment),
             duration,
             reps,
             ...(sets !== undefined ? { sets } : {}),
@@ -343,7 +391,7 @@ const parseAIResponse = (responseText: string, userData: UserData): WorkoutPlan 
             description,
             difficulty: validDifficulty,
             muscleGroups: w.muscleGroups || [],
-            equipment: w.equipment || [],
+            equipment: filterEquipmentList(w.equipment),
             duration,
             reps,
             ...(sets !== undefined ? { sets } : {}),
@@ -410,12 +458,18 @@ export const generateWorkoutForDay = async (
   const answersContext = JSON.stringify(answers, null, 2);
   const existingContext = JSON.stringify(existingWorkouts, null, 2);
   const currentContext = JSON.stringify(currentDayWorkouts, null, 2);
+  const equipmentContextDay = buildEquipmentContext(userData.equipment || []);
+  const equipmentNoteDay = equipmentContextDay.cleaned.length
+    ? `Equipment from Question 17: ${equipmentContextDay.cleaned.join(', ')}. Only include these items when specifying required equipment for the workouts (bodyweight is always allowed) and avoid mentioning other equipment.`
+    : 'Question 17 indicates no equipment; keep this day strictly bodyweight and do not reference equipment.';
   const basePrompt = `Here is the JSON schema for a DayWorkout:
 ${daySchema}
 
 Preferred start date: ${preferredStart}
 User data:
 ${userContext}
+
+${equipmentNoteDay}
 
 User questionnaire schema and answers:
 ${questionsContext}
@@ -634,8 +688,15 @@ export async function getAITextResponse(payload: { prompt: string; workoutPlan?:
     console.warn('getAITextResponse: failed to parse JSON response', e);
   }
   if (!response.ok) {
-    const errMsg = (data && (data.message || data.error)) ? (data.message || data.error) : `AI request failed (${response.status})`;
-    throw new Error(errMsg);
+    const diagnostic = data?.diagnostic;
+    const missingKey = diagnostic?.env_GEMINI_API_KEY_present === false || /AI provider not configured/i.test(data?.message || '');
+    const fallbackMessage = missingKey
+      ? 'AI Coach needs GEMINI_API_KEY configured on the server. Set GEMINI_API_KEY (or enable LOCAL_AI_MOCK=1 for local dev) and restart before trying again.'
+      : (data && (data.message || data.error)
+        ? (data.message || data.error)
+        : `AI request failed (${response.status})`);
+    const rawError = String(data?.message || data?.error || `HTTP ${response.status}`);
+    return { text: fallbackMessage, raw: rawError };
   }
   const candidate = data.candidates?.[0];
   // Accept several possible server response shapes:

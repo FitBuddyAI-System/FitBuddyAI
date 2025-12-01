@@ -156,19 +156,14 @@ const questions: Question[] = [
     subtitle: "Let's make fitness fun for you",
     type: 'multiple',
     options: [
-      'Strength training',
-      'Cardio workouts',
-      'Yoga & stretching',
-      'HIIT workouts',
-      'Bodyweight exercises',
-      'Dance workouts',
-      'Outdoor activities',
-      'Swimming',
-      'Pilates',
-      'Martial arts',
-      'Team sports',
-      'Walking/Hiking',
-      'Other'
+      'Strength Training',
+      'Cardio',
+      'Plyometrics',
+      'Powerlifting',
+      'Olympic Weightlifting',
+      'Stretching',
+      'Strongman',
+      'Rest Day'
     ],
     icon: <Heart size={32} />
   },
@@ -189,7 +184,7 @@ const questions: Question[] = [
   {
     id: 'equipment',
     title: "What equipment do you have access to?",
-    subtitle: "We'll work with whatever you've got",
+    subtitle: "List every item you actually have; the AI will only recommend workouts that require the selected equipment",
     type: 'multiple',    options: [
       'No equipment (bodyweight only)',
       'Dumbbells',
