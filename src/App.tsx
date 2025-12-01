@@ -17,7 +17,7 @@ import EmailVerifyPage from './components/EmailVerifyPage';
 
 
 
-import { WorkoutPlan, DayWorkout } from './types';
+import { WorkoutPlan, DayWorkout, Exercise } from './types';
 import { loadUserData, loadWorkoutPlan, saveUserData, saveWorkoutPlan, clearUserData } from './services/localStorage';
 import { fetchUserById } from './services/authService';
 import { format } from 'date-fns';
@@ -356,16 +356,16 @@ function App() {
       list?.map((entry) => ({ ...entry, muscleGroups: entry?.muscleGroups ? [...entry.muscleGroups] : [], equipment: entry?.equipment ? [...entry.equipment] : [] })) ?? [];
 
     const clonedWorkouts = cloneWorkouts(existingGapWorkout?.workouts);
-    const workouts = clonedWorkouts.length
+    const workouts: DayWorkout['workouts'] = clonedWorkouts.length
       ? clonedWorkouts
-      : [{
+      : ([{
           name: 'Streak Saver Boost',
           description: 'Bridged a missed day to keep your streak intact.',
-          difficulty: 'intermediate',
+          difficulty: 'intermediate' as Exercise['difficulty'],
           duration: '5 min',
           muscleGroups: [],
           equipment: []
-        }];
+        }] as Exercise[]);
 
     const updatedGapWorkout: DayWorkout = {
       date: gapDateString,
