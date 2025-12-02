@@ -448,6 +448,14 @@ body.theme-dark .user-greeting { color: rgba(255,255,255,0.85); }
   overflow: hidden;
 }
 
+/* Ensure SVG icons inside nav buttons are clearly white in light mode */
+body:not(.theme-dark) .nav-button svg,
+body:not(.theme-dark) .nav-button .home-icon,
+body:not(.theme-dark) .nav-button .lucide {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+}
+
 .nav-button::before {
   content: '';
   position: absolute;
@@ -706,46 +714,40 @@ body.theme-dark .nav-dropdown .dropdown-content button:hover { background: rgba(
     display: none;
   }
 
-  /* Switch header to stacked layout on very small screens */
+  /* Keep header in a single row on small screens so buttons align */
   .header-container {
-  flex-direction: column;
-  align-items: stretch;
-  gap: 6px;
-  padding: 6px 10px;
-  }
-
-  .header-left {
-    width: 100%;
-    justify-content: space-between;
-  }
-
-  /* Brand row: logo left, profile avatar right */
-  .header-brand {
-    display: flex;
+    flex-direction: row;
     align-items: center;
     justify-content: space-between;
-    width: 100%;
     gap: 8px;
+    padding: 6px 10px;
   }
 
-  /* Make logo smaller to save space */
-  .logo { width: 48px; height: 48px; }
-  /* Hide logo and brand text on very small screens */
-  .logo { display: none; }
-  .brand-text { display: none; }
-  .brand-title { display: none; }
-  .brand-subtitle { display: none; }
+  /* Left area holds the explore launcher */
+  .header-left {
+    width: auto;
+    gap: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    flex: 0 0 auto;
+  }
 
-  /* Position profile image to the right within the brand row */
-  .profile-section { position: relative; }
+  /* Make logo smaller to save space, hide brand text */
+  .logo { width: 48px; height: 48px; display: none; }
+  .brand-text, .brand-title, .brand-subtitle { display: none; }
+
+  /* Slightly smaller profile image and keep it at the right edge */
+  .profile-section { position: relative; margin-left: 8px; }
   .profile-image { width: 40px; height: 40px; }
 
-  /* Nav becomes a full-width icon row centered */
+  /* Nav occupies the center area and centers its buttons */
   .header-nav {
     display: flex;
     justify-content: center;
     gap: 6px;
-    width: 100%;
+    flex: 1 1 auto;
+    margin: 0 8px;
   }
 
   /* Compact nav for very small screens: show only icons, larger touch targets */
@@ -754,13 +756,11 @@ body.theme-dark .nav-dropdown .dropdown-content button:hover { background: rgba(
 
   /* Show sparkles icon in the compact mobile nav */
   .sparkles-mobile-only { display: inline-block; }
-  /* More specific selector to override .nav-button span { display: none } */
   .nav-button .sparkles-mobile-only { display: inline-flex; align-items: center; justify-content: center; }
-  /* Show flame in the compact mobile nav and override the span hide rule */
   .nav-button .flame-mobile-only { display: inline-flex; align-items: center; justify-content: center; }
 
   /* Reveal the home icon when labels are hidden */
-.home-icon { display: inline-block; }
+  .home-icon { display: inline-block; }
 }
 
 /* Ultra-compact header tweaks for very small phones (<= 375px) */

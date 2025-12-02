@@ -35,5 +35,8 @@ Tasks:
     - Generate some images for the shop
 
 What William needs to do: 
-
+    - Fix the error that signs out the user when they change their name
+    - Fix Mobile header buttons
+    - Ensure session/local storage is cleared when user signs out
+    - Speed up the loading of the website
 What Zade needs to do:
