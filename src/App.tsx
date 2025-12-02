@@ -18,7 +18,7 @@ import EmailVerifyPage from './components/EmailVerifyPage';
 
 
 import { WorkoutPlan, DayWorkout, Exercise } from './types';
-import { loadUserData, loadWorkoutPlan, saveUserData, saveWorkoutPlan, clearUserData } from './services/localStorage';
+import { loadUserData, loadWorkoutPlan, saveUserData, saveWorkoutPlan, clearUserData, getAuthToken } from './services/localStorage';
 import { fetchUserById } from './services/authService';
 import { format } from 'date-fns';
 import { getPrimaryType, isWorkoutCompleteForStreak, resolveWorkoutTypes } from './utils/streakUtils';
@@ -117,11 +117,10 @@ function App() {
     if (mode === 'light' || mode === 'dark') {
       const themeStr = mode === 'dark' ? 'theme-dark' : 'theme-light';
       const current = userData as any;
-      const merged: any = current ? { ...current } : { data: {} };
-      merged.data = { ...(current?.data ?? current ?? {}), theme: themeStr };
-      setUserData(merged);
+      const normalizedUser: any = { ...(current?.data ?? current ?? {}), theme: themeStr };
+      setUserData(normalizedUser);
       try {
-        saveUserData(merged, { skipBackup: false });
+        saveUserData({ data: normalizedUser }, { skipBackup: false });
       } catch (e) {
         console.warn('Failed to persist theme to user profile:', e);
       }
@@ -421,7 +420,18 @@ function App() {
         <Route path="/" element={<WelcomePage />} />
         <Route path="/workouts" element={<WorkoutsPage />} />
         <Route path="/library" element={<PersonalLibraryPage />} />
-        <Route path="/profile" element={<ProfilePage userData={userData} onProfileUpdate={(user) => { setUserData(user); setProfileVersion(v => v + 1); }} profileVersion={profileVersion} />} />
+        <Route path="/profile" element={<ProfilePage userData={userData} onProfileUpdate={(user) => {
+          try {
+            const token = getAuthToken();
+            // Persist updated user data and preserve session token
+            if (token) saveUserData({ data: user, token });
+            else saveUserData({ data: user });
+          } catch (e) {
+            // ignore persistence errors
+          }
+          setUserData(user);
+          setProfileVersion(v => v + 1);
+        }} profileVersion={profileVersion} />} />
         <Route path="/profile/settings" element={<SettingsPage theme={effectiveThemeClass} onToggleTheme={toggleTheme} />} />
         <Route path="/loading" element={<LoadingPage />} />
         <Route 

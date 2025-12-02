@@ -15,7 +15,7 @@ interface ProfilePageProps {
   profileVersion: number;
 }
 
-const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onProfileUpdate }) => {
+const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onProfileUpdate, profileVersion }) => {
   const [user, setUser] = useState(userData || getCurrentUser());
   // Remove stats state, always use user for stats
   const [editMode, setEditMode] = useState(false);
@@ -46,6 +46,14 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onProfileUpdate }) 
     const interval = setInterval(updateUser, 15000);
     return () => { stopped = true; clearInterval(interval); };
   }, []);
+
+  // Keep local `user` in sync when parent provides new `userData` or profileVersion changes
+  useEffect(() => {
+    const fresh = userData || getCurrentUser();
+    setUser(fresh);
+    setEditUsername(fresh?.username || '');
+    setEditAvatar(fresh?.avatar || '/images/fitbuddy_head.png');
+  }, [userData, profileVersion]);
 
   if (!user) {
     return (
@@ -105,17 +113,88 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onProfileUpdate }) 
     setSaving(true);
     setError('');
     try {
-      const updatePath = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.DEV) ? '/api/user/update' : '/api/user?action=update';
-      const res = await fetch(updatePath, {
+      // Client-side validation rules
+      const MAX_USERNAME = 20;
+      const candidate = String(editUsername || '');
+      // Disallow only-space names
+      if (candidate.trim().length === 0) {
+        const msg = 'Username cannot be empty or only spaces.';
+        setError(msg);
+        try { window.showFitBuddyNotification?.({ title: 'Invalid Username', message: msg, variant: 'error' }); } catch {}
+        setSaving(false);
+        return;
+      }
+      if (candidate.length > MAX_USERNAME) {
+        const msg = `Username must be ${MAX_USERNAME} characters or fewer.`;
+        setError(msg);
+        try { window.showFitBuddyNotification?.({ title: 'Invalid Username', message: msg, variant: 'error' }); } catch {}
+        setSaving(false);
+        return;
+      }
+      // Disallow zero-width joiners/non-joiners
+      if (/\u200C|\u200D/.test(candidate)) {
+        const msg = 'Username contains unsupported invisible characters.';
+        setError(msg);
+        try { window.showFitBuddyNotification?.({ title: 'Invalid Username', message: msg, variant: 'error' }); } catch {}
+        setSaving(false);
+        return;
+      }
+      // Disallow double spaces
+      if (/ {2,}/.test(candidate)) {
+        const msg = 'Username cannot contain consecutive spaces.';
+        setError(msg);
+        try { window.showFitBuddyNotification?.({ title: 'Invalid Username', message: msg, variant: 'error' }); } catch {}
+        setSaving(false);
+        return;
+      }
+      // Only allow letters, numbers, underscore and spaces (letters include Unicode letters)
+      const validRe = /^[\p{L}0-9_ ]+$/u;
+      if (!validRe.test(candidate)) {
+        const msg = 'Username may only contain letters, numbers, underscores, and spaces.';
+        setError(msg);
+        try { window.showFitBuddyNotification?.({ title: 'Invalid Username', message: msg, variant: 'error' }); } catch {}
+        setSaving(false);
+        return;
+      }
+      // Client-side profanity check (best-effort)
+      try {
+        const leoModule = await import('leo-profanity');
+        const leo = (leoModule && (leoModule.default || leoModule)) as any;
+        try { leo.loadDictionary(); } catch {}
+        if (leo.check && leo.check(candidate)) {
+          const msg = 'Username contains inappropriate or banned words.';
+          setError(msg);
+          try { window.showFitBuddyNotification?.({ title: 'Invalid Username', message: msg, variant: 'error' }); } catch {}
+          setSaving(false);
+          return;
+        }
+      } catch (err) {
+        // ignore if profanity lib is not available client-side
+      }
+      const isDev = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.DEV);
+      const backendHost = isDev ? (import.meta.env.VITE_DEV_BACKEND || 'http://localhost:3001') : '';
+      const updatePath = isDev ? '/api/user/update' : '/api/user?action=update';
+      const url = backendHost + updatePath;
+      const currentUserId = user?.id || getCurrentUser()?.id || undefined;
+      if (!currentUserId) {
+        setSaving(false);
+        const msg = 'Unable to determine user id. Please sign in and try again.';
+        setError(msg);
+        try { window.showFitBuddyNotification?.({ title: 'Save Failed', message: msg, variant: 'error' }); } catch {}
+        return;
+      }
+
+      const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: user.id, username: editUsername, avatar: editAvatar })
+        body: JSON.stringify({ id: currentUserId, username: editUsername, avatar: editAvatar })
       });
       if (res.ok) {
         const updated = await res.json();
         setUser(updated.user);
         onProfileUpdate(updated.user);
         setEditMode(false);
+        try { window.showFitBuddyNotification?.({ title: 'Profile Saved', message: 'Your profile was updated successfully.', variant: 'success' }); } catch {}
         // Try to update Supabase auth metadata for the current session so display name updates immediately
         try {
           const displayName = updated.user?.username;
@@ -126,23 +205,40 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onProfileUpdate }) 
           console.warn('[ProfilePage] failed to update supabase user metadata', e && (e as any).message || String(e));
         }
   } else {
-  // Server endpoint missing (common for static prod deployments).
-  // Fall back to a local-only save via saveUserData to avoid persisting tokens into localStorage.
-  const fallbackUser = { ...user, username: editUsername, avatar: editAvatar };
-  try { const { saveUserData } = await import('../services/localStorage'); saveUserData({ data: fallbackUser }); } catch {}
-  setUser(fallbackUser);
-  onProfileUpdate(fallbackUser);
-  setEditMode(false);
-  // Attempt to update Supabase auth metadata for the current session even when server is unavailable
-  try {
-    const displayName = fallbackUser?.username;
-    if (displayName && supabase && typeof supabase.auth?.updateUser === 'function') {
-      await supabase.auth.updateUser({ data: { display_name: displayName, username: displayName } });
-    }
-  } catch (e) {
-    console.warn('[ProfilePage] failed to update supabase user metadata (fallback)', e && (e as any).message || String(e));
-  }
-  setError('Saved locally (session) — server unavailable.');
+        // Try to surface server-provided message when available
+        let serverMsg = `Server returned ${res.status}`;
+        try {
+          const errBody = await res.json().catch(() => null);
+          serverMsg = errBody?.message || serverMsg;
+        } catch (e) {
+          // ignore parse errors
+        }
+
+        // If this is a client error (4xx), it's a validation/problem we should show
+        // and NOT fall back to saving locally (to avoid persisting invalid data).
+        if (res.status >= 400 && res.status < 500) {
+          try { window.showFitBuddyNotification?.({ title: 'Save Failed', message: serverMsg, variant: 'error' }); } catch {}
+          setError(serverMsg);
+        } else {
+          // For server errors (5xx) or unexpected statuses, fall back to local save
+          try { window.showFitBuddyNotification?.({ title: 'Save Failed', message: serverMsg, variant: 'error' }); } catch {}
+          const fallbackUser = { ...user, username: editUsername, avatar: editAvatar };
+          try { const { saveUserData } = await import('../services/localStorage'); saveUserData({ data: fallbackUser }); } catch {}
+          setUser(fallbackUser);
+          onProfileUpdate(fallbackUser);
+          setEditMode(false);
+          // Attempt to update Supabase auth metadata for the current session even when server is unavailable
+          try {
+            const displayName = fallbackUser?.username;
+            if (displayName && supabase && typeof supabase.auth?.updateUser === 'function') {
+              await supabase.auth.updateUser({ data: { display_name: displayName, username: displayName } });
+            }
+          } catch (e) {
+            console.warn('[ProfilePage] failed to update supabase user metadata (fallback)', e && (e as any).message || String(e));
+          }
+          setError('Saved locally (session) — server unavailable.');
+          try { window.showFitBuddyNotification?.({ title: 'Saved Locally', message: 'Profile saved locally. Server unavailable.', variant: 'warning' }); } catch {}
+        }
       }
     } catch (e: any) {
       // Network or other error — fall back to local save so edits persist in session storage
@@ -163,6 +259,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onProfileUpdate }) 
         console.warn('[ProfilePage] failed to update supabase user metadata (network fallback)', e && (e as any).message || String(e));
       }
       setError('Saved locally (network error).');
+      try { window.showFitBuddyNotification?.({ title: 'Saved Locally', message: 'Profile saved locally due to network error.', variant: 'warning' }); } catch {}
     } finally {
       setSaving(false);
     }
@@ -183,20 +280,13 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onProfileUpdate }) 
           <>
             <div className="avatar-select-row">
               {premadeAvatars.map((url) => {
-                // Lock shop avatars unless user owns them
                 const isShopAvatar = shopAvatars.includes(url);
                 const ownsAvatar = !isShopAvatar || (Array.isArray(user.inventory) && user.inventory.some((item: any) => item.image === url));
                 return (
                   <button
                     key={url}
                     className={`avatar-select-btn${editAvatar === url ? ' selected' : ''}${!ownsAvatar ? ' locked' : ''}`}
-                    onClick={() => {
-                      if (ownsAvatar) {
-                        setEditAvatar(url);
-                      } else {
-                        navigate('/shop');
-                      }
-                    }}
+                    onClick={() => { if (ownsAvatar) setEditAvatar(url); else navigate('/shop'); }}
                     type="button"
                     aria-label={ownsAvatar ? 'Choose avatar' : 'Locked avatar'}
                   >

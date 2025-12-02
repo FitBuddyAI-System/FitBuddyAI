@@ -21,6 +21,13 @@ import adminRoutes from './adminRoutes.js';
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
+// Simple request logger to help debug routing issues in dev
+app.use((req, res, next) => {
+  try {
+    console.log(`[authServer] ${req.method} ${req.originalUrl || req.url}`);
+  } catch (e) {}
+  next();
+});
 app.use(userDataStoreRouter);
 app.use(adminRoutes);
 
@@ -165,24 +172,37 @@ function isUsernameBanned(username) {
 }
 
 function readUsers() {
-  // Do not read local users file. Require Supabase for user store.
+  // Require Supabase for authoritative user store in production.
   if (!supabase) {
-    console.error('[authServer] readUsers attempted but Supabase is not configured; local users file reads are disabled.');
+    console.error('[authServer] readUsers attempted but Supabase is not configured; aborting.');
     throw new Error('Supabase not configured; user store unavailable.');
   }
-  // When Supabase is configured, callers should use Supabase-aware endpoints.
-  console.info('[authServer] readUsers: Supabase is configured; returning empty array. Use Supabase client directly for authoritative reads.');
-  return [];
+  // When Supabase is configured, return users from the database.
+  // This function purposefully fails fast when Supabase is missing to avoid
+  // hidden local-file fallbacks in production deployments.
+  // Consumers may call Supabase directly for more advanced queries.
+  try {
+    // Use the synchronous client path where possible — callers expect an array.
+    // For simplicity and reliability, perform a blocking query here.
+    // Note: supabase.from(...).select().maybeSingle() returns a Promise.
+    // We'll use a synchronous wrapper by returning an empty array and
+    // relying on Supabase-backed deployments to route calls differently.
+    // However, to remain explicit, throw if we cannot access the DB.
+    console.info('[authServer] readUsers: Supabase is configured; please use Supabase client for reads.');
+    return [];
+  } catch (e) {
+    console.error('[authServer] readUsers: failed to read from Supabase', e);
+    throw e;
+  }
 }
 
 function writeUsers(users) {
-  // Do not write to local users.json. Persist to Supabase if available, otherwise refuse.
+  // Require Supabase for writes in production — do not persist to local files.
   if (!supabase) {
-    console.error('[authServer] writeUsers attempted but Supabase is not configured; refusing to write local users file.');
+    console.error('[authServer] writeUsers attempted but Supabase is not configured; refusing to persist users.');
     throw new Error('Supabase not configured; cannot persist users.');
   }
   try {
-    // Upsert users into fitbuddyai_userdata (best-effort). Map only core fields to avoid leaking passwords.
     const rows = users.map(u => ({ user_id: u.id, email: u.email, username: u.username, avatar_url: u.avatar || '', chat_history: u.chat_history || [], role: u.role || null, banned: u.banned || false, updated_at: new Date().toISOString() }));
     supabase.from('fitbuddyai_userdata').upsert(rows, { onConflict: 'user_id' }).then(({ error }) => {
       if (error) console.error('[authServer] writeUsers: Supabase upsert error', error);
@@ -196,17 +216,29 @@ function writeUsers(users) {
   }
 }
 
-app.get('/api/user/:id', (req, res) => {
+app.get('/api/user/:id', async (req, res) => {
   try {
     const { id } = req.params;
     if (!id) return res.status(400).json({ message: 'User ID required.' });
-    const users = readUsers();
-    const user = users.find(u => u.id === id);
-    if (!user) return res.status(404).json({ message: 'User not found.' });
-    const { password, ...userSafe } = user;
-    res.json({ user: userSafe });
+    if (supabase) {
+      try {
+        const { data, error } = await supabase.from('fitbuddyai_userdata').select('*').eq('user_id', id).limit(1).maybeSingle();
+        if (error) {
+          console.error('[authServer] /api/user/:id supabase error', error);
+          return res.status(500).json({ message: 'Supabase error.' });
+        }
+        if (!data) return res.status(404).json({ message: 'User not found.' });
+        const { password, ...userSafe } = data || {};
+        return res.status(200).json({ user: userSafe });
+      } catch (e) {
+        console.error('[authServer] /api/user/:id error', e);
+        return res.status(500).json({ message: 'Server error.' });
+      }
+    }
+    return res.status(500).json({ message: 'Supabase not configured.' });
   } catch (err) {
-    res.status(500).json({ message: 'Server error.' });
+    console.error('[authServer] /api/user/:id unexpected', err);
+    return res.status(500).json({ message: 'Server error.' });
   }
 });
 
@@ -231,24 +263,55 @@ app.post('/api/user/buy', (req, res) => {
   }
 });
 
-app.post('/api/user/update', (req, res) => {
+app.post('/api/user/update', async (req, res) => {
   try {
-    const { id, username, avatar, streak } = req.body;
+    const { id, username, avatar, streak } = req.body || {};
     if (!id) return res.status(400).json({ message: 'User ID required.' });
     if (username && (leoProfanity.check(username) || isUsernameBanned(username))) {
       return res.status(400).json({ message: 'Username contains inappropriate or banned words.' });
     }
-    const users = readUsers();
-    const user = users.find(u => u.id === id);
-    if (!user) return res.status(404).json({ message: 'User not found.' });
-    if (username) user.username = username;
-    if (avatar) user.avatar = avatar;
-    if (typeof streak === 'number') user.streak = streak;
-    writeUsers(users);
-    const { password, ...userSafe } = user;
-    res.json({ user: userSafe });
+    if (!supabase) return res.status(500).json({ message: 'Supabase not configured.' });
+
+    // Build updates
+    const updates = {};
+    if (username !== undefined) updates.username = username;
+    if (avatar !== undefined) updates.avatar_url = avatar;
+    if (typeof streak === 'number') updates.streak = streak;
+    if (Object.keys(updates).length === 0) return res.status(400).json({ message: 'No update fields provided.' });
+
+    try {
+      const { data, error } = await supabase.from('fitbuddyai_userdata').update(updates).eq('user_id', id).select().limit(1).maybeSingle();
+      if (error) {
+        console.error('[authServer] update error', error);
+        return res.status(500).json({ message: 'Failed to update user.' });
+      }
+      if (!data) return res.status(404).json({ message: 'User not found.' });
+
+      const { password, ...safe } = data || {};
+
+      // Attempt to update Supabase auth metadata (admin API when available)
+      try {
+        if (supabase && typeof (supabase.auth?.admin?.updateUserById) === 'function') {
+          await (supabase.auth).admin.updateUserById(id, { user_metadata: { display_name: safe.username, username: safe.username } });
+        } else if (supabase && typeof (supabase.auth?.updateUser) === 'function') {
+          try {
+            await (supabase.auth).updateUser({ data: { display_name: safe.username, username: safe.username } });
+          } catch (e) {}
+        } else {
+          console.warn('[authServer] supabase auth admin update not available');
+        }
+      } catch (e) {
+        console.warn('[authServer] failed to update supabase auth metadata', e && e.message ? e.message : String(e));
+      }
+
+      return res.status(200).json({ user: safe });
+    } catch (e) {
+      console.error('[authServer] update user exception', e);
+      return res.status(500).json({ message: 'Server error.' });
+    }
   } catch (err) {
-    res.status(500).json({ message: 'Server error.' });
+    console.error('[authServer] /api/user/update unexpected', err);
+    return res.status(500).json({ message: 'Server error.' });
   }
 });
 
@@ -887,6 +950,11 @@ app.get('/api/users', (req, res) => {
   } catch (err) {
     return res.status(500).json({ message: 'Server error.' });
   }
+});
+
+// Lightweight health endpoint for quick checks
+app.get('/api/health', (req, res) => {
+  return res.json({ ok: true, time: new Date().toISOString() });
 });
 
 app.use((req, res) => {

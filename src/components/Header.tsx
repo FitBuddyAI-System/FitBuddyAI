@@ -38,20 +38,27 @@ const Header: React.FC<HeaderProps> = ({ profileVersion, userData }) => {
   const [tryOnAvatar, setTryOnAvatar] = React.useState<string | null>(null);
 
   React.useEffect(() => {
+      const normalize = (candidate: any) => {
+        if (!candidate) return null;
+        // If the app sometimes passes a wrapper { data: { ... } }, unwrap it
+        if (candidate.data && typeof candidate.data === 'object') return candidate.data;
+        return candidate;
+      };
+
       const updateUser = () => {
-      // Prefer explicit prop from App when available
-      if (userData) {
-        setCurrentUser(userData);
-        return;
-      }
-      try {
-        const { loadUserData } = require('../services/localStorage');
-        const parsed = loadUserData();
-        setCurrentUser(parsed || null);
-      } catch {
-        setCurrentUser(null);
-      }
-    };
+        // Prefer explicit prop from App when available
+        if (userData) {
+          setCurrentUser(normalize(userData));
+          return;
+        }
+        try {
+          const { loadUserData } = require('../services/localStorage');
+          const parsed = loadUserData();
+          setCurrentUser(normalize(parsed) || null);
+        } catch {
+          setCurrentUser(null);
+        }
+      };
   updateUser();
     window.addEventListener('storage', updateUser);
     // Listen for shop try-on events

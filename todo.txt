@@ -12,7 +12,7 @@ Tasks:
 ✅  - Add functionality for the select to add button on the calener menu
 ✅  - Remove Name question and functionality
 ✅  - Change all Name vars to Username
-    - Make emails non case sensative
+✅  - Make emails non case sensative
 ✅- Make Energy start out at 100 when user joins 
 ✅  - on question 24, if the user does not click it, they cannot move to the next question
 ✅  - on the last question of the assesment, you have to click the generate my plan button twice
