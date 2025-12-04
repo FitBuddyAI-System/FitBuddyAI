@@ -305,17 +305,18 @@ export const saveWorkoutPlan = (workoutPlan: any): void => {
         totalTime: plan.totalTime,
         weeklyStructure: Array.isArray(plan.weeklyStructure) ? plan.weeklyStructure.slice() : [],
         // filter out null/undefined entries (handles sparse arrays created by index assignments)
-        dailyWorkouts: Array.isArray(plan.dailyWorkouts) ? plan.dailyWorkouts.filter(Boolean).map((d: any) => ({
-          date: typeof d?.date === 'string' ? d.date : (d?.date ? new Date(d.date).toISOString().split('T')[0] : ''),
-          type: d?.type,
-          types: Array.isArray(d?.types) ? d.types.filter(Boolean).slice(0, 4) : (d?.type ? [d.type] : []),
-          completed: !!d?.completed,
-          completedTypes: Array.isArray(d?.completedTypes) ? d.completedTypes.filter(Boolean) : [],
-          energyRewarded: d?.energyRewarded ? true : undefined,
-          totalTime: d?.totalTime || '',
-          workouts: Array.isArray(d?.workouts) ? d.workouts.filter(Boolean).map((w: any) => ({
-            name: w?.name ?? '',
-            description: w?.description ?? '',
+          dailyWorkouts: Array.isArray(plan.dailyWorkouts) ? plan.dailyWorkouts.filter(Boolean).map((d: any) => ({
+            date: typeof d?.date === 'string' ? d.date : (d?.date ? new Date(d.date).toISOString().split('T')[0] : ''),
+            type: d?.type,
+            types: Array.isArray(d?.types) ? d.types.filter(Boolean).slice(0, 4) : (d?.type ? [d.type] : []),
+            completed: !!d?.completed,
+            completedTypes: Array.isArray(d?.completedTypes) ? d.completedTypes.filter(Boolean) : [],
+            energyRewarded: d?.energyRewarded ? true : undefined,
+            totalTime: d?.totalTime || '',
+            streakSaverBridge: d?.streakSaverBridge ? true : undefined,
+            workouts: Array.isArray(d?.workouts) ? d.workouts.filter(Boolean).map((w: any) => ({
+              name: w?.name ?? '',
+              description: w?.description ?? '',
             difficulty: w?.difficulty ?? 'beginner',
             duration: w?.duration ?? '',
             reps: w?.reps ?? '',

@@ -102,17 +102,16 @@
 .calendar-page {
   --calendar-day-height: 150px;
   min-height: calc(100vh - 60px);
-  background: linear-gradient(135deg, #f7f7f7 0%, #e8f5e8 100%);
+  background: transparent;
   padding: 40px 40px 44px;
   position: relative;
   z-index: 2; /* keep calendar content above global footer */
 }
 
 body.theme-dark .calendar-page {
-  background: linear-gradient(135deg, #0b111b 0%, #0f1828 100%);
+  background: transparent;
 }
 
-body.theme-dark .calendar-container,
 body.theme-dark .calendar-header .user-info,
 body.theme-dark .stat-card,
 body.theme-dark .calendar-day,
@@ -126,6 +125,12 @@ body.theme-dark .calendar-preview-callout {
   border-color: #1f2a36;
 }
 
+body.theme-dark .calendar-container {
+  background: transparent;
+  box-shadow: none;
+  border-color: transparent;
+}
+
 body.theme-dark .nav-button,
 body.theme-dark .calendar-day,
 body.theme-dark .edit-action-btn,
@@ -137,7 +142,7 @@ body.theme-dark .workout-edit-form select {
 }
 
 body.theme-dark .calendar-grid {
-  background: #1f2a36;
+  background: transparent;
   box-shadow: 0 10px 34px rgba(0,0,0,0.5);
 }
 
@@ -148,6 +153,12 @@ body.theme-dark .calendar-day:hover {
 body.theme-dark .calendar-day.today {
   background: rgba(15, 183, 122, 0.12);
   border-color: #1ecb7b;
+}
+
+body.theme-dark .calendar-day.bridge-day {
+  background: linear-gradient(145deg, rgba(96, 165, 250, 0.2), rgba(59, 130, 246, 0.35));
+  border-color: rgba(59, 130, 246, 0.8);
+  box-shadow: 0 6px 18px rgba(59, 130, 246, 0.4);
 }
 
 body.theme-dark .day-header {
@@ -411,6 +422,12 @@ body.theme-dark .batch-add-panel textarea {
   flex-direction: column;
 }
 
+.calendar-day.bridge-day {
+  background: linear-gradient(145deg, #e0f2fe, #dbeafe);
+  border: 2px solid #60a5fa;
+  box-shadow: 0 6px 18px rgba(59, 130, 246, 0.25);
+}
+
 .calendar-day.streak-complete {
   background: #ffedd5;
   border: 2px solid #fb923c;
@@ -480,6 +497,12 @@ body.theme-dark .calendar-day.streak-complete .workout-indicator {
   box-shadow: inset 0 2px 8px rgba(255,255,255,0.2);
 }
 
+.streak-card.bridge {
+  background: linear-gradient(135deg, #7dd3fc, #22d3ee);
+  border-color: rgba(255,255,255,0.7);
+  box-shadow: inset 0 2px 6px rgba(255,255,255,0.3);
+}
+
 .streak-card .streak-icon {
   display: inline-flex;
   align-items: center;
@@ -489,6 +512,10 @@ body.theme-dark .calendar-day.streak-complete .workout-indicator {
   width: 48px;
   height: 48px;
   box-shadow: 0 4px 10px rgba(0,0,0,0.12);
+}
+
+.streak-card.bridge .streak-icon {
+  background: rgba(255,255,255,0.35);
 }
 
 .streak-card .streak-number {
@@ -950,7 +977,7 @@ body.theme-dark .loader-overlay {
 /* Calendar Styles */
 .calendar-page {
   min-height: calc(100vh - 60px);
-  background: linear-gradient(135deg, #f7f7f7 0%, #e8f5e8 100%);
+  background: transparent;
   padding: 28px 40px 36px;
 }
 
@@ -1115,7 +1142,7 @@ body.theme-dark .hero-card {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   gap: 2px;
-  background: var(--border-light);
+  background: transparent;
   border-radius: 16px;
   overflow: hidden;
   margin-bottom: 40px;
