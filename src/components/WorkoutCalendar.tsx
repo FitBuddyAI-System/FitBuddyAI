@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ChevronLeft, ChevronRight, Calendar, Play, Check, Clock, Target, Edit3, Plus, Settings, Save, X, Trash2, Dumbbell, Flame } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, Play, Check, Clock, Target, Edit3, Plus, Settings, Save, X, Trash2, Dumbbell, Flame, Snowflake } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay } from 'date-fns';
 import { WorkoutPlan, DayWorkout, WorkoutType } from '../types';
 import { getPrimaryType, isWorkoutCompleteForStreak, normalizeTypesExclusiveRest, resolveWorkoutTypes } from '../utils/streakUtils';
 import { UserData } from '../services/aiService';
 import WorkoutModal from './WorkoutModal';
+import BackgroundDots from './BackgroundDots';
 import './WorkoutCalendar.css';
 import { generateWorkoutPlan, generateWorkoutForDay } from '../services/aiService';
 import { loadQuestionnaireProgress, loadUserData, loadWorkoutPlan, saveUserData, saveWorkoutPlan } from '../services/localStorage';
@@ -391,6 +392,7 @@ updatedWorkouts = updatedWorkouts.map(workout => {
   if (!workoutPlan) {
     return (
       <div className="calendar-page">
+        <BackgroundDots />
         <div className="calendar-container">
           <div className="calendar-preview-callout fade-in-bounce">
             <div className="calendar-no-plan-icon-bg">
@@ -555,7 +557,8 @@ updatedWorkouts = updatedWorkouts.map(workout => {
       return {
         ...workout,
         completed: isAllComplete,
-        completedTypes: types.length > 0 ? nextCompleted : []
+        completedTypes: types.length > 0 ? nextCompleted : [],
+        streakSaverBridge: workout.streakSaverBridge
       };
     });
 
@@ -743,12 +746,24 @@ updatedWorkouts = updatedWorkouts.map(workout => {
     return formatMinutes(defaultMinutes);
   };
 
-  const computeStreak = (dailyWorkouts: DayWorkout[], targetDate?: Date): number => {
+  const computeStreak = (
+    dailyWorkouts: DayWorkout[],
+    targetDate?: Date,
+    options?: { skipIncompleteToday?: boolean }
+  ): number => {
     const target = targetDate ? new Date(targetDate) : new Date();
     target.setHours(0, 0, 0, 0);
     const formatDay = (d: Date) => format(d, 'yyyy-MM-dd');
     const workoutMap = new Map(dailyWorkouts.map(w => [w.date, w]));
-    const dayWorkout = workoutMap.get(formatDay(target));
+    const todayKey = formatDay(new Date());
+    let dayKey = formatDay(target);
+    let dayWorkout = workoutMap.get(dayKey);
+    const isTargetToday = dayKey === todayKey;
+    if (options?.skipIncompleteToday && isTargetToday && !isWorkoutCompleteForStreak(dayWorkout)) {
+      target.setDate(target.getDate() - 1);
+      dayKey = formatDay(target);
+      dayWorkout = workoutMap.get(dayKey);
+    }
     if (!isWorkoutCompleteForStreak(dayWorkout)) return 0;
 
     let streak = 1;
@@ -765,7 +780,7 @@ updatedWorkouts = updatedWorkouts.map(workout => {
 
   const updateStreakCounter = (dailyWorkouts: DayWorkout[]) => {
     try {
-      const streak = computeStreak(dailyWorkouts);
+      const streak = computeStreak(dailyWorkouts, undefined, { skipIncompleteToday: true });
       // Prefer the userData prop (current session) before falling back to storage
       const existingUser = (userData && typeof userData === 'object') ? userData : loadUserData();
       if (!existingUser) return;
@@ -1752,6 +1767,7 @@ updatedWorkouts = updatedWorkouts.map(workout => {
 
   return (
     <div className="calendar-page">
+      <BackgroundDots />
       <div className="calendar-container">
         {isGuestUser && (
           <div className="calendar-preview-banner">
@@ -1895,6 +1911,7 @@ updatedWorkouts = updatedWorkouts.map(workout => {
             // render logging removed to reduce noise
             const totalDurationLabel = workout ? getWorkoutDuration(workout) : null;
             const isStreakCompleteDay = workout ? isWorkoutCompleteForStreak(workout) : false;
+            const isIceBridgeDay = !!workout?.streakSaverBridge;
             const multiGradient = isMultiType && typeList.length > 1
               ? buildMultiTypeGradient(typeList as WorkoutType[])
               : undefined;
@@ -1913,20 +1930,21 @@ updatedWorkouts = updatedWorkouts.map(workout => {
                   (selectedForAdd.includes(dateString) ? ' selected' : '') +
                   (pendingRestAssignment ? ' rest-pending' : '') +
                   (selectedForDeletion.includes(dateString) ? ' delete-selected' : '') +
-                  (isStreakCompleteDay ? ' streak-complete' : '')}
+                  (isStreakCompleteDay ? ' streak-complete' : '') +
+                  (isIceBridgeDay ? ' bridge-day' : '')}
                 onClick={() => handleDayClick(date)}
                 onDragOver={(e) => handleDragOver(e, date)}
                 onDragLeave={handleDragLeave}
                 onDrop={(e) => handleDrop(e, date)}
-              >                
+              >
                   <span className="day-number">{format(date, 'd')}</span>
                   {totalDurationLabel && (
                     <span className="day-total-time">⏱️ {totalDurationLabel}</span>
                   )}
                   {isStreakCompleteDay && (
-                    <div className="streak-card">
+                    <div className={`streak-card${isIceBridgeDay ? ' bridge' : ''}`}>
                       <div className="streak-icon">
-                        <Flame size={32} />
+                        {isIceBridgeDay ? <Snowflake size={32} /> : <Flame size={32} />}
                       </div>
                       <div className="streak-number">{cellStreak}</div>
                       <div className="streak-label">Day Streak</div>

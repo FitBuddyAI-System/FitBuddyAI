@@ -322,81 +322,107 @@ function App() {
     }
 
     const MS_PER_DAY = 24 * 60 * 60 * 1000;
-    let gapDate: Date | null = null;
-    let gapReferenceWorkout: DayWorkout | null = null;
+    type GapInfo = {
+      missingDates: Date[];
+      gapReferenceWorkout: DayWorkout;
+    };
+    let gapInfo: GapInfo | null = null;
     for (let i = 0; i < completedEntries.length - 1; i += 1) {
       const later = completedEntries[i];
       const earlier = completedEntries[i + 1];
       const gapDays = Math.round((later.date.getTime() - earlier.date.getTime()) / MS_PER_DAY);
-      if (gapDays === 2) {
-        gapDate = new Date(earlier.date.getTime() + MS_PER_DAY);
-        gapReferenceWorkout = later.workout;
+      if (gapDays >= 2) {
+        const missingDates: Date[] = [];
+        for (let delta = 1; delta < gapDays; delta += 1) {
+          missingDates.push(new Date(earlier.date.getTime() + delta * MS_PER_DAY));
+        }
+        gapInfo = { missingDates, gapReferenceWorkout: later.workout };
         break;
       }
     }
 
-    if (!gapDate) {
-      return 'No recent streaks are separated by a single missed day.';
+    if (!gapInfo || gapInfo.missingDates.length === 0) {
+      return 'No recent streak gaps are available to bridge.';
     }
 
-    const gapDateString = format(gapDate, 'yyyy-MM-dd');
-    const gapIndex = workoutPlan.dailyWorkouts.findIndex((workout) => workout.date === gapDateString);
-    const existingGapWorkout = gapIndex >= 0 ? workoutPlan.dailyWorkouts[gapIndex] : null;
-    const fillType = gapReferenceWorkout
-      ? getPrimaryType(gapReferenceWorkout)
-      : (existingGapWorkout ? getPrimaryType(existingGapWorkout) : 'strength');
-    let normalizedTypes = existingGapWorkout ? resolveWorkoutTypes(existingGapWorkout) : [];
+    const { missingDates, gapReferenceWorkout } = gapInfo;
+    const daysToBridge = missingDates.length;
+    if (availableQty < daysToBridge) {
+      const needed = daysToBridge - availableQty;
+      return `You need ${daysToBridge} streak savers to bridge that gap. Buy ${needed} more to cover the skipped days.`;
+    }
+
+    if (daysToBridge > 1) {
+      const firstLabel = format(missingDates[0], 'MMMM d');
+      const lastLabel = format(missingDates[missingDates.length - 1], 'MMMM d');
+      const confirmMessage = `You skipped ${daysToBridge} days (${firstLabel} - ${lastLabel}). Redeem ${daysToBridge} streak savers to cover them?`;
+      const wantsMultiple = typeof window !== 'undefined' ? window.confirm(confirmMessage) : true;
+      if (!wantsMultiple) {
+        return `Each missed day needs a streak saver. Buy ${daysToBridge} more to keep your streak.`;
+      }
+    }
+
+    const gapDateStrings = missingDates.map((date) => format(date, 'yyyy-MM-dd'));
+    const fillType = gapReferenceWorkout ? getPrimaryType(gapReferenceWorkout) : 'strength';
+    let normalizedTypes = gapReferenceWorkout ? resolveWorkoutTypes(gapReferenceWorkout) : [];
     if (normalizedTypes.length === 0) normalizedTypes = [fillType];
-    const completedTypes = normalizedTypes.length ? normalizedTypes : [fillType];
+    const baseTypes = normalizedTypes.length ? normalizedTypes : [fillType];
+    const isIceBridge = daysToBridge > 1;
 
     const cloneWorkouts = (list?: DayWorkout['workouts']) =>
       list?.map((entry) => ({ ...entry, muscleGroups: entry?.muscleGroups ? [...entry.muscleGroups] : [], equipment: entry?.equipment ? [...entry.equipment] : [] })) ?? [];
     const cloneAlternatives = (list?: DayWorkout['alternativeWorkouts']) =>
       list?.map((entry) => ({ ...entry, muscleGroups: entry?.muscleGroups ? [...entry.muscleGroups] : [], equipment: entry?.equipment ? [...entry.equipment] : [] })) ?? [];
 
-    const clonedWorkouts = cloneWorkouts(existingGapWorkout?.workouts);
-    const workouts: DayWorkout['workouts'] = clonedWorkouts.length
-      ? clonedWorkouts
-      : ([{
-          name: 'Streak Saver Boost',
-          description: 'Bridged a missed day to keep your streak intact.',
-          difficulty: 'intermediate' as Exercise['difficulty'],
-          duration: '5 min',
-          muscleGroups: [],
-          equipment: []
-        }] as Exercise[]);
-
-    const updatedGapWorkout: DayWorkout = {
-      date: gapDateString,
-      workouts,
-      alternativeWorkouts: cloneAlternatives(existingGapWorkout?.alternativeWorkouts),
-      completed: true,
-      totalTime: existingGapWorkout?.totalTime || '5 min',
-      type: normalizedTypes[0] || fillType,
-      types: normalizedTypes,
-      completedTypes,
+    const placeholderWorkout: Exercise = {
+      name: 'Streak Saver Boost',
+      description: 'Bridged a missed day to keep your streak intact.',
+      difficulty: 'intermediate',
+      duration: '5 min',
+      muscleGroups: [],
+      equipment: []
     };
 
-    const updatedDailyWorkouts = [...workoutPlan.dailyWorkouts];
-    if (gapIndex >= 0) {
-      updatedDailyWorkouts[gapIndex] = updatedGapWorkout;
-    } else {
-      updatedDailyWorkouts.push(updatedGapWorkout);
-    }
+    const buildBridgeDay = (dateStr: string, existing?: DayWorkout): DayWorkout => {
+      const workouts = cloneWorkouts(existing?.workouts);
+      const alternativeWorkouts = cloneAlternatives(existing?.alternativeWorkouts);
+      const typesForDay = baseTypes.length ? [...baseTypes] : [fillType];
+      return {
+        date: dateStr,
+        workouts: workouts.length ? workouts : [{ ...placeholderWorkout }],
+        alternativeWorkouts,
+        completed: true,
+        totalTime: existing?.totalTime || '5 min',
+        type: typesForDay[0] || fillType,
+        types: typesForDay,
+        completedTypes: typesForDay,
+        streakSaverBridge: isIceBridge
+      };
+    };
+
+    const existingMap = new Map(workoutPlan.dailyWorkouts.map((day) => [day.date, day]));
+    const filteredWorkouts = workoutPlan.dailyWorkouts.filter((day) => !gapDateStrings.includes(day.date));
+    const updatedDailyWorkouts = [...filteredWorkouts];
+    gapDateStrings.forEach((dateStr) => {
+      updatedDailyWorkouts.push(buildBridgeDay(dateStr, existingMap.get(dateStr)));
+    });
     const sortedDailyWorkouts = updatedDailyWorkouts.slice().sort((a, b) => a.date.localeCompare(b.date));
     const updatedPlan = { ...workoutPlan, dailyWorkouts: sortedDailyWorkouts };
     setWorkoutPlan(updatedPlan);
     setPlanVersion((v) => v + 1);
 
     const nextInventory = [...inventory];
-    if (availableQty <= 1) {
+    const remainingQty = availableQty - daysToBridge;
+    if (remainingQty <= 0) {
       nextInventory.splice(saverIndex, 1);
     } else {
-      nextInventory[saverIndex] = { ...saverEntry, quantity: availableQty - 1 };
+      nextInventory[saverIndex] = { ...saverEntry, quantity: remainingQty };
     }
     setUserData({ ...userData, inventory: nextInventory });
 
-    return `Redeemed a streak saver to bridge ${format(gapDate, 'MMMM d')}.`;
+    return daysToBridge > 1
+      ? `Redeemed ${daysToBridge} streak savers to bridge ${format(missingDates[0], 'MMMM d')} - ${format(missingDates[missingDates.length - 1], 'MMMM d')}.`
+      : `Redeemed a streak saver to bridge ${format(missingDates[0], 'MMMM d')}.`;
   };
 
   // compute effective theme class for passing to components
@@ -416,7 +442,8 @@ function App() {
     <div className={`App ${effectiveThemeClass}`}>
       <Header userData={userData} profileVersion={profileVersion} theme={effectiveThemeClass} />
       <AgreementBanner userData={userData} />
-      <Routes>
+      <main className="app-main">
+        <Routes>
         <Route path="/" element={<WelcomePage />} />
         <Route path="/workouts" element={<WorkoutsPage />} />
         <Route path="/library" element={<PersonalLibraryPage />} />
@@ -497,10 +524,11 @@ function App() {
         <Route path="/signin" element={<SignInPage />} />
         <Route path="/signup" element={<SignUpPage />} />
   <Route path="/verify-email" element={<EmailVerifyPage />} />
-  <Route path="/rickroll" element={<RickrollPage />} />
-  {/* 404 Not Found Route */}
-  <Route path="*" element={<NotFoundPage />} />
+        <Route path="/rickroll" element={<RickrollPage />} />
+        {/* 404 Not Found Route */}
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
+      </main>
       {/* Site-wide footer ensures visibility on all routes and deployments */}
       <Footer themeMode={themeMode} onChangeThemeMode={setThemeModeHandler} />
     </div>
