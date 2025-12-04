@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 // import { Lock } from 'lucide-react';
 import './ProfilePage.css';
 import { getCurrentUser, fetchUserById } from '../services/authService';
-import { supabase } from '../services/supabaseClient';
+// Supabase auth metadata updates are handled server-side; no client import needed here
 import { useNavigate } from 'react-router-dom';
 import SignOutButton from './SignOutButton';
 
@@ -195,15 +195,9 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onProfileUpdate, pr
         onProfileUpdate(updated.user);
         setEditMode(false);
         try { window.showFitBuddyNotification?.({ title: 'Profile Saved', message: 'Your profile was updated successfully.', variant: 'success' }); } catch {}
-        // Try to update Supabase auth metadata for the current session so display name updates immediately
-        try {
-          const displayName = updated.user?.username;
-          if (displayName && supabase && typeof supabase.auth?.updateUser === 'function') {
-            await supabase.auth.updateUser({ data: { display_name: displayName, username: displayName } });
-          }
-        } catch (e) {
-          console.warn('[ProfilePage] failed to update supabase user metadata', e && (e as any).message || String(e));
-        }
+        // NOTE: Supabase auth metadata update is handled server-side to avoid
+        // client-side session issues (calling updateUser from the anon client
+        // can inadvertently affect the session). Server will sync auth metadata.
   } else {
         // Try to surface server-provided message when available
         let serverMsg = `Server returned ${res.status}`;
@@ -227,15 +221,6 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onProfileUpdate, pr
           setUser(fallbackUser);
           onProfileUpdate(fallbackUser);
           setEditMode(false);
-          // Attempt to update Supabase auth metadata for the current session even when server is unavailable
-          try {
-            const displayName = fallbackUser?.username;
-            if (displayName && supabase && typeof supabase.auth?.updateUser === 'function') {
-              await supabase.auth.updateUser({ data: { display_name: displayName, username: displayName } });
-            }
-          } catch (e) {
-            console.warn('[ProfilePage] failed to update supabase user metadata (fallback)', e && (e as any).message || String(e));
-          }
           setError('Saved locally (session) — server unavailable.');
           try { window.showFitBuddyNotification?.({ title: 'Saved Locally', message: 'Profile saved locally. Server unavailable.', variant: 'warning' }); } catch {}
         }
@@ -249,15 +234,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onProfileUpdate, pr
       setUser(fallbackUser);
       onProfileUpdate(fallbackUser);
       setEditMode(false);
-      // Attempt to update Supabase auth metadata for the current session even on network error
-      try {
-        const displayName = fallbackUser?.username;
-        if (displayName && supabase && typeof supabase.auth?.updateUser === 'function') {
-          await supabase.auth.updateUser({ data: { display_name: displayName, username: displayName } });
-        }
-      } catch (e) {
-        console.warn('[ProfilePage] failed to update supabase user metadata (network fallback)', e && (e as any).message || String(e));
-      }
+      // NOTE: Supabase auth metadata updates are performed server-side.
       setError('Saved locally (network error).');
       try { window.showFitBuddyNotification?.({ title: 'Saved Locally', message: 'Profile saved locally due to network error.', variant: 'warning' }); } catch {}
     } finally {
