@@ -361,6 +361,11 @@ export const saveWorkoutPlan = (workoutPlan: any): void => {
 
     // schedule cloud backup (if user signed in)
     scheduleBackup();
+    try {
+      if (typeof window !== 'undefined' && window?.dispatchEvent) {
+        window.dispatchEvent(new CustomEvent('fitbuddyai-workout-plan-updated', { detail: { plan: normalized } }));
+      }
+    } catch {}
   } catch (error) {
     console.warn('Failed to save workout plan:', error);
   }
@@ -393,7 +398,12 @@ export const loadWorkoutPlan = (): any | null => {
 export const clearWorkoutPlan = (): void => {
   try {
     localStorage.removeItem(STORAGE_KEYS.WORKOUT_PLAN);
-  scheduleBackup();
+    scheduleBackup();
+    try {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('fitbuddyai-workout-plan-updated', { detail: { plan: null } }));
+      }
+    } catch {}
   } catch (error) {
     console.warn('Failed to clear workout plan:', error);
   }

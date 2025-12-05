@@ -1,9 +1,10 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Calendar, User, Flame, Sparkles, Home } from 'lucide-react';
-import { loadQuestionnaireProgress, clearUserData, clearQuestionnaireProgress, loadAssessmentData } from '../services/localStorage';
+import { Flame, Sparkles } from 'lucide-react';
+import { loadQuestionnaireProgress, clearUserData, clearQuestionnaireProgress, loadAssessmentData, loadWorkoutPlan } from '../services/localStorage';
 import './Header.css';
 import { backupAndDeleteSensitive } from '../services/cloudBackupService';
+import { loadSavedNames, subscribeSavedNames } from '../utils/savedNames';
 
 interface HeaderProps {
   profileVersion: number;
@@ -11,16 +12,58 @@ interface HeaderProps {
   theme: 'theme-light' | 'theme-dark';
 }
 
+type ExploreDrawerState = 'closed' | 'open' | 'closing';
+
+const normalizeDateToDay = (value: string | Date | undefined | null): Date | null => {
+  if (!value) return null;
+  const date = value instanceof Date ? value : typeof value === 'string' ? new Date(value) : new Date(value as any);
+  if (!date || Number.isNaN(date.getTime())) return null;
+  const copy = new Date(date.getTime());
+  copy.setHours(0, 0, 0, 0);
+  return copy;
+};
+
+const getUpcomingWorkoutCount = (plan: any | null): number => {
+  if (!plan || !Array.isArray(plan.dailyWorkouts)) return 0;
+  const today = normalizeDateToDay(new Date());
+  if (!today) return 0;
+  return plan.dailyWorkouts.reduce((count: number, day: any) => {
+    if (!day) return count;
+    if (day.completed) return count;
+    const date = normalizeDateToDay(day.date);
+    if (!date) return count;
+    if (date.getTime() < today.getTime()) return count;
+    const type = typeof day.type === 'string' ? day.type.toLowerCase() : '';
+    if (type === 'rest') return count;
+    if (Array.isArray(day.workouts) && day.workouts.length === 0) return count;
+    return count + 1;
+  }, 0);
+};
+
 const Header: React.FC<HeaderProps> = ({ profileVersion, userData }) => {
   const navigate = useNavigate();
   const location = useLocation();
 
   const [currentUser, setCurrentUser] = React.useState<any | null>(null);
-  const [exploreOpen, setExploreOpen] = React.useState(false);
+  const [drawerState, setDrawerState] = React.useState<ExploreDrawerState>('closed');
   const exploreRef = React.useRef<HTMLDivElement | null>(null);
   const [motivationMessage, setMotivationMessage] = React.useState<string | null>(null);
   // Track the last time we updated the greeting to avoid rapid churn
   const lastGreetingUpdateRef = React.useRef<number>(0);
+  const [savedWorkoutCount, setSavedWorkoutCount] = React.useState<number>(() => loadSavedNames().length);
+  const [upcomingWorkoutCount, setUpcomingWorkoutCount] = React.useState<number>(() => getUpcomingWorkoutCount(loadWorkoutPlan()));
+  const isDrawerVisible = drawerState !== 'closed';
+  const isDrawerClosing = drawerState === 'closing';
+  const toggleExploreDrawer = React.useCallback(() => {
+    setDrawerState((prev) => (prev === 'open' ? 'closing' : 'open'));
+  }, []);
+  const closeExploreDrawer = React.useCallback(() => {
+    setDrawerState((prev) => (prev === 'open' ? 'closing' : prev));
+  }, []);
+  const handleDrawerTransitionEnd = React.useCallback((event: React.TransitionEvent<HTMLDivElement>) => {
+    if (event.propertyName !== 'transform') return;
+    setDrawerState((prev) => (prev === 'closing' ? 'closed' : prev));
+  }, []);
   // Base64 decode helper (handles browser and Node dev env)
   const b64Decode = (s: string) => {
     try {
@@ -90,11 +133,11 @@ const Header: React.FC<HeaderProps> = ({ profileVersion, userData }) => {
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (exploreRef.current && !exploreRef.current.contains(event.target as Node)) {
-        setExploreOpen(false);
+        closeExploreDrawer();
       }
     };
     const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setExploreOpen(false);
+      if (event.key === 'Escape') closeExploreDrawer();
     };
     document.addEventListener('mousedown', handleClickOutside);
     document.addEventListener('keydown', handleEscape);
@@ -102,13 +145,37 @@ const Header: React.FC<HeaderProps> = ({ profileVersion, userData }) => {
       document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('keydown', handleEscape);
     };
+  }, [closeExploreDrawer]);
+
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    setSavedWorkoutCount(loadSavedNames().length);
+    const unsubscribe = subscribeSavedNames((list) => setSavedWorkoutCount(list.length));
+    return () => {
+      try {
+        unsubscribe();
+      } catch {}
+    };
+  }, []);
+
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const refresh = () => setUpcomingWorkoutCount(getUpcomingWorkoutCount(loadWorkoutPlan()));
+    refresh();
+    const handler = () => refresh();
+    window.addEventListener('storage', handler);
+    window.addEventListener('fitbuddyai-workout-plan-updated', handler);
+    return () => {
+      window.removeEventListener('storage', handler);
+      window.removeEventListener('fitbuddyai-workout-plan-updated', handler);
+    };
   }, []);
 
   // Toggle a body-level class when the explore drawer is open so we can
   // apply page-wide blur while keeping the header visually sharp.
   React.useEffect(() => {
     try {
-      if (exploreOpen) {
+      if (isDrawerVisible) {
         document.body.classList.add('explore-open');
       } else {
         document.body.classList.remove('explore-open');
@@ -119,11 +186,11 @@ const Header: React.FC<HeaderProps> = ({ profileVersion, userData }) => {
     return () => {
       try { document.body.classList.remove('explore-open'); } catch (e) {}
     };
-  }, [exploreOpen]);
+  }, [isDrawerVisible]);
 
   React.useEffect(() => {
-    setExploreOpen(false);
-  }, [location.pathname]);
+    closeExploreDrawer();
+  }, [location.pathname, closeExploreDrawer]);
 
   React.useEffect(() => {
     const name = (() => {
@@ -307,13 +374,13 @@ const Header: React.FC<HeaderProps> = ({ profileVersion, userData }) => {
     <header className="app-header">
       <div className="header-container">
         <div className="header-left">
-          <div className={`explore-launcher nav-dropdown ${exploreOpen ? 'open' : ''}`} ref={exploreRef}>
+          <div className={`explore-launcher nav-dropdown ${isDrawerVisible ? 'open' : ''}`} ref={exploreRef}>
             <button
               className="explore-button"
               aria-label="Explore"
-              aria-expanded={exploreOpen}
+              aria-expanded={isDrawerVisible}
               aria-haspopup="true"
-              onClick={() => setExploreOpen((open) => !open)}
+              onClick={toggleExploreDrawer}
             >
               <span className="explore-menu-lines" aria-hidden="true">
                 <span />
@@ -322,15 +389,18 @@ const Header: React.FC<HeaderProps> = ({ profileVersion, userData }) => {
               </span>
               <span className="explore-sr-text">Explore menu</span>
             </button>
-            <div className="explore-backdrop" aria-hidden="true" onClick={() => setExploreOpen(false)} />
-            <div className={`dropdown-content explore-dropdown explore-drawer${exploreOpen ? ' active' : ''}`}>
+            <div className="explore-backdrop" aria-hidden="true" onClick={closeExploreDrawer} />
+            <div
+              className={`dropdown-content explore-dropdown explore-drawer${isDrawerVisible ? ' active' : ''}${isDrawerClosing ? ' closing' : ''}`}
+              onTransitionEnd={handleDrawerTransitionEnd}
+            >
               <div className="explore-drawer-content">
                 <div className="explore-profile">
                   <img
                     src={tryOnAvatar || (currentUser && currentUser.avatar && currentUser.avatar.trim() ? currentUser.avatar : "/images/fitbuddy_head.png")}
                     alt="Profile"
                     className="explore-profile-image"
-                    onClick={() => { setExploreOpen(false); navigate(isSignedIn ? '/profile' : '/signin'); }}
+                    onClick={() => { closeExploreDrawer(); navigate(isSignedIn ? '/profile' : '/signin'); }}
                   />
                   <div className="explore-profile-text">
                     <div className="explore-profile-name">
@@ -349,34 +419,52 @@ const Header: React.FC<HeaderProps> = ({ profileVersion, userData }) => {
                       </div>
                     )}
                     <div className="explore-profile-actions">
-                      <button onClick={() => { setExploreOpen(false); navigate(isSignedIn ? '/profile' : '/signin'); }}>
+                      <button onClick={() => { closeExploreDrawer(); navigate(isSignedIn ? '/profile' : '/signin'); }}>
                         {isSignedIn ? 'View Profile' : 'Sign In'}
                       </button>
                     </div>
                   </div>
                 </div>
                 <div className="explore-drawer-links">
-                  <button onClick={() => { setExploreOpen(false); navigate('/?intro=0'); }}>Home</button>
-                  <button onClick={() => { setExploreOpen(false); navigate('/workouts'); }}>Workout Library</button>
-                  <button onClick={() => { setExploreOpen(false); navigate('/library'); }}>Saved Workouts</button>
-                  <button onClick={() => { setExploreOpen(false); navigate('/questionnaire'); }}>Assessment</button>
-                  <button onClick={() => { setExploreOpen(false); navigate('/calendar'); }}>Calendar</button>
+                  <button onClick={() => { closeExploreDrawer(); navigate('/?intro=0'); }}>Home</button>
+                  <button onClick={() => { closeExploreDrawer(); navigate('/workouts'); }}>Workout Library</button>
+                  <button
+                    className="saved-workouts-link"
+                    aria-label={`Saved Workouts (${savedWorkoutCount} saved)`}
+                    onClick={() => { closeExploreDrawer(); navigate('/library'); }}
+                  >
+                    <span>Saved Workouts</span>
+                    <span className="saved-workouts-badge badge-circle" aria-hidden="true">
+                      {savedWorkoutCount}
+                    </span>
+                  </button>
+                  <button onClick={() => { closeExploreDrawer(); navigate('/questionnaire'); }}>Assessment</button>
+                  <button
+                    className="calendar-link"
+                    aria-label={`Calendar (${upcomingWorkoutCount} upcoming workouts)`}
+                    onClick={() => { closeExploreDrawer(); navigate('/calendar'); }}
+                  >
+                    <span>Calendar</span>
+                    <span className="badge-circle" aria-hidden="true">
+                      {upcomingWorkoutCount}
+                    </span>
+                  </button>
                   <button
                     onClick={() => {
                       try { window.dispatchEvent(new CustomEvent('fitbuddyai-open-chat')); } catch {}
-                      setExploreOpen(false);
+                      closeExploreDrawer();
                       navigate('/chat');
                     }}
                   >
                     Chat
                   </button>
-                  <button onClick={() => { setExploreOpen(false); navigate('/nutrition'); }}>Nutrition</button>
-                  <button onClick={() => { setExploreOpen(false); navigate('/blog'); }}>Blog</button>
-                  <button onClick={() => { setExploreOpen(false); navigate('/pricing'); }}>Pricing</button>
-                  <button onClick={() => { setExploreOpen(false); navigate('/shop'); }} >Shop</button>
+                  <button onClick={() => { closeExploreDrawer(); navigate('/nutrition'); }}>Nutrition</button>
+                  <button onClick={() => { closeExploreDrawer(); navigate('/blog'); }}>Blog</button>
+                  <button onClick={() => { closeExploreDrawer(); navigate('/pricing'); }}>Pricing</button>
+                  <button onClick={() => { closeExploreDrawer(); navigate('/shop'); }} >Shop</button>
                   {isSignedIn && (
                     <div className="explore-footer">
-                      <button onClick={() => { setExploreOpen(false); navigate('/profile/settings'); }}>Settings</button>
+                      <button onClick={() => { closeExploreDrawer(); navigate('/profile/settings'); }}>Settings</button>
                     </div>
                   )}
                 </div>
@@ -395,51 +483,6 @@ const Header: React.FC<HeaderProps> = ({ profileVersion, userData }) => {
 
         {/* Navigation */}
         <nav className="header-nav">
-          <button
-            className={`nav-button ${isActive('/') ? 'active' : ''}`}
-            onClick={() => navigate('/?intro=0')}
-            aria-label="Home"
-          >
-            <Home size={20} className="home-icon" />
-            <span>Home</span>
-          </button>
-          <button
-            className={`nav-button ${isActive('/questionnaire') ? 'active' : ''}`}
-            onClick={() => {
-              const savedProgress = loadQuestionnaireProgress();
-              if (savedProgress?.completed) {
-                navigate('/questionnaire?edit=true');
-              } else {
-                navigate('/questionnaire');
-              }
-            }}
-            aria-label="Questionnaire"
-          >
-            <User size={20} />
-            <span>Assessment</span>
-          </button>
-          <button
-            className={`nav-button ${isActive('/calendar') ? 'active' : ''}`}
-            onClick={() => navigate('/calendar')}
-            aria-label="Workout Calendar"
-            title={!isSignedIn ? 'Sign in to save and sync your calendar' : 'Open calendar'}
-          >
-            <Calendar size={20} />
-            <span>Calendar</span>
-          </button>
-
-          <button
-            className={`nav-button ${isActive('/chat') ? 'active' : ''}`}
-            onClick={() => {
-              try { window.dispatchEvent(new CustomEvent('fitbuddyai-open-chat')); } catch {}
-              navigate('/chat');
-            }}
-            aria-label="Chat with AI Coach"
-          >
-            <span className="sparkles-mobile-only"><Sparkles size={20} /></span>
-            <span>Chat</span>
-          </button>
-
           {/* theme toggle removed: theme controlled in footer via selector */}
 
           {isAdmin && (

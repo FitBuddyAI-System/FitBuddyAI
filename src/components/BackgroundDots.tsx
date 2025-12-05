@@ -84,7 +84,7 @@ const BackgroundDots: React.FC = () => {
 
         if (mouseRef.current.active && animate) {
           const dx = d.x - mouseRef.current.x;
-          const dy = d.y - mouseRef.current.y - document.documentElement.scrollTop + 60;
+          const dy = d.y - mouseRef.current.y;
           const dist = Math.hypot(dx, dy);
           if (dist < influence && dist > 0.01) {
             const force = (influence - dist) / influence;
@@ -156,7 +156,11 @@ const BackgroundDots: React.FC = () => {
       const now = performance.now();
       if (now - lastMoveTimestamp < 20) return;
       lastMoveTimestamp = now;
-      mouseRef.current = { x: e.clientX, y: e.clientY, active: true };
+      const scrollX = window.scrollX ?? document.documentElement.scrollLeft;
+      const scrollY = window.scrollY ?? document.documentElement.scrollTop;
+      const pageX = e.pageX ?? e.clientX + scrollX;
+      const pageY = e.pageY ?? e.clientY + scrollY;
+      mouseRef.current = { x: pageX, y: pageY, active: true };
     };
 
     const handleLeave = () => {

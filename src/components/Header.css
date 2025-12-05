@@ -8,6 +8,28 @@
   --explore-menu-button-dark-border: rgba(191, 219, 255, 0.9);
   --explore-menu-button-dark-hover: rgba(134, 193, 255, 0.38);
   --explore-menu-button-dark-text: #f4f7fb;
+  --header-badge-gradient: linear-gradient(135deg, rgba(30, 203, 123, 0.92), rgba(28, 176, 246, 0.92));
+  --header-badge-text: #fff;
+  --header-badge-border: rgba(255, 255, 255, 0.4);
+}
+
+.badge-circle {
+  min-width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background: var(--header-badge-gradient);
+  color: var(--header-badge-text);
+  border: 1px solid var(--header-badge-border);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.35);
+  text-transform: none;
+  flex-shrink: 0;
 }
 
 /* Header Counters (Streak & Energy) */
@@ -212,6 +234,12 @@ body:not(.theme-dark) .explore-button { color: #fff; }
   visibility: visible;
 }
 
+.explore-drawer.closing {
+  transform: translateX(115%);
+  opacity: 0;
+  pointer-events: none;
+}
+
 .explore-drawer-content {
   width: min(360px, 86vw);
   margin-right: auto;
@@ -336,6 +364,28 @@ body:not(.theme-dark) .explore-drawer button {
   margin-bottom: 4px;
 }
 
+.explore-drawer button.saved-workouts-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.explore-drawer button.saved-workouts-link .saved-workouts-badge {
+  margin-left: 12px;
+}
+
+.explore-drawer button.calendar-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.explore-drawer button.calendar-link .badge-circle {
+  margin-left: 12px;
+}
+
 .explore-drawer button:hover {
   background: var(--explore-menu-button-light-hover);
   border-color: var(--explore-menu-button-light-border);
@@ -432,6 +482,12 @@ body.theme-dark .explore-logo {
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.45);
 }
 
+body.theme-dark {
+  --header-badge-gradient: linear-gradient(145deg, rgba(56, 189, 248, 0.9), rgba(74, 222, 128, 0.9));
+  --header-badge-text: #0b172a;
+  --header-badge-border: rgba(255, 255, 255, 0.25);
+}
+
 body.theme-dark .explore-button:hover {
   border-color: #3b4f66;
   box-shadow: 0 12px 26px rgba(0, 0, 0, 0.45);
@@ -515,7 +571,7 @@ body.theme-dark .user-greeting { color: rgba(255,255,255,0.85); }
 .nav-button {
   display: flex;
   align-items: center;
-  gap: 0px;
+  gap: 12px;
   padding: 8px 16px;
   border: 1px solid rgba(255, 255, 255, 0.2);
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
@@ -602,7 +658,7 @@ body.theme-dark .nav-button.active {
   cursor: not-allowed;
 }
 
-.nav-button span {
+.nav-button span:not(.badge-circle) {
   font-size: 13px;
   font-weight: 500;
 }

@@ -6,6 +6,7 @@ import { loadSavedNames, addSavedName, subscribeSavedNames, persistSavedNames, r
 import { loadAssessmentData } from '../services/localStorage';
 import { Workout, getAllWorkouts, getCategoryOptions, getCategoryBuckets } from '../services/workoutLibrary';
 import { pickWorkoutsFromAssessment } from '../services/assessmentWorkouts';
+import confetti from 'canvas-confetti';
 
 const workouts = getAllWorkouts();
 const categoryOptions = getCategoryOptions();
@@ -23,21 +24,24 @@ const WorkoutsPage: React.FC = () => {
   const [categorySort, setCategorySort] = useState<string>('all');
   const [selected, setSelected] = useState<string | null>(null);
   const [mySavedNames, setMySavedNames] = useState<string[]>(() => loadSavedNames());
-  const [saveNotice, setSaveNotice] = useState<string | null>(null);
   const [aiSaving, setAiSaving] = useState(false);
   const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE_COUNT);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const notify = (opts: { title?: string; message: string; variant?: 'info' | 'success' | 'warning' | 'error' }) => {
+    window.showFitBuddyNotification?.({
+      durationMs: 3600,
+      ...opts
+    });
+  };
 
   const removeFromPlan = (item: Workout & { title: string }) => {
     setMySavedNames(prev => {
       if (!prev.includes(item.title)) {
-        setSaveNotice('That workout is not in your saved list.');
-        window.setTimeout(() => setSaveNotice(null), 2600);
+        notify({ title: 'Not Saved', message: 'That workout is not in your saved list.', variant: 'warning' });
         return prev;
       }
       const next = removeSavedName(item.title);
-      setSaveNotice('Removed from your workouts.');
-      window.setTimeout(() => setSaveNotice(null), 2600);
+      notify({ title: 'Removed', message: 'Removed from your workouts.', variant: 'info' });
       return next;
     });
   };
@@ -105,21 +109,22 @@ const WorkoutsPage: React.FC = () => {
   }, []);
 
   const addToPlan = (item: Workout & { title: string }) => {
-    // Add only the workout name to the new saved-names list (no confetti)
     setMySavedNames(prev => {
       if (prev.includes(item.title)) {
-        setSaveNotice('Already saved to your workouts.');
-        window.setTimeout(() => setSaveNotice(null), 2600);
+        notify({ title: 'Already Saved', message: 'That workout is already in your list.', variant: 'info' });
         return prev;
       }
       const next = addSavedName(item.title);
-      setSaveNotice('Saved to your workouts!');
-      window.setTimeout(() => setSaveNotice(null), 2600);
+      notify({ title: 'Workout Saved', message: 'Saved to your workouts!', variant: 'success' });
+      confetti({
+        particleCount: 110,
+        spread: 80,
+        origin: { y: 0.45 },
+        zIndex: 9999,
+      });
       return next;
     });
   };
-
-  
 
   const visibleWorkouts = filtered.slice(0, Math.min(visibleCount, filtered.length));
 
@@ -129,14 +134,13 @@ const WorkoutsPage: React.FC = () => {
     try {
       const assessment = loadAssessmentData();
       if (!assessment) {
-        setSaveNotice('Complete the assessment first to let AI save workouts for you.');
+        notify({ title: 'Assessment Needed', message: 'Complete the assessment first to let AI save workouts for you.', variant: 'warning' });
         return;
       }
       setAiSaving(true);
       window.setTimeout(() => {
         const picks = pickWorkoutsFromAssessment(assessment);
         let added = 0;
-        // Persist only names using the new saved-names approach
         setMySavedNames(prev => {
           const next = [...prev];
           picks.forEach(p => {
@@ -148,12 +152,22 @@ const WorkoutsPage: React.FC = () => {
           try { persistSavedNames(next); } catch (e) {}
           return next;
         });
-        setSaveNotice(added > 0 ? `Saved ${added} workouts from your assessment.` : 'Those workouts are already saved.');
+        if (added > 0) {
+          confetti({
+            particleCount: 120,
+            spread: 90,
+            origin: { y: 0.4 },
+            zIndex: 9999,
+          });
+          notify({ title: 'Workouts Saved', message: `Saved ${added} workouts from your assessment.`, variant: 'success' });
+        } else {
+          notify({ title: 'No New Workouts', message: 'Those workouts are already saved.', variant: 'info' });
+        }
         setAiSaving(false);
       }, 120);
     } catch (err) {
       console.warn('AI save failed', err);
-      setSaveNotice('Could not save workouts. Try again.');
+      notify({ title: 'Save Failed', message: 'Could not save workouts. Try again.', variant: 'error' });
       setAiSaving(false);
     }
   };
@@ -213,12 +227,6 @@ const WorkoutsPage: React.FC = () => {
             </div>
           </div>
         </div>
-
-      {saveNotice && (
-        <div className="save-notice" role="status">
-          {saveNotice}
-        </div>
-      )}
 
       <div className="workouts-grid">
         {filtered.length === 0 && (

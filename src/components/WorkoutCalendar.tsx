@@ -10,6 +10,7 @@ import './WorkoutCalendar.css';
 import { generateWorkoutPlan, generateWorkoutForDay } from '../services/aiService';
 import { loadQuestionnaireProgress, loadUserData, loadWorkoutPlan, saveUserData, saveWorkoutPlan } from '../services/localStorage';
 import { restoreUserDataFromServer, backupUserDataToServer } from '../services/cloudBackupService';
+import confetti from 'canvas-confetti';
 
 interface WorkoutCalendarProps {
   workoutPlan: WorkoutPlan | null;
@@ -883,6 +884,12 @@ updatedWorkouts = updatedWorkouts.map(workout => {
     };
     
     onUpdatePlan(updatedPlan);
+    confetti({
+      particleCount: 130,
+      spread: 70,
+      origin: { y: 0.4 },
+      zIndex: 9999,
+    });
     setIsEditing(false);
     setShowEditMenu(false);
     setEditingWorkout(null);
