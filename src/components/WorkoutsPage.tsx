@@ -6,7 +6,6 @@ import { loadSavedNames, addSavedName, subscribeSavedNames, persistSavedNames, r
 import { loadAssessmentData } from '../services/localStorage';
 import { Workout, getAllWorkouts, getCategoryOptions, getCategoryBuckets } from '../services/workoutLibrary';
 import { pickWorkoutsFromAssessment } from '../services/assessmentWorkouts';
-import confetti from 'canvas-confetti';
 
 const workouts = getAllWorkouts();
 const categoryOptions = getCategoryOptions();
@@ -24,24 +23,21 @@ const WorkoutsPage: React.FC = () => {
   const [categorySort, setCategorySort] = useState<string>('all');
   const [selected, setSelected] = useState<string | null>(null);
   const [mySavedNames, setMySavedNames] = useState<string[]>(() => loadSavedNames());
+  const [saveNotice, setSaveNotice] = useState<string | null>(null);
   const [aiSaving, setAiSaving] = useState(false);
   const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE_COUNT);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const notify = (opts: { title?: string; message: string; variant?: 'info' | 'success' | 'warning' | 'error' }) => {
-    window.showFitBuddyNotification?.({
-      durationMs: 3600,
-      ...opts
-    });
-  };
 
   const removeFromPlan = (item: Workout & { title: string }) => {
     setMySavedNames(prev => {
       if (!prev.includes(item.title)) {
-        notify({ title: 'Not Saved', message: 'That workout is not in your saved list.', variant: 'warning' });
+        setSaveNotice('That workout is not in your saved list.');
+        window.setTimeout(() => setSaveNotice(null), 2600);
         return prev;
       }
       const next = removeSavedName(item.title);
-      notify({ title: 'Removed', message: 'Removed from your workouts.', variant: 'info' });
+      setSaveNotice('Removed from your workouts.');
+      window.setTimeout(() => setSaveNotice(null), 2600);
       return next;
     });
   };
@@ -109,22 +105,21 @@ const WorkoutsPage: React.FC = () => {
   }, []);
 
   const addToPlan = (item: Workout & { title: string }) => {
+    // Add only the workout name to the new saved-names list (no confetti)
     setMySavedNames(prev => {
       if (prev.includes(item.title)) {
-        notify({ title: 'Already Saved', message: 'That workout is already in your list.', variant: 'info' });
+        setSaveNotice('Already saved to your workouts.');
+        window.setTimeout(() => setSaveNotice(null), 2600);
         return prev;
       }
       const next = addSavedName(item.title);
-      notify({ title: 'Workout Saved', message: 'Saved to your workouts!', variant: 'success' });
-      confetti({
-        particleCount: 110,
-        spread: 80,
-        origin: { y: 0.45 },
-        zIndex: 9999,
-      });
+      setSaveNotice('Saved to your workouts!');
+      window.setTimeout(() => setSaveNotice(null), 2600);
       return next;
     });
   };
+
+  
 
   const visibleWorkouts = filtered.slice(0, Math.min(visibleCount, filtered.length));
 
@@ -134,13 +129,14 @@ const WorkoutsPage: React.FC = () => {
     try {
       const assessment = loadAssessmentData();
       if (!assessment) {
-        notify({ title: 'Assessment Needed', message: 'Complete the assessment first to let AI save workouts for you.', variant: 'warning' });
+        setSaveNotice('Complete the assessment first to let AI save workouts for you.');
         return;
       }
       setAiSaving(true);
       window.setTimeout(() => {
         const picks = pickWorkoutsFromAssessment(assessment);
         let added = 0;
+        // Persist only names using the new saved-names approach
         setMySavedNames(prev => {
           const next = [...prev];
           picks.forEach(p => {
@@ -152,22 +148,12 @@ const WorkoutsPage: React.FC = () => {
           try { persistSavedNames(next); } catch (e) {}
           return next;
         });
-        if (added > 0) {
-          confetti({
-            particleCount: 120,
-            spread: 90,
-            origin: { y: 0.4 },
-            zIndex: 9999,
-          });
-          notify({ title: 'Workouts Saved', message: `Saved ${added} workouts from your assessment.`, variant: 'success' });
-        } else {
-          notify({ title: 'No New Workouts', message: 'Those workouts are already saved.', variant: 'info' });
-        }
+        setSaveNotice(added > 0 ? `Saved ${added} workouts from your assessment.` : 'Those workouts are already saved.');
         setAiSaving(false);
       }, 120);
     } catch (err) {
       console.warn('AI save failed', err);
-      notify({ title: 'Save Failed', message: 'Could not save workouts. Try again.', variant: 'error' });
+      setSaveNotice('Could not save workouts. Try again.');
       setAiSaving(false);
     }
   };
@@ -227,6 +213,12 @@ const WorkoutsPage: React.FC = () => {
             </div>
           </div>
         </div>
+      </div>
+      {saveNotice && (
+        <div className="save-notice" role="status">
+          {saveNotice}
+        </div>
+      )}
 
       <div className="workouts-grid">
         {filtered.length === 0 && (
@@ -294,7 +286,6 @@ const WorkoutsPage: React.FC = () => {
         />
       )}
     </div>
-  </div>
   );
 };
 
@@ -372,39 +363,32 @@ function WorkoutModal({ title, data, onClose, onAdd, isSaved }: { title: string;
               <section className="instructions">
                 <h4>Instructions</h4>
                 <ol>
-                  {data.instructions.map((ins, idx) => (
-                    <li key={idx}>{ins}</li>
-                  ))}
+                  {data.instructions.map((ins, idx) => <li key={idx}>{ins}</li>)}
                 </ol>
               </section>
             )}
 
-            <div className="muscle-grid">
-              {((Array.isArray(data.primaryMuscles) && data.primaryMuscles.length > 0) ||
-                (Array.isArray(data.secondaryMuscles) && data.secondaryMuscles.length > 0)) && (
-                <div className="muscle-section modal">
-                  <div className="muscle-header">Muscles Exercised</div>
-                  <div className="muscle-list">
-                    {Array.isArray(data.primaryMuscles) && data.primaryMuscles.length > 0 && (
-                      <div className="muscle-col">
-                        <strong>Primary Muscles</strong>
-                        <div>
-                          <span className="muscle-badge primary" title={data.primaryMuscles.join(', ')}>
-                            <span className="muscle-text primary-text">
-                              {data.primaryMuscles.join(', ')}
+              <div className="muscle-grid">
+                {((Array.isArray(data.primaryMuscles) && data.primaryMuscles.length > 0) || (Array.isArray(data.secondaryMuscles) && data.secondaryMuscles.length > 0)) && (
+                  <div className="muscle-section modal">
+                    <div className="muscle-header">Muscles Exercised</div>
+                    <div className="muscle-list">
+                      {Array.isArray(data.primaryMuscles) && data.primaryMuscles.length > 0 && (
+                        <div className="muscle-col">
+                          <strong>Primary Muscles</strong>
+                          <div>
+                            <span className="muscle-badge primary" title={data.primaryMuscles.join(', ')}>
+                              <span className="muscle-text primary-text">{data.primaryMuscles.join(', ')}</span>
                             </span>
-                          </span>
+                          </div>
                         </div>
-                      </div>
-                    )}
-                    {Array.isArray(data.secondaryMuscles) && data.secondaryMuscles.length > 0 && (
-                      <div className="muscle-col">
-                        <strong>Secondary Muscles</strong>
-                        <div>
-                          <span className="muscle-badge secondary" title={data.secondaryMuscles.join(', ')}>
-                            <span className="muscle-text secondary-text">
-                              {data.secondaryMuscles.join(', ')}
-                            </span>
+                      )}
+                      {Array.isArray(data.secondaryMuscles) && data.secondaryMuscles.length > 0 && (
+                        <div className="muscle-col">
+                          <strong>Secondary Muscles</strong>
+                          <div>
+                            <span className="muscle-badge secondary" title={data.secondaryMuscles.join(', ')}>
+                              <span className="muscle-text secondary-text">{data.secondaryMuscles.join(', ')}</span>
                           </span>
                         </div>
                       </div>
