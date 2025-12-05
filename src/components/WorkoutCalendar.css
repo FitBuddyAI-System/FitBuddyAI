@@ -1238,7 +1238,6 @@ body.theme-dark .hero-card {
   font-size: 14px;
   letter-spacing: 0.6px;
   color: rgba(255, 255, 255, 0.95);
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
   box-shadow: 0 12px 24px rgba(21, 41, 70, 0.35);
 }
 
@@ -1308,7 +1307,6 @@ body.theme-dark .calendar-grid {
 body.theme-dark .day-header {
   background: var(--gradient-primary);
   color: rgba(255, 255, 255, 0.95);
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.55);
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.6);
 }
 
