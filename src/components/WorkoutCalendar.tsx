@@ -784,6 +784,10 @@ updatedWorkouts = updatedWorkouts.map(workout => {
       // Prefer the userData prop (current session) before falling back to storage
       const existingUser = (userData && typeof userData === 'object') ? userData : loadUserData();
       if (!existingUser) return;
+      const storedStreak = typeof existingUser.streak === 'number' ? existingUser.streak : undefined;
+      if (typeof storedStreak === 'number' && storedStreak > 0 && streak <= storedStreak) {
+        return;
+      }
       const nextUser = { ...(existingUser || {}), streak };
       saveUserData({ data: nextUser });
       // Broadcast to any listeners that streak changed
@@ -1778,11 +1782,12 @@ updatedWorkouts = updatedWorkouts.map(workout => {
           </div>
         )}
         {/* Header */}
-        <div className="calendar-header">
-          <div className="user-info">
-            <h1>Welcome back, {displayName}!</h1>
-            <p>{workoutPlan.description}</p>
-          </div>
+          <div className="calendar-header">
+            <div className="user-info">
+              <div className="welcome-badge">
+              <h1>Welcome back, {displayName}!</h1>
+            </div>
+            </div>
           
           <div className="progress-stats">
             <div className="stat-card">

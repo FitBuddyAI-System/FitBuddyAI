@@ -11,6 +11,11 @@ if (!SUPABASE_URL || !SUPABASE_KEY) {
 
 const supabase = createClient(SUPABASE_URL || '', SUPABASE_KEY || '');
 
+const normalizeEmail = (value: string | undefined | null): string => {
+  if (!value) return '';
+  return String(value).trim().toLowerCase();
+};
+
 export default async function handler(req: any, res: any) {
   // Set CORS headers for Vercel / browser requests
   res.setHeader('Access-Control-Allow-Origin', process.env.ALLOW_ORIGIN || '*');
@@ -33,8 +38,10 @@ export default async function handler(req: any, res: any) {
     if (action === 'signin') {
       const { email, password } = req.body as { email: string; password: string };
       if (!email || !password) return res.status(400).json({ message: 'Email and password required.' });
+      const normalizedEmail = normalizeEmail(email);
+      if (!normalizedEmail) return res.status(400).json({ message: 'Email is required.' });
       // Look up user in fitbuddyai_userdata by email (legacy API flow)
-      const { data } = await supabase.from('fitbuddyai_userdata').select('*').eq('email', email).limit(1).maybeSingle();
+      const { data } = await supabase.from('fitbuddyai_userdata').select('*').ilike('email', normalizedEmail).limit(1).maybeSingle();
       const user = data as any;
       if (!user || user.password !== password) return res.status(401).json({ message: 'Invalid email or password.' });
       const safeUser = { id: user.user_id || user.id, email: user.email, username: user.username, energy: user.energy, streak: user.streak, role: user.role };
@@ -54,11 +61,11 @@ export default async function handler(req: any, res: any) {
       const { email, username, password } = req.body as { email: string; username: string; password: string };
       if (!email || !username || !password) return res.status(400).json({ message: 'All fields are required.' });
       // Normalize email for equality checks (case-insensitive)
-      const normalizedEmail = String(email).trim().toLowerCase();
+      const normalizedEmail = normalizeEmail(email);
       // Quick existence check to return a friendly message without attempting insert
       try {
         const { data: existing } = await supabase.from('fitbuddyai_userdata').select('user_id,email').ilike('email', normalizedEmail).limit(1).maybeSingle();
-  if (existing) return res.status(409).json({ code: 'EMAIL_EXISTS', message: 'Email already exists.' });
+        if (existing) return res.status(409).json({ code: 'EMAIL_EXISTS', message: 'Email already exists.' });
       } catch (e) {
         // ignore and proceed to insert; DB unique index will enforce constraint
       }
@@ -85,12 +92,50 @@ export default async function handler(req: any, res: any) {
     if (action === 'create_profile') {
       const { id, email, username } = req.body as { id: string; email: string; username: string };
       if (!id || !email || !username) return res.status(400).json({ message: 'id, email and username required.' });
+      const normalizedEmail = normalizeEmail(email);
       try {
-        // Upsert into unified fitbuddyai_userdata table using user_id as primary key
-        const userRow = { user_id: id, email: String(email).trim().toLowerCase(), username, avatar: '', energy: 100, streak: 0, inventory: [], accepted_privacy: false, accepted_terms: false, chat_history: [], workout_plan: null, questionnaire_progress: null, banned: false, role: 'basic_member' };
-        const { error: uErr } = await supabase.from('fitbuddyai_userdata').upsert(userRow, { onConflict: 'user_id' as any });
-        if (uErr) console.warn('[api/auth/create_profile] fitbuddyai_userdata upsert error', uErr);
+        // Try to reuse existing profile for this email before creating a new one.
+        const { data: existing } = await supabase
+          .from('fitbuddyai_userdata')
+          .select('*')
+          .ilike('email', normalizedEmail)
+          .limit(1)
+          .maybeSingle();
+        if (existing && existing.user_id) {
+          const updates: any = { email: normalizedEmail };
+          if (existing.username !== username && username) updates.username = username;
+          if (existing.user_id !== id) updates.user_id = id;
+          const matchId = existing.user_id;
+          const { error: updateError } = await supabase.from('fitbuddyai_userdata').update(updates).eq('user_id', matchId);
+          if (updateError) {
+            console.warn('[api/auth/create_profile] failed to rebind existing profile', updateError);
+            return res.status(500).json({ message: 'Failed to migrate existing profile.' });
+          }
+          return res.status(200).json({ ok: true, reused: true });
+        }
 
+        // No existing row: insert a new profile
+        const userRow = {
+          user_id: id,
+          email: normalizedEmail,
+          username,
+          avatar: '',
+          energy: 100,
+          streak: 0,
+          inventory: [],
+          accepted_privacy: false,
+          accepted_terms: false,
+          chat_history: [],
+          workout_plan: null,
+          questionnaire_progress: null,
+          banned: false,
+          role: 'basic_member'
+        };
+        const { error: uErr } = await supabase.from('fitbuddyai_userdata').insert(userRow);
+        if (uErr) {
+          console.warn('[api/auth/create_profile] fitbuddyai_userdata insert error', uErr);
+          return res.status(500).json({ message: 'Failed to create profile.' });
+        }
         return res.status(200).json({ ok: true });
       } catch (e) {
         console.error('[api/auth/create_profile] error', e);

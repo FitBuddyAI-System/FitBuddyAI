@@ -323,7 +323,7 @@ const Header: React.FC<HeaderProps> = ({ profileVersion, userData }) => {
               <span className="explore-sr-text">Explore menu</span>
             </button>
             <div className="explore-backdrop" aria-hidden="true" onClick={() => setExploreOpen(false)} />
-            <div className="dropdown-content explore-dropdown explore-drawer">
+            <div className={`dropdown-content explore-dropdown explore-drawer${exploreOpen ? ' active' : ''}`}>
               <div className="explore-profile">
                 <img
                   src={tryOnAvatar || (currentUser && currentUser.avatar && currentUser.avatar.trim() ? currentUser.avatar : "/images/fitbuddy_head.png")}

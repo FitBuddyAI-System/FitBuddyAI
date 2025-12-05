@@ -39,6 +39,7 @@ import WorkoutsPage from './components/WorkoutsPage';
 import MyPlanPage from './components/MyPlanPage';
 import PersonalLibraryPage from './components/PersonalLibraryPage';
 import SuggestWorkout from './components/SuggestWorkout';
+import { autoSaveWorkoutsFromAssessment } from './services/assessmentWorkouts';
 
 function App() {
   const [userData, setUserData] = useState<any | null>(null);
@@ -472,6 +473,10 @@ function App() {
                     // use wrapper to ensure calendar re-renders when plan is set
                     setWorkoutPlan(plan);
                     setPlanVersion(v => v + 1);
+                    const autoSaveResult = autoSaveWorkoutsFromAssessment(data);
+                    if (autoSaveResult.added > 0) {
+                      console.info(`[AI] Auto-saved ${autoSaveResult.added} workouts from assessment.`);
+                    }
                     navigate('/calendar');
                   }} 
                 />
@@ -486,7 +491,6 @@ function App() {
               ? (
                 <AgreementGuard userData={userData}>
                   <WorkoutCalendar 
-                    key={planVersion}
                     workoutPlan={workoutPlan}
                     userData={userData}
                     onUpdatePlan={(plan) => { setWorkoutPlan(plan); setPlanVersion(v => v + 1); }}
@@ -498,7 +502,6 @@ function App() {
                   ? <LoadingPage />
                   // If not signed in, still allow preview calendar (component handles guest fallback)
                   : <WorkoutCalendar 
-                      key={planVersion}
                       workoutPlan={workoutPlan}
                       userData={userData}
                       onUpdatePlan={(plan) => { setWorkoutPlan(plan); setPlanVersion(v => v + 1); }}

@@ -1,5 +1,6 @@
 import React from 'react';
 import './WorkoutsPage.css';
+import BackgroundDots from './BackgroundDots';
 import { loadSavedNames, subscribeSavedNames, persistSavedNames } from '../utils/savedNames';
 
 const PersonalLibraryPage: React.FC = () => {
@@ -132,13 +133,15 @@ const PersonalLibraryPage: React.FC = () => {
   const emptyCopy = 'Nothing saved yet — add workouts from the library to see them here.';
 
   return (
-    <div className="workouts-page">
-      <div className="workouts-hero">
-        <div className="hero-left">
-          <h1>Saved Workouts</h1>
-          <p className="hero-sub">Everything you save in the Workout Library shows up here.</p>
+    <div className="page-with-dots">
+      <BackgroundDots />
+      <div className="workouts-page">
+        <div className="workouts-hero">
+          <div className="hero-left">
+            <h1>Saved Workouts</h1>
+            <p className="hero-sub">Everything you save in the Workout Library shows up here.</p>
+          </div>
         </div>
-      </div>
 
       <section className="my-plan-section">
         <header className="my-plan-header">
@@ -298,6 +301,7 @@ const PersonalLibraryPage: React.FC = () => {
             </div>
           </div>
         )}
+      </div>
     </div>
   );
 };

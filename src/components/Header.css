@@ -169,13 +169,13 @@ body:not(.theme-dark) .explore-button { color: #fff; }
 }
 
 .explore-drawer {
-  display: none;
+  display: block;
   position: fixed;
   top: 0;
   left: 0;
   height: 100vh;
   width: min(420px, 55vw);
-  padding: 96px 18px 24px;
+  padding: 32px 18px 24px;
   background: var(--background-white, #fff);
   color: var(--text-dark, #111);
   box-shadow: 0 20px 60px rgba(0,0,0,0.35);
@@ -185,6 +185,19 @@ body:not(.theme-dark) .explore-button { color: #fff; }
   overflow-y: auto;
   border-right: 1px solid rgba(0,0,0,0.06);
   margin-left: 0;
+  transform: translateX(-115%);
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.25s ease;
+  will-change: transform, opacity;
+}
+
+.explore-drawer.active {
+  transform: translateX(0);
+  opacity: 1;
+  pointer-events: auto;
+  visibility: visible;
 }
 
 .explore-profile {
@@ -242,21 +255,22 @@ body:not(.theme-dark) .explore-button { color: #fff; }
 }
 
 .explore-profile-actions button {
-  background: #131b29;
-  color: #f7f9fc;
-  padding: 8px 12px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04));
+  color: #fdfdff;
+  padding: 9px 14px;
   border-radius: 10px;
   font-weight: 700;
-  font-size: 12px;
-  border: none;
+  font-size: 13px;
+  border: 2px solid rgba(255, 255, 255, 0.55);
   cursor: pointer;
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.25);
-  transition: background 0.18s ease, transform 0.15s ease, color 0.15s ease;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.35);
+  transition: background 0.18s ease, transform 0.15s ease, color 0.15s ease, border-color 0.18s ease;
 }
 
 .explore-profile-actions button:hover {
-  background: linear-gradient(135deg, #16d99c, #0fb67a);
+  background: linear-gradient(135deg, rgba(22, 217, 156, 0.2), rgba(15, 182, 122, 0.25));
   transform: translateY(-1px);
+  border-color: rgba(255, 255, 255, 0.8);
 }
 
 .explore-profile-actions button:active {
@@ -307,10 +321,7 @@ body:not(.theme-dark) .explore-button { color: #fff; }
   font-weight: 700;
 }
 
-.nav-dropdown .dropdown-content { display: none; }
-.nav-dropdown.open .dropdown-content { display: block; }
 .nav-dropdown.open .explore-backdrop { display: block; }
-.nav-dropdown.open .explore-drawer { display: block; }
 .nav-dropdown.open .explore-button { border-color: rgba(255,255,255,0.45); box-shadow: 0 12px 30px rgba(0,0,0,0.28); }
 
 /* When the explore drawer is open, blur the page content but keep the header sharp */
@@ -584,7 +595,7 @@ body.theme-dark .nav-button.active {
   color: rgba(255, 255, 255, 0.8);
 }
 
-.dropdown-content {
+.dropdown-content:not(.explore-drawer) {
   display: none;
   position: absolute;
   top: 100%;
@@ -600,10 +611,27 @@ body.theme-dark .nav-button.active {
   display: block;
 }
 
-/* Nav dropdown for Explore */
 .nav-dropdown { position: relative; }
-.nav-dropdown .dropdown-content { right: auto; left: 0; top: calc(100% + 6px); background: var(--background-white); color: var(--text-dark); padding: 6px; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.12); min-width: 180px }
-.nav-dropdown .dropdown-content button { display:block; width:100%; padding:8px 12px; background:none; border:none; text-align:left; cursor:pointer }
+.nav-dropdown .dropdown-content:not(.explore-drawer) {
+  right: auto;
+  left: 0;
+  top: calc(100% + 6px);
+  background: var(--background-white);
+  color: var(--text-dark);
+  padding: 6px;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  min-width: 180px;
+}
+.nav-dropdown .dropdown-content button {
+  display:block;
+  width:100%;
+  padding:8px 12px;
+  background:none;
+  border:none;
+  text-align:left;
+  cursor:pointer;
+}
 .nav-dropdown .dropdown-content button:hover { background: rgba(0,0,0,0.03) }
 /* Dark-mode tweak for dropdown hover to keep subtle contrast */
 body.theme-dark .nav-dropdown .dropdown-content button:hover { background: rgba(255,255,255,0.02) }
