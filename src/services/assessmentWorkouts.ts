@@ -72,6 +72,40 @@ const deriveCategoryKeys = (assessment: any): string[] => {
   return Array.from(found);
 };
 
+const DIFFICULTY_RANKS: Record<string, number> = {
+  easy: 0,
+  medium: 1,
+  hard: 2,
+  varies: 1
+};
+
+const getDifficultyRank = (value?: string | null): number => {
+  if (!value) return DIFFICULTY_RANKS.varies;
+  const normalized = value.toString().trim().toLowerCase();
+  if (normalized.includes('easy') || normalized.includes('beginner')) return DIFFICULTY_RANKS.easy;
+  if (normalized.includes('medium') || normalized.includes('intermediate')) return DIFFICULTY_RANKS.medium;
+  if (normalized.includes('hard') || normalized.includes('advanced')) return DIFFICULTY_RANKS.hard;
+  return DIFFICULTY_RANKS[normalized] ?? DIFFICULTY_RANKS.varies;
+};
+
+const getAssessmentDifficultyThreshold = (assessment: any): number => {
+  if (!assessment) return DIFFICULTY_RANKS.hard;
+  const candidates = [
+    assessment.fitnessLevel,
+    assessment.level,
+    assessment.experience,
+    assessment.experienceLevel
+  ];
+  for (const candidate of candidates) {
+    if (!candidate) continue;
+    const normalized = candidate.toString().split(/[-–]/)[0].trim().toLowerCase();
+    if (normalized.includes('beginner')) return DIFFICULTY_RANKS.easy;
+    if (normalized.includes('intermediate')) return DIFFICULTY_RANKS.medium;
+    if (normalized.includes('advanced')) return DIFFICULTY_RANKS.hard;
+  }
+  return DIFFICULTY_RANKS.hard;
+};
+
 export const pickWorkoutsFromAssessment = (assessment: any, limit = 20): Workout[] => {
   if (!assessment) return [];
   const workouts = getAllWorkouts();
@@ -84,7 +118,10 @@ export const pickWorkoutsFromAssessment = (assessment: any, limit = 20): Workout
     assessment.preferences ||
     ''
   );
-  const scored = workouts.map((workout) => {
+  const difficultyThreshold = getAssessmentDifficultyThreshold(assessment);
+  const allowedWorkouts = workouts.filter((workout) => getDifficultyRank(workout.difficultyKey) <= difficultyThreshold);
+  if (!allowedWorkouts.length) return [];
+  const scored = allowedWorkouts.map((workout) => {
     let score = 0;
     if (goalCategoryKeys.length) {
       goalCategoryKeys.forEach((categoryKey) => {
@@ -149,7 +186,9 @@ export const pickWorkoutsFromAssessment = (assessment: any, limit = 20): Workout
     addFromEntries(scored);
   }
 
-  const finalSelection = selected.length ? selected.slice(0, limit) : workouts.slice(0, Math.min(limit, workouts.length));
+  const finalSelection = selected.length
+    ? selected.slice(0, limit)
+    : allowedWorkouts.slice(0, Math.min(limit, allowedWorkouts.length));
   return finalSelection;
 };
 

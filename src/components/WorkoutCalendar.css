@@ -173,7 +173,9 @@ body.theme-dark .calendar-day.bridge-day {
 }
 
 body.theme-dark .day-header {
-  background: linear-gradient(135deg, #0fb77a, #1b9fe0);
+  background: linear-gradient(135deg, rgba(150, 193, 255, 0.95), rgba(110, 154, 255, 0.95));
+  border-color: rgba(190, 214, 255, 0.8);
+  box-shadow: 0 6px 18px rgba(111, 145, 229, 0.35);
 }
 
 body.theme-dark .calendar-preview-banner {
@@ -1211,56 +1213,70 @@ body.theme-dark .hero-card {
 }
 
 .calendar-grid {
+  position: relative;
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 2px;
-  background: transparent;
-  border-radius: 16px;
-  overflow: hidden;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 14px;
   margin-bottom: 40px;
-  box-shadow: 0 8px 32px var(--shadow-light);
+  padding: 18px 16px;
+  border-radius: 42px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 20px 55px rgba(15, 23, 42, 0.12);
+  backdrop-filter: blur(20px);
 }
 
 .day-header {
-  background: var(--primary-green);
-  color: white;
-  padding: 16px 8px;
-  text-align: center;
+  background: var(--gradient-primary);
+  border-radius: 999px;
+  padding: 12px 6px;
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-weight: 600;
   font-size: 14px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.6px;
+  color: rgba(255, 255, 255, 0.95);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 12px 24px rgba(21, 41, 70, 0.35);
 }
 
 .calendar-day {
-  background: white;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 22px;
   min-height: 120px;
-  padding: 12px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  position: relative;
+  padding: 14px;
   display: flex;
   flex-direction: column;
+  gap: 10px;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease, background 0.25s ease;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.15);
+  cursor: pointer;
+  color: var(--text-dark, #111);
 }
 
 .calendar-day:hover {
-  background: rgba(88, 204, 2, 0.05);
+  transform: translateY(-2px);
+  box-shadow: 0 20px 36px rgba(15, 23, 42, 0.25);
 }
 
 .calendar-day.today {
-  background: rgba(88, 204, 2, 0.1);
-  border: 2px solid var(--primary-green);
+  background: rgba(30, 203, 123, 0.12);
+  border-color: rgba(30, 203, 123, 0.6);
+  box-shadow: 0 0 0 2px rgba(30, 203, 123, 0.4), 0 18px 32px rgba(15, 23, 42, 0.25);
 }
 
 .calendar-day.has-workout:hover {
-  transform: scale(1.02);
-  box-shadow: 0 8px 24px var(--shadow-medium);
+  transform: translateY(-2px) scale(1.01);
+  box-shadow: 0 20px 38px rgba(15, 23, 42, 0.3);
 }
 
 .day-number {
   font-size: 16px;
   font-weight: 600;
-  color: var(--text-dark);
+  color: var(--text-dark, #111);
   margin-bottom: 8px;
 }
 
@@ -1281,6 +1297,44 @@ body.theme-dark .hero-card {
   overflow: hidden;
   background: rgba(30, 203, 123, 0.08);
   border: 2px solid transparent;
+}
+
+body.theme-dark .calendar-grid {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(8, 12, 26, 0.35);
+  box-shadow: 0 20px 55px rgba(0, 0, 0, 0.6);
+}
+
+body.theme-dark .day-header {
+  background: var(--gradient-primary);
+  color: rgba(255, 255, 255, 0.95);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.55);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.6);
+}
+
+body.theme-dark .calendar-day {
+  background: rgba(5, 11, 26, 0.94);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.55);
+  color: #f0f6ff;
+}
+
+body.theme-dark .calendar-day:hover {
+  box-shadow: 0 20px 36px rgba(0, 0, 0, 0.65);
+}
+
+body.theme-dark .calendar-day.today {
+  background: rgba(30, 203, 123, 0.12);
+  border-color: rgba(30, 203, 123, 0.6);
+  box-shadow: 0 0 0 2px rgba(30, 203, 123, 0.6), 0 18px 32px rgba(0, 0, 0, 0.5);
+}
+
+body.theme-dark .calendar-day.has-workout:hover {
+  box-shadow: 0 20px 38px rgba(0, 0, 0, 0.65);
+}
+
+body.theme-dark .day-number {
+  color: #f0f6ff;
 }
 
 .workout-indicator.strength { border-color: #ff6b6b; background: rgba(255, 107, 107, 0.16); color: #b12222; }
