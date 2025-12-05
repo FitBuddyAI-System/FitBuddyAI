@@ -1,40 +1,21 @@
 import React, { useMemo, useState } from 'react';
 import './WorkoutsPage.css';
+import BackgroundDots from './BackgroundDots';
 // savedLibrary types unused here; using saved-names storage for saved list
 import { loadSavedNames, addSavedName, subscribeSavedNames, persistSavedNames, removeSavedName } from '../utils/savedNames';
 import { loadAssessmentData } from '../services/localStorage';
+import { Workout, getAllWorkouts, getCategoryOptions, getCategoryBuckets } from '../services/workoutLibrary';
+import { pickWorkoutsFromAssessment } from '../services/assessmentWorkouts';
 
-type Workout = {
-  id?: string;
-  name?: string;
-  images?: string[];
-  video?: string;
-  featuredVideo?: boolean;
-  resources?: Array<{ label: string; url: string }>;
-  galleryImages?: string[];
-  imageCaptions?: string[];
-  difficulty?: string;
-  duration?: string;
-  exampleNote?: string;
-  meta?: Record<string, any>;
-  // Fields matching the exercises JSON schema
-  force?: string | null;
-  level?: string;
-  mechanic?: string | null;
-  equipment?: string | string[] | null;
-  primaryMuscles?: string[];
-  secondaryMuscles?: string[];
-  instructions?: string[];
-  category?: string;
-  // UI helpers added at runtime
-  displayDifficulty?: string;
-  difficultyClass?: string;
-  displayCategory?: string;
-  categoryClass?: string;
-  searchText?: string;
-  categoryKey?: string;
-  difficultyKey?: string;
-};
+const workouts = getAllWorkouts();
+const categoryOptions = getCategoryOptions();
+const categoryBuckets = getCategoryBuckets();
+
+const ITEMS_PER_BATCH = 18;
+const INITIAL_BATCHES = 5;
+const INITIAL_VISIBLE_COUNT = ITEMS_PER_BATCH * INITIAL_BATCHES;
+
+const normalizeCategoryLabel = (value: string) => String(value || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'all';
 
 const WorkoutsPage: React.FC = () => {
   const [query, setQuery] = useState('');
@@ -44,21 +25,8 @@ const WorkoutsPage: React.FC = () => {
   const [mySavedNames, setMySavedNames] = useState<string[]>(() => loadSavedNames());
   const [saveNotice, setSaveNotice] = useState<string | null>(null);
   const [aiSaving, setAiSaving] = useState(false);
-
-  // Map JSON level values to UI difficulty labels
-  const mapLevel = (lvl?: string) => {
-    if (!lvl) return 'Varies';
-    const s = String(lvl).toLowerCase();
-    if (s === 'beginner') return 'Easy';
-    if (s === 'intermediate') return 'Medium';
-    if (s === 'expert' || s === 'advanced') return 'Hard';
-    // normalize some alternate shapes
-    if (s === 'easy' || s === 'medium' || s === 'moderate' || s === 'hard') {
-      if (s === 'moderate') return 'Medium';
-      return s.charAt(0).toUpperCase() + s.slice(1);
-    }
-    return 'Varies';
-  };
+  const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE_COUNT);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   const removeFromPlan = (item: Workout & { title: string }) => {
     setMySavedNames(prev => {
@@ -73,79 +41,6 @@ const WorkoutsPage: React.FC = () => {
       return next;
     });
   };
-  const capitalizeWords = (s?: string) => {
-    if (!s) return '';
-    return String(s).split(/\s+/).map(p => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase()).join(' ');
-  };
-  const sanitizeClassName = (s?: string) => {
-    if (!s) return 'uncategorized';
-    return String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'uncategorized';
-  };
-  const normalizeCategoryLabel = (s: string) => s.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-');
-  const { workouts, categoryOptions, categoryBuckets } = useMemo(() => {
-    // Dynamically import all exercise JSON files under src/data/exercises
-    // Using Vite's import.meta.glob with eager option to bundle them.
-    const modules = (import.meta as any).glob('../data/exercises/*.json', { eager: true }) as Record<string, any>;
-    // Build an assets map for images (bundled URLs)
-    const assets = (import.meta as any).glob('../data/exercises/**', { eager: true, as: 'url' }) as Record<string, string>;
-    const categoryMap = new Map<string, string>();
-    const items: Array<{ title: string } & Workout & Record<string, any>> = Object.entries(modules).map(([path, mod]) => {
-      const data = (mod && mod.default) ? mod.default : mod;
-      const title = data.name || data.id || path.split('/').pop()?.replace('.json', '') || 'Unknown';
-      // Resolve image URLs relative to this module using new URL()
-      const images: string[] = Array.isArray(data.images) ? data.images.map((p: string) => {
-        // prefer pre-bundled asset URL (exact match)
-        const exactKey = `../data/exercises/${p}`;
-        if (assets && assets[exactKey]) return assets[exactKey];
-
-        // Robust lookup: try to find any asset key that ends with the image path
-        if (assets) {
-          const found = Object.entries(assets).find(([k]) => k.endsWith(`/${p}`) || k.endsWith(p));
-          if (found) return found[1];
-        }
-
-        // fallback: attempt to build a relative URL
-        try { return new URL(`../data/exercises/${p}`, import.meta.url).href; } catch (e) { return `/data/exercises/${p}`; }
-      }) : [];
-      // compute a UI difficulty label based on JSON 'level' or 'difficulty'
-      const displayDifficulty = mapLevel(data.level || data.difficulty);
-      const difficultyClass = (displayDifficulty || 'Varies').toLowerCase();
-      const displayCategory = data.category ? capitalizeWords(data.category) : '';
-      const categoryClass = sanitizeClassName(data.category);
-      // Normalize and capitalize muscle names so UI can assume consistent casing
-      const primaryMuscles = Array.isArray(data.primaryMuscles) ? data.primaryMuscles.map((m: string) => capitalizeWords(String(m))) : [];
-      const secondaryMuscles = Array.isArray(data.secondaryMuscles) ? data.secondaryMuscles.map((m: string) => capitalizeWords(String(m))) : [];
-      const searchText = [
-        title,
-        data.exampleNote,
-        data.meta?.description,
-        primaryMuscles.join(' '),
-        secondaryMuscles.join(' '),
-        data.displayCategory || data.category,
-        Array.isArray(data.instructions) ? data.instructions.join(' ') : ''
-      ].filter(Boolean).join(' ').toLowerCase();
-      const categoryLabel = (displayCategory && displayCategory.trim())
-        || (data.category ? capitalizeWords(String(data.category)) : 'Uncategorized');
-      const categoryKey = normalizeCategoryLabel(displayCategory || data.category || 'Uncategorized');
-      if (!categoryMap.has(categoryKey)) categoryMap.set(categoryKey, categoryLabel);
-      const difficultyKey = (displayDifficulty || '').toLowerCase();
-
-      return { title, ...data, images, displayDifficulty, difficultyClass, displayCategory, categoryClass, primaryMuscles, secondaryMuscles, searchText, categoryKey, difficultyKey };
-    });
-    // keep deterministic order once to avoid re-sorting during filters
-    items.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
-    // build buckets after items are sorted so intra-category order is stable
-    const categoryBuckets = new Map<string, typeof items>();
-    items.forEach((item) => {
-      const key = item.categoryKey || 'uncategorized';
-      if (!categoryBuckets.has(key)) categoryBuckets.set(key, []);
-      categoryBuckets.get(key)!.push(item);
-    });
-    const categoryEntries = Array.from(categoryMap.entries()).map(([key, label]) => ({ key, label }));
-    categoryEntries.sort((a, b) => a.label.localeCompare(b.label));
-    const categoryOptions = [{ key: 'all', label: 'All' }, ...categoryEntries];
-    return { workouts: items, categoryOptions, categoryBuckets };
-  }, []);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -158,6 +53,51 @@ const WorkoutsPage: React.FC = () => {
       return (w as any).searchText ? (w as any).searchText.includes(q) : false;
     });
   }, [workouts, categoryBuckets, query, difficulty, categorySort]);
+
+  const loadMoreRef = React.useRef<HTMLDivElement | null>(null);
+  const visibleCountRef = React.useRef(visibleCount);
+  const loadingRef = React.useRef(isLoadingMore);
+  const filteredLengthRef = React.useRef(filtered.length);
+  const loadTimerRef = React.useRef<number | null>(null);
+
+  React.useEffect(() => {
+    if (loadTimerRef.current) {
+      window.clearTimeout(loadTimerRef.current);
+      loadTimerRef.current = null;
+    }
+    setVisibleCount(Math.min(filtered.length, INITIAL_VISIBLE_COUNT));
+    setIsLoadingMore(false);
+  }, [filtered]);
+
+  React.useEffect(() => { visibleCountRef.current = visibleCount; }, [visibleCount]);
+  React.useEffect(() => { loadingRef.current = isLoadingMore; }, [isLoadingMore]);
+  React.useEffect(() => { filteredLengthRef.current = filtered.length; }, [filtered.length]);
+
+  React.useEffect(() => {
+    const trigger = loadMoreRef.current;
+    if (!trigger) return;
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        if (loadingRef.current) return;
+        if (visibleCountRef.current >= filteredLengthRef.current) return;
+        setIsLoadingMore(true);
+        loadTimerRef.current = window.setTimeout(() => {
+          setVisibleCount((prev) => Math.min(prev + ITEMS_PER_BATCH, filteredLengthRef.current));
+          setIsLoadingMore(false);
+          loadTimerRef.current = null;
+        }, 420);
+      });
+    }, { rootMargin: '160px' });
+    observer.observe(trigger);
+    return () => {
+      observer.disconnect();
+      if (loadTimerRef.current) {
+        window.clearTimeout(loadTimerRef.current);
+        loadTimerRef.current = null;
+      }
+    };
+  }, []);
 
   React.useEffect(() => {
     const unsub = subscribeSavedNames((list) => setMySavedNames(list));
@@ -181,47 +121,9 @@ const WorkoutsPage: React.FC = () => {
 
   
 
+  const visibleWorkouts = filtered.slice(0, Math.min(visibleCount, filtered.length));
+
   const selectedWorkout = selected ? workouts.find(w => w.title === selected) : undefined;
-
-  const pickWorkoutsFromAssessment = (assessment: any) => {
-    if (!assessment) return [];
-    const goalRaw = String(assessment.goal || assessment.primaryGoal || assessment.motivation || '').toLowerCase();
-    const focusRaw = assessment.focusAreas || assessment.targetMuscles || assessment.primaryMuscles || assessment.focus || [];
-    const focusTerms: string[] = Array.isArray(focusRaw)
-      ? focusRaw.map((f: any) => String(f).toLowerCase())
-      : String(focusRaw).split(/[,/]/).map((s: string) => s.trim().toLowerCase()).filter(Boolean);
-    const goalToCategory = () => {
-      if (goalRaw.includes('strength') || goalRaw.includes('muscle')) return 'strength';
-      if (goalRaw.includes('stretch') || goalRaw.includes('flex') || goalRaw.includes('mobility')) return 'stretching';
-      if (goalRaw.includes('cardio') || goalRaw.includes('endurance')) return 'cardio';
-      if (goalRaw.includes('power')) return 'powerlifting';
-      return '';
-    };
-    const goalKey = goalToCategory();
-
-    const scored = workouts.map(w => {
-      let score = 0;
-      if (goalKey && (w.categoryKey === goalKey || (w.categoryKey || '').includes(goalKey))) score += 3;
-      if (focusTerms.length) {
-        const muscles = [...(w.primaryMuscles || []), ...(w.secondaryMuscles || [])].map(m => m.toLowerCase());
-        focusTerms.forEach(term => {
-          if (muscles.some(m => m.includes(term))) score += 2;
-        });
-      }
-      // Prefer matching difficulty if present on assessment
-      const assessLevel = assessment.level || assessment.experience || assessment.experienceLevel;
-      if (assessLevel) {
-        const assessKey = mapLevel(assessLevel).toLowerCase();
-        if (assessKey && w.difficultyKey === assessKey) score += 1;
-      }
-      return { w, score };
-    });
-
-    scored.sort((a, b) => b.score - a.score);
-    const top = scored.slice(0, 8).map(s => s.w).filter(Boolean);
-    if (top.length > 0) return top;
-    return workouts.slice(0, 6);
-  };
 
   const saveFromAssessment = () => {
     try {
@@ -257,9 +159,10 @@ const WorkoutsPage: React.FC = () => {
   };
 
   return (
-    <div className="workouts-page">
-      <div className="workouts-hero">
-        <div className="hero-left">
+    <div className="page-with-dots">
+      <BackgroundDots />
+      <div className="workouts-page">
+        <div className="workouts-hero">
           <h1>
             Workout Library
             <span className="saved-count" aria-hidden="true"> ({mySavedNames.length} saved)</span>
@@ -310,7 +213,7 @@ const WorkoutsPage: React.FC = () => {
             </div>
           </div>
         </div>
-      </div>
+
       {saveNotice && (
         <div className="save-notice" role="status">
           {saveNotice}
@@ -322,7 +225,7 @@ const WorkoutsPage: React.FC = () => {
           <div className="empty">No workouts found. Try a different search.</div>
         )}
 
-        {filtered.map(w => (
+        {visibleWorkouts.map(w => (
           <article
             key={w.title}
             className="workout-card"
@@ -356,6 +259,16 @@ const WorkoutsPage: React.FC = () => {
         ))}
       </div>
 
+      <div className="workouts-grid-footer">
+        <div ref={loadMoreRef} className="load-more-trigger" aria-hidden="true" />
+        {isLoadingMore && (
+          <div className="loading-indicator" role="status">
+            <span className="spinner" aria-hidden="true" />
+            Loading more workouts…
+          </div>
+        )}
+      </div>
+
       {selectedWorkout && (
         <WorkoutModal
           title={selectedWorkout.title}
@@ -373,6 +286,7 @@ const WorkoutsPage: React.FC = () => {
         />
       )}
     </div>
+  </div>
   );
 };
 
@@ -450,32 +364,39 @@ function WorkoutModal({ title, data, onClose, onAdd, isSaved }: { title: string;
               <section className="instructions">
                 <h4>Instructions</h4>
                 <ol>
-                  {data.instructions.map((ins, idx) => <li key={idx}>{ins}</li>)}
+                  {data.instructions.map((ins, idx) => (
+                    <li key={idx}>{ins}</li>
+                  ))}
                 </ol>
               </section>
             )}
 
-              <div className="muscle-grid">
-                {((Array.isArray(data.primaryMuscles) && data.primaryMuscles.length > 0) || (Array.isArray(data.secondaryMuscles) && data.secondaryMuscles.length > 0)) && (
-                  <div className="muscle-section modal">
-                    <div className="muscle-header">Muscles Exercised</div>
-                    <div className="muscle-list">
-                      {Array.isArray(data.primaryMuscles) && data.primaryMuscles.length > 0 && (
-                        <div className="muscle-col">
-                          <strong>Primary Muscles</strong>
-                          <div>
-                            <span className="muscle-badge primary" title={data.primaryMuscles.join(', ')}>
-                              <span className="muscle-text primary-text">{data.primaryMuscles.join(', ')}</span>
+            <div className="muscle-grid">
+              {((Array.isArray(data.primaryMuscles) && data.primaryMuscles.length > 0) ||
+                (Array.isArray(data.secondaryMuscles) && data.secondaryMuscles.length > 0)) && (
+                <div className="muscle-section modal">
+                  <div className="muscle-header">Muscles Exercised</div>
+                  <div className="muscle-list">
+                    {Array.isArray(data.primaryMuscles) && data.primaryMuscles.length > 0 && (
+                      <div className="muscle-col">
+                        <strong>Primary Muscles</strong>
+                        <div>
+                          <span className="muscle-badge primary" title={data.primaryMuscles.join(', ')}>
+                            <span className="muscle-text primary-text">
+                              {data.primaryMuscles.join(', ')}
                             </span>
-                          </div>
+                          </span>
                         </div>
-                      )}
-                      {Array.isArray(data.secondaryMuscles) && data.secondaryMuscles.length > 0 && (
-                        <div className="muscle-col">
-                          <strong>Secondary Muscles</strong>
-                          <div>
-                            <span className="muscle-badge secondary" title={data.secondaryMuscles.join(', ')}>
-                              <span className="muscle-text secondary-text">{data.secondaryMuscles.join(', ')}</span>
+                      </div>
+                    )}
+                    {Array.isArray(data.secondaryMuscles) && data.secondaryMuscles.length > 0 && (
+                      <div className="muscle-col">
+                        <strong>Secondary Muscles</strong>
+                        <div>
+                          <span className="muscle-badge secondary" title={data.secondaryMuscles.join(', ')}>
+                            <span className="muscle-text secondary-text">
+                              {data.secondaryMuscles.join(', ')}
+                            </span>
                           </span>
                         </div>
                       </div>

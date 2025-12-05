@@ -70,6 +70,19 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
   // Add delete mode state
   const [deleteMode, setDeleteMode] = useState(false);
   const [selectedForDeletion, setSelectedForDeletion] = useState<string[]>([]);
+  const [manualRestOverrides, setManualRestOverrides] = useState<string[]>([]);
+  const addManualRestOverrides = (dates: string[]) => {
+    if (!dates.length) return;
+    setManualRestOverrides(prev => {
+      const next = new Set(prev);
+      dates.forEach(date => next.add(date));
+      return Array.from(next);
+    });
+  };
+  const removeManualRestOverrides = (dates: string[]) => {
+    if (!dates.length) return;
+    setManualRestOverrides(prev => prev.filter(date => !dates.includes(date)));
+  };
   const previewPlanSeededRef = useRef(false);
   const lastPlanIdRef = useRef<string | null>(initialStoredPlanId);
   const guestUserData: UserData = {
@@ -228,7 +241,7 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
 
   useEffect(() => {
     // no-op: kept for potential future side-effects when workoutPlan changes
-  }, [workoutPlan]);
+  }, [workoutPlan, manualRestOverrides]);
 
   // Persist multi-type days to user profile for history/backup
   useEffect(() => {
@@ -334,9 +347,12 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
               const dateStr = format(d, 'yyyy-MM-dd');
               const patternIndex = i % 7;
               const slot = (pattern[patternIndex] || '').toString().toLowerCase();
-              if (slot.includes('rest')) {
-                // if there's no existing entry for this date, insert a Rest Day
-                if (!existingDates.has(dateStr)) {
+          if (slot.includes('rest')) {
+            if (manualRestOverrides.includes(dateStr)) {
+              continue;
+            }
+            // if there's no existing entry for this date, insert a Rest Day
+            if (!existingDates.has(dateStr)) {
                   const restWorkout = {
                     date: dateStr,
                     workouts: [{
@@ -784,6 +800,10 @@ updatedWorkouts = updatedWorkouts.map(workout => {
       // Prefer the userData prop (current session) before falling back to storage
       const existingUser = (userData && typeof userData === 'object') ? userData : loadUserData();
       if (!existingUser) return;
+      const storedStreak = typeof existingUser.streak === 'number' ? existingUser.streak : undefined;
+      if (typeof storedStreak === 'number' && storedStreak > 0 && streak <= storedStreak) {
+        return;
+      }
       const nextUser = { ...(existingUser || {}), streak };
       saveUserData({ data: nextUser });
       // Broadcast to any listeners that streak changed
@@ -937,6 +957,7 @@ updatedWorkouts = updatedWorkouts.map(workout => {
     };
 
     onUpdatePlan(updatedPlan);
+    removeManualRestOverrides([dateString]);
   };
   const handleAddRestDayWithPicker = () => {
     if (selectedAddDate) {
@@ -1092,8 +1113,10 @@ updatedWorkouts = updatedWorkouts.map(workout => {
   try { console.log('[WorkoutCalendar] Saving batch-generated plan to localStorage:', { totalDays: updatedPlan.totalDays, dailyWorkoutsCount: updatedPlan.dailyWorkouts.length }); saveWorkoutPlan(updatedPlan); } catch (err) { console.warn('Failed to save batch-generated plan locally:', err); }
 
   // clear loading states and selection when done
+  const datesToClearOverrides = [...selectedForAdd];
   setLoadingDates([]);
   setSelectedForAdd([]);
+  removeManualRestOverrides(datesToClearOverrides);
   };
   const handleAddWorkoutDay = async (date?: Date, workoutType?: 'strength' | 'cardio' | 'flexibility' | 'rest' | 'mixed', preferences?: any) => {
     if (!workoutPlan) return;
@@ -1514,6 +1537,7 @@ updatedWorkouts = updatedWorkouts.map(workout => {
     }
     const updatedDaily = workoutPlan.dailyWorkouts.filter(w => w.date !== draggedWorkout.date);
     const updatedPlan = { ...workoutPlan, dailyWorkouts: updatedDaily, totalDays: updatedDaily.length };
+    addManualRestOverrides([draggedWorkout.date]);
     onUpdatePlan(updatedPlan);
     try { saveWorkoutPlan(updatedPlan); } catch (err) { console.warn('Failed to save plan after legend drop delete:', err); }
 
@@ -1632,6 +1656,7 @@ updatedWorkouts = updatedWorkouts.map(workout => {
         const nextDaily = [...withoutTarget, normalizedDay].sort((a, b) => a.date.localeCompare(b.date));
         const updatedPlan = { ...workoutPlan, dailyWorkouts: nextDaily, totalDays: nextDaily.length };
         onUpdatePlan(updatedPlan);
+        removeManualRestOverrides([targetDateString]);
         try { saveWorkoutPlan(updatedPlan); } catch (err) { console.warn('Failed to save generated day locally:', err); }
         setLastUpdatedDate(targetDateString);
         window.setTimeout(() => setLastUpdatedDate(null), 2000);
@@ -1728,6 +1753,7 @@ updatedWorkouts = updatedWorkouts.map(workout => {
     // Persist cleared plan and update UI
     onUpdatePlan(clearedPlan);
     try { saveWorkoutPlan(clearedPlan); } catch (err) { console.warn('Failed to persist cleared plan:', err); }
+    setManualRestOverrides([]);
 
     // If user is signed in, also overwrite their server backup immediately
     try {
@@ -1754,6 +1780,7 @@ updatedWorkouts = updatedWorkouts.map(workout => {
       return;
     }
     const updated = workoutPlan.dailyWorkouts.filter(w => !selectedForDeletion.includes(w.date));
+    addManualRestOverrides(selectedForDeletion);
     onUpdatePlan({ ...workoutPlan, dailyWorkouts: updated });
     setSelectedForDeletion([]);
     setDeleteMode(false);
@@ -1778,11 +1805,12 @@ updatedWorkouts = updatedWorkouts.map(workout => {
           </div>
         )}
         {/* Header */}
-        <div className="calendar-header">
-          <div className="user-info">
-            <h1>Welcome back, {displayName}!</h1>
-            <p>{workoutPlan.description}</p>
-          </div>
+          <div className="calendar-header">
+            <div className="user-info">
+              <div className="welcome-badge">
+              <h1>Welcome back, {displayName}!</h1>
+            </div>
+            </div>
           
           <div className="progress-stats">
             <div className="stat-card">
@@ -1884,7 +1912,7 @@ updatedWorkouts = updatedWorkouts.map(workout => {
         {/* Calendar Grid */}
         <div className="calendar-grid">
           {/* Day headers */}
-          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+          {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map(day => (
             <div key={day} className="day-header">
               {day}
             </div>

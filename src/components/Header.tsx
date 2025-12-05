@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Calendar, User, Flame, Sparkles, Home } from 'lucide-react';
-import { loadQuestionnaireProgress, clearUserData, clearQuestionnaireProgress, clearWorkoutPlan, loadAssessmentData } from '../services/localStorage';
+import { loadQuestionnaireProgress, clearUserData, clearQuestionnaireProgress, loadAssessmentData } from '../services/localStorage';
 import './Header.css';
 import { backupAndDeleteSensitive } from '../services/cloudBackupService';
 
@@ -323,60 +323,64 @@ const Header: React.FC<HeaderProps> = ({ profileVersion, userData }) => {
               <span className="explore-sr-text">Explore menu</span>
             </button>
             <div className="explore-backdrop" aria-hidden="true" onClick={() => setExploreOpen(false)} />
-            <div className="dropdown-content explore-dropdown explore-drawer">
-              <div className="explore-profile">
-                <img
-                  src={tryOnAvatar || (currentUser && currentUser.avatar && currentUser.avatar.trim() ? currentUser.avatar : "/images/fitbuddy_head.png")}
-                  alt="Profile"
-                  className="explore-profile-image"
-                  onClick={() => { setExploreOpen(false); navigate(isSignedIn ? '/profile' : '/signin'); }}
-                />
-                <div className="explore-profile-text">
-                  <div className="explore-profile-name">
-                    {isSignedIn ? (((currentUser?.username && currentUser.username.trim()) || 'User')) : 'Sign in to personalize'}
+            <div className={`dropdown-content explore-dropdown explore-drawer${exploreOpen ? ' active' : ''}`}>
+              <div className="explore-drawer-content">
+                <div className="explore-profile">
+                  <img
+                    src={tryOnAvatar || (currentUser && currentUser.avatar && currentUser.avatar.trim() ? currentUser.avatar : "/images/fitbuddy_head.png")}
+                    alt="Profile"
+                    className="explore-profile-image"
+                    onClick={() => { setExploreOpen(false); navigate(isSignedIn ? '/profile' : '/signin'); }}
+                  />
+                  <div className="explore-profile-text">
+                    <div className="explore-profile-name">
+                      {isSignedIn ? (((currentUser?.username && currentUser.username.trim()) || 'User')) : 'Sign in to personalize'}
+                    </div>
+                    {isSignedIn && (
+                      <div className="explore-profile-counters">
+                        <div className="header-counter streak">
+                          <Flame size={18} color="#ffb347" style={{ marginRight: 4 }} />
+                          <span className="counter-value">{currentUser?.streak ?? 0}</span>
+                        </div>
+                        <div className="header-counter energy">
+                          <Sparkles size={18} color="#1e90cb" style={{ marginRight: 4 }} />
+                          <span className="counter-value">{currentUser?.energy ?? 0}</span>
+                        </div>
+                      </div>
+                    )}
+                    <div className="explore-profile-actions">
+                      <button onClick={() => { setExploreOpen(false); navigate(isSignedIn ? '/profile' : '/signin'); }}>
+                        {isSignedIn ? 'View Profile' : 'Sign In'}
+                      </button>
+                    </div>
                   </div>
+                </div>
+                <div className="explore-drawer-links">
+                  <button onClick={() => { setExploreOpen(false); navigate('/?intro=0'); }}>Home</button>
+                  <button onClick={() => { setExploreOpen(false); navigate('/workouts'); }}>Workout Library</button>
+                  <button onClick={() => { setExploreOpen(false); navigate('/library'); }}>Saved Workouts</button>
+                  <button onClick={() => { setExploreOpen(false); navigate('/questionnaire'); }}>Assessment</button>
+                  <button onClick={() => { setExploreOpen(false); navigate('/calendar'); }}>Calendar</button>
+                  <button
+                    onClick={() => {
+                      try { window.dispatchEvent(new CustomEvent('fitbuddyai-open-chat')); } catch {}
+                      setExploreOpen(false);
+                      navigate('/chat');
+                    }}
+                  >
+                    Chat
+                  </button>
+                  <button onClick={() => { setExploreOpen(false); navigate('/nutrition'); }}>Nutrition</button>
+                  <button onClick={() => { setExploreOpen(false); navigate('/blog'); }}>Blog</button>
+                  <button onClick={() => { setExploreOpen(false); navigate('/pricing'); }}>Pricing</button>
+                  <button onClick={() => { setExploreOpen(false); navigate('/shop'); }} >Shop</button>
                   {isSignedIn && (
-                    <div className="explore-profile-counters">
-                      <div className="header-counter streak">
-                        <Flame size={18} color="#ffb347" style={{ marginRight: 4 }} />
-                        <span className="counter-value">{currentUser?.streak ?? 0}</span>
-                      </div>
-                      <div className="header-counter energy">
-                        <Sparkles size={18} color="#1e90cb" style={{ marginRight: 4 }} />
-                        <span className="counter-value">{currentUser?.energy ?? 0}</span>
-                      </div>
+                    <div className="explore-footer">
+                      <button onClick={() => { setExploreOpen(false); navigate('/profile/settings'); }}>Settings</button>
                     </div>
                   )}
-                  <div className="explore-profile-actions">
-                    <button onClick={() => { setExploreOpen(false); navigate(isSignedIn ? '/profile' : '/signin'); }}>
-                      {isSignedIn ? 'View Profile' : 'Sign In'}
-                    </button>
-                  </div>
                 </div>
               </div>
-              <button onClick={() => { setExploreOpen(false); navigate('/?intro=0'); }}>Home</button>
-              <button onClick={() => { setExploreOpen(false); navigate('/workouts'); }}>Workout Library</button>
-              <button onClick={() => { setExploreOpen(false); navigate('/library'); }}>Saved Workouts</button>
-              <button onClick={() => { setExploreOpen(false); navigate('/questionnaire'); }}>Assessment</button>
-              <button onClick={() => { setExploreOpen(false); navigate('/calendar'); }}>Calendar</button>
-              <button
-                onClick={() => {
-                  try { window.dispatchEvent(new CustomEvent('fitbuddyai-open-chat')); } catch {}
-                  setExploreOpen(false);
-                  navigate('/chat');
-                }}
-              >
-                Chat
-              </button>
-              <button onClick={() => { setExploreOpen(false); navigate('/nutrition'); }}>Nutrition</button>
-              <button onClick={() => { setExploreOpen(false); navigate('/blog'); }}>Blog</button>
-              <button onClick={() => { setExploreOpen(false); navigate('/pricing'); }}>Pricing</button>
-              <button onClick={() => { setExploreOpen(false); navigate('/shop'); }} >Shop</button>
-              {isSignedIn && (
-                <div className="explore-footer">
-                  <button onClick={() => { setExploreOpen(false); navigate('/profile/settings'); }}>Settings</button>
-                </div>
-              )}
             </div>
           </div>
 
@@ -501,7 +505,6 @@ const Header: React.FC<HeaderProps> = ({ profileVersion, userData }) => {
                           // Now clear stored user and related data using helpers
                           try { clearUserData(); } catch {}
                           try { clearQuestionnaireProgress(); } catch {}
-                          try { clearWorkoutPlan(); } catch {}
                           // Also call legacy signOut to remove any auth cookies/local keys if needed
                           try { /* legacy signOut is handled elsewhere */ } catch {}
                           // Notify app and navigate to sign-in

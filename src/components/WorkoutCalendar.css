@@ -101,7 +101,8 @@
 
 .calendar-page {
   --calendar-day-height: 150px;
-  min-height: calc(100vh - 60px);
+  flex: 1;
+  min-height: 0;
   background: transparent;
   padding: 40px 40px 44px;
   position: relative;
@@ -112,7 +113,6 @@ body.theme-dark .calendar-page {
   background: transparent;
 }
 
-body.theme-dark .calendar-header .user-info,
 body.theme-dark .stat-card,
 body.theme-dark .calendar-day,
 body.theme-dark .batch-add-panel,
@@ -123,6 +123,13 @@ body.theme-dark .calendar-preview-callout {
   color: var(--text-dark);
   box-shadow: 0 8px 28px rgba(0,0,0,0.45);
   border-color: #1f2a36;
+}
+
+body.theme-dark .calendar-header .user-info {
+  background: transparent;
+  color: var(--text-dark);
+  box-shadow: none;
+  border-color: transparent;
 }
 
 body.theme-dark .calendar-container {
@@ -139,6 +146,10 @@ body.theme-dark .workout-edit-form select {
   background: #0b1320;
   border-color: #1f2a36;
   color: var(--text-dark);
+}
+
+body.theme-dark .nav-button {
+  color: var(--primary-green);
 }
 
 body.theme-dark .calendar-grid {
@@ -162,7 +173,9 @@ body.theme-dark .calendar-day.bridge-day {
 }
 
 body.theme-dark .day-header {
-  background: linear-gradient(135deg, #0fb77a, #1b9fe0);
+  background: linear-gradient(135deg, rgba(150, 193, 255, 0.95), rgba(110, 154, 255, 0.95));
+  border-color: rgba(190, 214, 255, 0.8);
+  box-shadow: 0 6px 18px rgba(111, 145, 229, 0.35);
 }
 
 body.theme-dark .calendar-preview-banner {
@@ -231,6 +244,8 @@ body.theme-dark .batch-add-panel textarea {
   align-items: flex-start;
   margin-bottom: 40px;
   gap: 40px;
+  background: transparent;
+  border: none;
 }
 
 /* Ensure the header's user-info (title + description) is left-aligned */
@@ -239,13 +254,35 @@ body.theme-dark .batch-add-panel textarea {
   flex-direction: column;
   align-items: flex-start;
   text-align: left;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  margin: 0;
 }
 
 .user-info h1 {
   font-size: 32px;
   font-weight: 700;
   color: var(--text-dark);
-  margin-bottom: 8px;
+  margin: 0;
+}
+
+.user-info .welcome-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 18px;
+  border: 1px solid var(--border-light);
+  background: var(--background-white, #fff);
+  padding: 16px 22px;
+  margin-bottom: 12px;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
+}
+
+body.theme-dark .user-info .welcome-badge {
+  background: #0f1624;
+  border-color: #1f2a36;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
 }
 
 .user-info p {
@@ -356,25 +393,40 @@ body.theme-dark .batch-add-panel textarea {
   justify-content: center;
   width: 48px;
   height: 48px;
-  background: #ffffff;
+  background: var(--background-white);
   border: 2px solid var(--border-light);
   border-radius: 12px;
   cursor: pointer;
-  transition: all 0.2s ease;
-  color: var(--text-dark);
-  box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+  transition: border-color 0.2s ease, color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+  color: var(--primary-green);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.12);
 }
 
 .nav-button:hover {
   border-color: var(--primary-green);
-  color: var(--primary-green);
-  transform: scale(1.05);
+  color: var(--primary-green-hover);
+  transform: translateY(-1px) scale(1.05);
+  box-shadow: 0 18px 32px rgba(30, 129, 76, 0.2);
 }
 
-.nav-button svg {
+.calendar-nav .nav-button svg {
   stroke-width: 2.4px;
-  color: var(--text-dark); /* force dark arrow in light mode */
-  stroke: currentColor;
+  stroke: var(--primary-green);
+  color: inherit;
+  fill: none;
+}
+
+.calendar-nav .nav-button:hover svg {
+  stroke: var(--primary-green-hover);
+}
+
+body:not(.theme-dark) .calendar-nav .nav-button svg {
+  stroke: var(--primary-green) !important;
+  color: var(--primary-green) !important;
+}
+
+body:not(.theme-dark) .calendar-nav .nav-button:hover svg {
+  stroke: var(--primary-green-hover) !important;
 }
 
 .month-year {
@@ -447,6 +499,16 @@ body.theme-dark .batch-add-panel textarea {
   background: #fff;
 }
 
+.calendar-day.streak-complete.bridge-day {
+  background: linear-gradient(145deg, #e0f2fe, #dbeafe);
+  border: 2px solid #60a5fa;
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.35);
+}
+
+.calendar-day.streak-complete.bridge-day .workout-indicator {
+  background: linear-gradient(135deg, #3b82f6, #22d3ee);
+}
+
 .day-streak-badge {
   position: absolute;
   top: 8px;
@@ -481,6 +543,16 @@ body.theme-dark .calendar-day.streak-complete {
 body.theme-dark .calendar-day.streak-complete .workout-indicator {
   background: linear-gradient(135deg, #fb923c, #f97316);
   color: #fff;
+}
+
+body.theme-dark .calendar-day.streak-complete.bridge-day {
+  background: #0b1227;
+  border-color: #3b82f6;
+  box-shadow: 0 6px 20px rgba(56, 189, 248, 0.35);
+}
+
+body.theme-dark .calendar-day.streak-complete.bridge-day .workout-indicator {
+  background: linear-gradient(135deg, #3b82f6, #06b6d4);
 }
 
 .streak-card {
@@ -1116,18 +1188,20 @@ body.theme-dark .hero-card {
   justify-content: center;
   width: 48px;
   height: 48px;
-  background: white;
+  background: var(--background-white);
   border: 2px solid var(--border-light);
   border-radius: 12px;
   cursor: pointer;
-  transition: all 0.2s ease;
-  color: var(--text-medium);
+  transition: border-color 0.2s ease, color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+  color: var(--primary-green);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.12);
 }
 
 .nav-button:hover {
   border-color: var(--primary-green);
-  color: var(--primary-green);
-  transform: scale(1.05);
+  color: var(--primary-green-hover);
+  transform: translateY(-1px) scale(1.05);
+  box-shadow: 0 18px 32px rgba(30, 129, 76, 0.2);
 }
 
 .month-year {
@@ -1139,56 +1213,69 @@ body.theme-dark .hero-card {
 }
 
 .calendar-grid {
+  position: relative;
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 2px;
-  background: transparent;
-  border-radius: 16px;
-  overflow: hidden;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 14px;
   margin-bottom: 40px;
-  box-shadow: 0 8px 32px var(--shadow-light);
+  padding: 18px 16px;
+  border-radius: 42px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 20px 55px rgba(15, 23, 42, 0.12);
+  backdrop-filter: blur(20px);
 }
 
 .day-header {
-  background: var(--primary-green);
-  color: white;
-  padding: 16px 8px;
-  text-align: center;
+  background: var(--gradient-primary);
+  border-radius: 999px;
+  padding: 12px 6px;
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-weight: 600;
   font-size: 14px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.6px;
+  color: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 12px 24px rgba(21, 41, 70, 0.35);
 }
 
 .calendar-day {
-  background: white;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 22px;
   min-height: 120px;
-  padding: 12px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  position: relative;
+  padding: 14px;
   display: flex;
   flex-direction: column;
+  gap: 10px;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease, background 0.25s ease;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.15);
+  cursor: pointer;
+  color: var(--text-dark, #111);
 }
 
 .calendar-day:hover {
-  background: rgba(88, 204, 2, 0.05);
+  transform: translateY(-2px);
+  box-shadow: 0 20px 36px rgba(15, 23, 42, 0.25);
 }
 
 .calendar-day.today {
-  background: rgba(88, 204, 2, 0.1);
-  border: 2px solid var(--primary-green);
+  background: rgba(30, 203, 123, 0.12);
+  border-color: rgba(30, 203, 123, 0.6);
+  box-shadow: 0 0 0 2px rgba(30, 203, 123, 0.4), 0 18px 32px rgba(15, 23, 42, 0.25);
 }
 
 .calendar-day.has-workout:hover {
-  transform: scale(1.02);
-  box-shadow: 0 8px 24px var(--shadow-medium);
+  transform: translateY(-2px) scale(1.01);
+  box-shadow: 0 20px 38px rgba(15, 23, 42, 0.3);
 }
 
 .day-number {
   font-size: 16px;
   font-weight: 600;
-  color: var(--text-dark);
+  color: var(--text-dark, #111);
   margin-bottom: 8px;
 }
 
@@ -1209,6 +1296,43 @@ body.theme-dark .hero-card {
   overflow: hidden;
   background: rgba(30, 203, 123, 0.08);
   border: 2px solid transparent;
+}
+
+body.theme-dark .calendar-grid {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(8, 12, 26, 0.35);
+  box-shadow: 0 20px 55px rgba(0, 0, 0, 0.6);
+}
+
+body.theme-dark .day-header {
+  background: var(--gradient-primary);
+  color: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.6);
+}
+
+body.theme-dark .calendar-day {
+  background: rgba(5, 11, 26, 0.94);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.55);
+  color: #f0f6ff;
+}
+
+body.theme-dark .calendar-day:hover {
+  box-shadow: 0 20px 36px rgba(0, 0, 0, 0.65);
+}
+
+body.theme-dark .calendar-day.today {
+  background: rgba(30, 203, 123, 0.12);
+  border-color: rgba(30, 203, 123, 0.6);
+  box-shadow: 0 0 0 2px rgba(30, 203, 123, 0.6), 0 18px 32px rgba(0, 0, 0, 0.5);
+}
+
+body.theme-dark .calendar-day.has-workout:hover {
+  box-shadow: 0 20px 38px rgba(0, 0, 0, 0.65);
+}
+
+body.theme-dark .day-number {
+  color: #f0f6ff;
 }
 
 .workout-indicator.strength { border-color: #ff6b6b; background: rgba(255, 107, 107, 0.16); color: #b12222; }
