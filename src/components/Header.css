@@ -235,7 +235,7 @@ body:not(.theme-dark) .explore-button { color: #fff; }
 }
 
 .explore-drawer.closing {
-  transform: translateX(115%);
+  transform: translateX(-115%);
   opacity: 0;
   pointer-events: none;
 }
