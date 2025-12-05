@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Calendar, User, Flame, Sparkles, Home } from 'lucide-react';
-import { loadQuestionnaireProgress, clearUserData, clearQuestionnaireProgress, clearWorkoutPlan, loadAssessmentData } from '../services/localStorage';
+import { loadQuestionnaireProgress, clearUserData, clearQuestionnaireProgress, loadAssessmentData } from '../services/localStorage';
 import './Header.css';
 import { backupAndDeleteSensitive } from '../services/cloudBackupService';
 
@@ -505,7 +505,6 @@ const Header: React.FC<HeaderProps> = ({ profileVersion, userData }) => {
                           // Now clear stored user and related data using helpers
                           try { clearUserData(); } catch {}
                           try { clearQuestionnaireProgress(); } catch {}
-                          try { clearWorkoutPlan(); } catch {}
                           // Also call legacy signOut to remove any auth cookies/local keys if needed
                           try { /* legacy signOut is handled elsewhere */ } catch {}
                           // Notify app and navigate to sign-in

@@ -809,6 +809,6 @@ export async function getAITextResponse(payload: { prompt: string; workoutPlan?:
   const fenceMatch = rawText.match(/```(?:json)?\n([\s\S]*?)```/);
   const cleaned = fenceMatch && fenceMatch[1] ? fenceMatch[1].trim() : rawText.trim();
   // Avoid returning an empty string so the UI can show a helpful fallback
-  const fallback = data?.message || 'Buddy is currently unavailable. Please try again later.';
+  const fallback = data?.message || 'AI Coach is currently unavailable. Please try again later.';
   return { text: cleaned || fallback, raw: rawText || fallback };
 }

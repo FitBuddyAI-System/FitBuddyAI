@@ -1,8 +1,9 @@
 /* Shared explore menu button colors */
 :root {
-  --explore-menu-button-light-bg: rgba(227, 249, 236, 0.85);
-  --explore-menu-button-light-border: rgba(133, 219, 178, 0.9);
-  --explore-menu-button-light-hover: rgba(207, 242, 220, 1);
+  --explore-menu-button-light-bg: linear-gradient(135deg, rgba(30, 203, 123, 0.92), rgba(28, 176, 246, 0.92));
+  --explore-menu-button-light-border: rgba(30, 203, 123, 0.95);
+  --explore-menu-button-light-hover: linear-gradient(135deg, rgba(30, 203, 123, 1), rgba(28, 176, 246, 1));
+  --explore-menu-button-light-text: #fff;
   --explore-menu-button-dark-bg: rgba(96, 165, 255, 0.24);
   --explore-menu-button-dark-border: rgba(191, 219, 255, 0.9);
   --explore-menu-button-dark-hover: rgba(134, 193, 255, 0.38);
@@ -286,11 +287,19 @@ body:not(.theme-dark) .explore-button { color: #fff; }
   border-radius: 12px;
   font-weight: 700;
   font-size: 13px;
-  color: var(--text-dark, #081c12);
+  color: var(--explore-menu-button-light-text);
   cursor: pointer;
   transition: background 0.2s ease, transform 0.15s ease, border-color 0.2s ease;
   outline: 2px solid transparent;
   outline-offset: 2px;
+}
+
+body:not(.theme-dark) .explore-profile-actions button,
+body:not(.theme-dark) .explore-drawer button {
+  background: var(--explore-menu-button-light-bg);
+  border-color: var(--explore-menu-button-light-border);
+  color: var(--explore-menu-button-light-text);
+  box-shadow: none;
 }
 
 .explore-profile-actions button {
@@ -298,18 +307,17 @@ body:not(.theme-dark) .explore-button { color: #fff; }
   align-items: center;
   gap: 8px;
   padding: 9px 14px;
-  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.25);
   justify-content: center;
 }
 
 .explore-profile-actions button:hover {
   background: var(--explore-menu-button-light-hover);
-  border-color: rgba(30, 203, 123, 1);
+  border-color: var(--explore-menu-button-light-border);
   transform: translateY(-1px);
 }
 
 .explore-profile-actions button:active {
-  background: rgba(30, 203, 123, 0.46);
+  background: rgba(47, 166, 94, 0.8);
   transform: translateY(0);
 }
 
@@ -326,17 +334,16 @@ body:not(.theme-dark) .explore-button { color: #fff; }
   border-radius: 12px;
   background-clip: padding-box;
   margin-bottom: 4px;
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.18);
 }
 
 .explore-drawer button:hover {
   background: var(--explore-menu-button-light-hover);
-  border-color: rgba(30, 203, 123, 1);
+  border-color: var(--explore-menu-button-light-border);
   transform: translateX(2px);
 }
 
 .explore-drawer button:active {
-  background: rgba(30, 203, 123, 0.38);
+  background: rgba(47, 166, 94, 0.85);
   transform: translateX(0);
 }
 
