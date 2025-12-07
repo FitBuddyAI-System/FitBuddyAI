@@ -156,10 +156,11 @@ const BackgroundDots: React.FC = () => {
       const now = performance.now();
       if (now - lastMoveTimestamp < 20) return;
       lastMoveTimestamp = now;
-      const rect = canvas.getBoundingClientRect();
-      const x = Math.min(Math.max(e.clientX - rect.left, 0), width);
-      const y = Math.min(Math.max(e.clientY - rect.top, 0), height);
-      mouseRef.current = { x, y, active: true };
+      const scrollX = window.scrollX ?? document.documentElement.scrollLeft;
+      const scrollY = window.scrollY ?? document.documentElement.scrollTop;
+      const pageX = e.pageX ?? e.clientX + scrollX;
+      const pageY = e.pageY ?? e.clientY + scrollY;
+      mouseRef.current = { x: pageX, y: pageY, active: true };
     };
 
     const handleLeave = () => {
