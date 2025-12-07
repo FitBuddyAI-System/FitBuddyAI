@@ -126,6 +126,13 @@ const BackgroundDots: React.FC = () => {
       else cancelFrame();
     };
 
+    const refreshCanvas = () => {
+      draw(true);
+      if (animate) {
+        toggleAnimation();
+      }
+    };
+
     let observer: IntersectionObserver | null = null;
     try {
       observer = new IntersectionObserver(entries => {
@@ -156,11 +163,11 @@ const BackgroundDots: React.FC = () => {
       const now = performance.now();
       if (now - lastMoveTimestamp < 20) return;
       lastMoveTimestamp = now;
-      const scrollX = window.scrollX ?? document.documentElement.scrollLeft;
-      const scrollY = window.scrollY ?? document.documentElement.scrollTop;
-      const pageX = e.pageX ?? e.clientX + scrollX;
-      const pageY = e.pageY ?? e.clientY + scrollY;
-      mouseRef.current = { x: pageX, y: pageY, active: true };
+      if (!canvas) return;
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      mouseRef.current = { x, y, active: true };
     };
 
     const handleLeave = () => {
@@ -188,17 +195,30 @@ const BackgroundDots: React.FC = () => {
     window.addEventListener('mousemove', handleMove);
     window.addEventListener('mouseleave', handleLeave);
     window.addEventListener('resize', handleResize);
-    window.addEventListener('visibilitychange', handleVisibilityChange);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    const handleFocus = () => {
+      refreshCanvas();
+    };
+    window.addEventListener('focus', handleFocus);
 
     draw(true);
     if (animate) toggleAnimation();
+
+    let initialRaf: number | null = requestAnimationFrame(() => {
+      refreshCanvas();
+    });
 
     return () => {
       cancelFrame();
       window.removeEventListener('mousemove', handleMove);
       window.removeEventListener('mouseleave', handleLeave);
       window.removeEventListener('resize', handleResize);
-      window.removeEventListener('visibilitychange', handleVisibilityChange);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+      if (initialRaf) {
+        cancelAnimationFrame(initialRaf);
+      }
       if (observer) {
         try { observer.disconnect(); } catch {}
       }

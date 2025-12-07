@@ -2,6 +2,7 @@
 import attachAuthHeaders from './apiAuth';
 import { supabase } from './supabaseClient';
 import { saveUserData, saveAuthToken, clearAuthToken, loadUserData, saveSupabaseSession, clearSupabaseSession } from './localStorage';
+import { ensureUserId } from '../utils/userHelpers';
 
 const DEFAULT_ENERGY = 10000;
 
@@ -50,9 +51,10 @@ export async function fetchUserById(id: string): Promise<User | null> {
     if (useSupabase) {
       try {
         const { data, error } = await supabase.from('fitbuddyai_userdata').select('*').eq('user_id', id).limit(1).maybeSingle();
-  if (error || !data) return null;
-  try { saveUserData({ data }); } catch {}
-  return data as User;
+        if (error || !data) return null;
+        const normalized = ensureUserId(data);
+        try { saveUserData({ data: normalized }); } catch {}
+        return normalized as User;
       } catch {
         return null;
       }

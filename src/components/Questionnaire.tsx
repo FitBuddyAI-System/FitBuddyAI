@@ -444,6 +444,7 @@ const MenuScreen: React.FC<{ onRegenerate: () => void; onEditResponses: () => vo
 
   return (
     <div className="menu-screen">
+      <BackgroundDots />
       <div className="menu-container menu-container--hero">
         <div className="menu-hero">
           <div className="menu-hero-icon">

@@ -1,11 +1,20 @@
 /* --- Menu Screen (edit=true) --- */
 .menu-screen {
+  position: relative;
+  overflow: hidden;
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.menu-screen::before {
+  content: '';
+  position: absolute;
+  inset: 0;
   /* Use the app primary gradient for the page background */
   background: var(--gradient-primary);
+  z-index: -2;
 }
 .menu-container {
   background: #fff;
@@ -19,6 +28,8 @@
 }
 /* Hero variation for the MenuScreen */
 .menu-container--hero {
+  position: relative;
+  z-index: 1;
   max-width: 720px;
   padding: 40px 36px;
   background: var(--background-white);
