@@ -41,5 +41,6 @@ What William needs to do:
     - Fix Mobile header buttons
     - Ensure session/local storage is cleared when user signs out
     - Speed up the loading of the website
+      -make mobile app
 
 What Zade needs to do:
