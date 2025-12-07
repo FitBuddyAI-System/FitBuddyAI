@@ -278,6 +278,38 @@ button.btn.btn-outline.menu-btn.menu-btn--alt:hover,
   margin-bottom: 20px;
 }
 
+.start-date-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+  justify-content: center;
+}
+
+.start-date-actions .question-input {
+  margin-bottom: 0;
+  flex: 1 1 240px;
+  min-width: 180px;
+}
+
+.start-today-btn {
+  padding: 14px 20px;
+  border: none;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--primary-green), var(--secondary-blue));
+  color: #fff;
+  font-weight: 600;
+  font-size: 16px;
+  cursor: pointer;
+  box-shadow: 0 12px 24px rgba(30, 144, 203, 0.3);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.start-today-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 28px rgba(30, 144, 203, 0.35);
+}
+
 .slider-container {
   display: flex;
   flex-direction: column;

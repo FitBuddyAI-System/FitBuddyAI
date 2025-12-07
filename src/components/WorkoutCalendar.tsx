@@ -802,7 +802,7 @@ updatedWorkouts = updatedWorkouts.map(workout => {
       const existingUser = (userData && typeof userData === 'object') ? userData : loadUserData();
       if (!existingUser) return;
       const storedStreak = typeof existingUser.streak === 'number' ? existingUser.streak : undefined;
-      if (typeof storedStreak === 'number' && storedStreak > 0 && streak <= storedStreak) {
+      if (typeof storedStreak === 'number' && storedStreak === streak) {
         return;
       }
       const nextUser = { ...(existingUser || {}), streak };
@@ -2072,15 +2072,6 @@ updatedWorkouts = updatedWorkouts.map(workout => {
           onUpdateWorkout={handleUpdateWorkout}
         />
       )}
-
-      {/* Floating Edit Button */}
-      <button
-        className={`edit-fab ${showEditMenu ? 'active' : ''}`}
-        onClick={() => setShowEditMenu(!showEditMenu)}
-        aria-label="Edit workouts"
-      >
-        {showEditMenu ? <X size={24} /> : <Edit3 size={24} />}
-      </button>
 
       {/* Edit Menu */}
       <div className={`edit-menu ${showEditMenu ? 'open' : ''}`}>

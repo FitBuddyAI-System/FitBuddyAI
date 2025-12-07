@@ -15,7 +15,8 @@ const STORAGE_KEYS = {
   USER_DATA: 'fitbuddyai_user_data',
   USER_DATA_PERSISTED: 'fitbuddyai_user_data_persisted',
   ASSESSMENT_DATA: 'fitbuddyai_assessment_data',
-  WORKOUT_PLAN: 'fitbuddyai_workout_plan'
+  WORKOUT_PLAN: 'fitbuddyai_workout_plan',
+  SUPABASE_SESSION: 'fitbuddyai_supabase_session'
 };
 const AUTH_KEYS = {
   TOKEN: 'fitbuddyai_token',
@@ -286,6 +287,41 @@ export const getAuthToken = (): string | null => {
 
 export const clearAuthToken = () => {
   try { sessionStorage.removeItem(AUTH_KEYS.TOKEN); } catch {}
+};
+
+export const saveSupabaseSession = (session: any | null) => {
+  try {
+    if (!session) {
+      localStorage.removeItem(STORAGE_KEYS.SUPABASE_SESSION);
+      return;
+    }
+    const payload: any = {
+      access_token: session.access_token,
+      refresh_token: session.refresh_token,
+      expires_at: session.expires_at ?? (session.expires_in ? Math.round(Date.now() / 1000) + Number(session.expires_in || 0) : undefined)
+    };
+    localStorage.setItem(STORAGE_KEYS.SUPABASE_SESSION, JSON.stringify(payload));
+  } catch (error) {
+    console.warn('[localStorage] saveSupabaseSession failed:', error);
+  }
+};
+
+export const loadSupabaseSession = (): { access_token?: string; refresh_token?: string; expires_at?: number } | null => {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.SUPABASE_SESSION);
+    if (!raw) return null;
+    return safeParseStored(raw);
+  } catch (error) {
+    return null;
+  }
+};
+
+export const clearSupabaseSession = () => {
+  try {
+    localStorage.removeItem(STORAGE_KEYS.SUPABASE_SESSION);
+  } catch (error) {
+    // ignore
+  }
 };
 
 // Workout Plan

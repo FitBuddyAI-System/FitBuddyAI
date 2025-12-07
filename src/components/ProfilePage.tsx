@@ -305,7 +305,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onProfileUpdate, pr
             </div>
             <div className="profile-actions-row">
               <button className="btn edit-profile" onClick={handleEdit}>Edit Profile</button>
-              <button className="btn view-achievements">View Achievements</button>
+              <button className="btn view-achievements" onClick={() => navigate('/profile/achievements')}>View Achievements</button>
               <SignOutButton />
             </div>
           </>

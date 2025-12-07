@@ -114,10 +114,15 @@ const questions: Question[] = [
   },
   {
     id: 'exerciseFormat',
-    title: "How do you prefer to track your exercises?",
-    subtitle: "This helps us format your workout instructions perfectly for you",
+    title: "How do you prefer to track your workouts?",
+    subtitle: "When the calendar is generated, each exercise will show either a reps target or a duration based on this choice.",
     type: 'single',
-    options: ['Time-based (e.g., 30 seconds)', 'Rep-based (e.g., 10 reps)', 'Mixed - both time and reps', 'Other'],
+    options: [
+      'Time-based (e.g., each move includes 30 seconds or 2 minutes)',
+      'Rep-based (e.g., each move lists 8–12 reps)',
+      'Mixed - both time and reps',
+      'Other'
+    ],
     icon: <Clock size={32} />
   },
   {
@@ -285,6 +290,65 @@ const questions: Question[] = [
     subtitle: "Share anything else that would help us create the perfect plan for you - dietary restrictions, work schedule, family commitments, past injuries, fears, or anything else on your mind",
     type: 'textarea',
     icon: <Heart size={32} />
+  }
+];
+
+// Default follow-up questions used when AI-generated ones fail or return invalid data.
+const DEFAULT_FOLLOW_UP_QUESTIONS: Question[] = [
+  {
+    id: 'ai_followup_challenges',
+    title: 'Which barriers could make sticking to a plan difficult?',
+    subtitle: 'Select all that apply so we can help you sidestep them.',
+    type: 'multiple',
+    options: [
+      'Time constraints',
+      'Low energy',
+      'Motivation dips',
+      'Limited equipment',
+      'Recovery needs',
+      'Injuries or pain',
+      'Other'
+    ],
+    iconType: 'Heart',
+    aiGenerated: true
+  },
+  {
+    id: 'ai_followup_focus',
+    title: 'What should we prioritize next for you?',
+    subtitle: 'Share a single focus area that feels most important right now.',
+    type: 'textarea',
+    iconType: 'Target',
+    aiGenerated: true
+  },
+  {
+    id: 'ai_followup_support',
+    title: 'How much accountability would keep you on track?',
+    subtitle: 'Higher values mean more check-ins or nudges from the coach.',
+    type: 'slider',
+    min: 0,
+    max: 10,
+    step: 1,
+    iconType: 'Clock',
+    aiGenerated: true
+  },
+  {
+    id: 'ai_followup_energy_peak',
+    title: 'When do you normally feel most energized?',
+    subtitle: 'We can tailor workouts around your natural highs.',
+    type: 'single',
+    options: ['Early morning (5-8 AM)', 'Late morning (8-11 AM)', 'Lunch hour', 'Afternoon', 'Evening', 'Flex schedule'],
+    iconType: 'Calendar',
+    aiGenerated: true
+  },
+  {
+    id: 'ai_followup_recovery',
+    title: 'How are you handling recovery these days?',
+    subtitle: 'Rate your current recovery ability from 1 (tough) to 10 (excellent).',
+    type: 'rating',
+    min: 1,
+    max: 10,
+    iconType: 'Star',
+    aiGenerated: true
   }
 ];
 
@@ -619,6 +683,35 @@ const Questionnaire: React.FC<QuestionnaireProps> = ({ onComplete }) => {
   // Update follow-up generation trigger: after 23 answers
   const shouldGenerateFollowUp = Object.keys(answers).length >= 23 && !followUpGenerated;
 
+  const appendGeneratedFollowUps = (incoming: Question[]): boolean => {
+    if (!incoming || incoming.length === 0) {
+      console.warn('[AI-FOLLOWUP] No follow-up questions available to append.');
+      return false;
+    }
+    const questionsWithIcons = incoming.map((q) => ({
+      ...q,
+      aiGenerated: true,
+      icon: q.icon || getIconFromType(q.iconType || '')
+    }));
+    setAllQuestions((prev) => {
+      const updated = [...prev, ...questionsWithIcons];
+      console.log('[AI-FOLLOWUP] allQuestions after append:', updated);
+      setTimeout(() => {
+        try {
+          if (currentQuestion === questions.length - 1) {
+            setCurrentQuestion(questions.length);
+          }
+        } catch (e) {
+          // ignore
+        }
+      }, 0);
+      return updated;
+    });
+    setFollowUpGenerated(true);
+    console.log('[AI-FOLLOWUP] Follow-up questions appended and flag set.');
+    return true;
+  };
+
   // Helper to map iconType string to an icon component
   const getIconFromType = (type: string): React.ReactNode => {
     switch (type) {
@@ -659,6 +752,7 @@ const Questionnaire: React.FC<QuestionnaireProps> = ({ onComplete }) => {
      setIsFollowUpLoading(true);
      setError(null);
 
+    let followUpCandidates: Question[] | null = null;
     try {
       // Prepare answers for context: replace 'Other' with customInputs where applicable
       const processedAnswers: Record<string, any> = { ...answers };
@@ -685,49 +779,25 @@ const Questionnaire: React.FC<QuestionnaireProps> = ({ onComplete }) => {
       console.log('[AI-FOLLOWUP] Prompt:', prompt);
       const aiResponse = await getAIResponse({ prompt });
       console.log('[AI-FOLLOWUP] Received AI response:', aiResponse);
-
-      // Validate and append questions
-  if (Array.isArray(aiResponse)) {
-        // Attach icons to each generated question
-        const questionsWithIcons = aiResponse.map((q: any, idx: number) => {
-          console.log(`[AI-FOLLOWUP] Generated Q${idx + 1}:`, q);
-          return {
-            ...q,
-            icon: getIconFromType(q.iconType || ''),
-          };
-        });
-        setAllQuestions((prev) => {
-          const updated = [...prev, ...questionsWithIcons];
-          console.log('[AI-FOLLOWUP] allQuestions after append:', updated);
-          // If the user was on the last base question, move them to the first generated
-          // question so the UI shows the new questions immediately.
-          setTimeout(() => {
-            try {
-              if (currentQuestion === questions.length - 1) {
-                setCurrentQuestion(questions.length); // first generated question index
-              }
-            } catch (e) {
-              // ignore
-            }
-          }, 0);
-          return updated;
-        });
-    setFollowUpGenerated(true);
-    console.log('[AI-FOLLOWUP] Follow-up questions appended and flag set.');
-    return true;
+      if (Array.isArray(aiResponse) && aiResponse.length > 0) {
+        followUpCandidates = aiResponse;
       } else {
-        console.error('[AI-FOLLOWUP] AI response is not an array:', aiResponse);
-        setError('Invalid AI response format');
+        console.warn('[AI-FOLLOWUP] AI response is not an array:', aiResponse);
       }
     } catch (err) {
       console.error('[AI-FOLLOWUP] Error fetching follow-up questions:', err);
-      setError('Failed to fetch follow-up questions. Please try again.');
     } finally {
       setIsFollowUpLoading(false);
       console.log('[AI-FOLLOWUP] Done loading follow-up questions.');
     }
-  return false;
- };
+
+    if (!followUpCandidates || followUpCandidates.length === 0) {
+      console.warn('[AI-FOLLOWUP] Falling back to default follow-up questions.');
+      followUpCandidates = DEFAULT_FOLLOW_UP_QUESTIONS;
+    }
+
+    return appendGeneratedFollowUps(followUpCandidates);
+  };
 
   // Use effect to trigger follow-up generation
   useEffect(() => {
@@ -1027,18 +1097,27 @@ const Questionnaire: React.FC<QuestionnaireProps> = ({ onComplete }) => {
     switch (question.type) {
       case 'text':
         if (question.id === 'startDate') {
-          const minDate = new Date().toISOString().split('T')[0];
+          const todayStr = new Date().toISOString().split('T')[0];
           return (
             <>
-              <input
-                type="date"
-                className="input question-input"
-                min={minDate}
-                value={answer || ''}
-                onChange={(e) => handleAnswer(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && !dateError && canProceed() && handleNext()}
-                aria-label={question.title}
-              />
+              <div className="start-date-actions">
+                <input
+                  type="date"
+                  className="input question-input"
+                  min={todayStr}
+                  value={answer || ''}
+                  onChange={(e) => handleAnswer(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && !dateError && canProceed() && handleNext()}
+                  aria-label={question.title}
+                />
+                <button
+                  type="button"
+                  className="start-today-btn"
+                  onClick={() => handleAnswer(todayStr)}
+                >
+                  Start Today!
+                </button>
+              </div>
               {dateError && <div className="error-message" role="alert">{dateError}</div>}
             </>
           );
@@ -1098,8 +1177,8 @@ const Questionnaire: React.FC<QuestionnaireProps> = ({ onComplete }) => {
               ))}
             </div>
             <div className="rating-labels">
-              <span>Poor</span>
-              <span>Excellent</span>
+              <span>{question.id === 'stressLevel' ? 'Low Stress Levels' : 'Poor'}</span>
+              <span>{question.id === 'stressLevel' ? 'High Stress Levels' : 'Excellent'}</span>
             </div>
             {answer && (
               <div className="rating-value">

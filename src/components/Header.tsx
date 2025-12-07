@@ -48,8 +48,7 @@ const Header: React.FC<HeaderProps> = ({ profileVersion, userData }) => {
   const [drawerState, setDrawerState] = React.useState<ExploreDrawerState>('closed');
   const exploreRef = React.useRef<HTMLDivElement | null>(null);
   const [motivationMessage, setMotivationMessage] = React.useState<string | null>(null);
-  // Track the last time we updated the greeting to avoid rapid churn
-  const lastGreetingUpdateRef = React.useRef<number>(0);
+  const motivationKeyRef = React.useRef<string | null>(null);
   const [savedWorkoutCount, setSavedWorkoutCount] = React.useState<number>(() => loadSavedNames().length);
   const [upcomingWorkoutCount, setUpcomingWorkoutCount] = React.useState<number>(() => getUpcomingWorkoutCount(loadWorkoutPlan()));
   const isDrawerVisible = drawerState !== 'closed';
@@ -213,7 +212,7 @@ const Header: React.FC<HeaderProps> = ({ profileVersion, userData }) => {
       }
     };
 
-    // Special-case for a particular user: rotate a set of themed messages every 10s
+    // Special-case for a particular user: display a themed message once per load
     const rawName = ((currentUser as any)?.username || '').toString().trim();
     const lower = rawName.toLowerCase();
 
@@ -269,23 +268,21 @@ const Header: React.FC<HeaderProps> = ({ profileVersion, userData }) => {
         buildEnc([68,97,107,111,116,97,32,82,97,121,32,66,97,108,100,119,105,110,44,32,101,118,101,110,32,110,101,114,100,115,32,110,101,101,100,32,97,32,118,105,99,116,111,114,121,32,100,97,110,99,101,32,45,32,101,97,114,110,32,105,116,46])
       ];
 
-      const pickSpecial = () => {
-        const m = specialMessagesB64[Math.floor(Math.random() * specialMessagesB64.length)];
-        setMotivationMessage(b64Decode(m));
-      };
-      pickSpecial();
-      const iid = setInterval(pickSpecial, 10000);
-      return () => clearInterval(iid);
-    }
-
-    // Default behavior for other users: throttle updates to at most once every 15s
-    const motivation = resolveMotivation();
-    const now = Date.now();
-    const THROTTLE_MS = 15000;
-    if (now - (lastGreetingUpdateRef.current || 0) < THROTTLE_MS) {
+      const key = `special:${rawName}`;
+      if (motivationKeyRef.current === key) return;
+      motivationKeyRef.current = key;
+      const pickSpecial = specialMessagesB64[Math.floor(Math.random() * specialMessagesB64.length)];
+      setMotivationMessage(b64Decode(pickSpecial));
       return;
     }
-    lastGreetingUpdateRef.current = now;
+
+    // Default behavior for other users: only refresh when identity or motivation truly changes
+    const motivation = resolveMotivation();
+    const key = `motivation:${rawName}:${motivation || ''}`;
+    if (motivationKeyRef.current === key) {
+      return;
+    }
+    motivationKeyRef.current = key;
     if (!motivation) {
       setMotivationMessage(`Hello, ${name}! 👋`);
       return;
@@ -357,6 +354,8 @@ const Header: React.FC<HeaderProps> = ({ profileVersion, userData }) => {
         return 'Your Workout Plan';
       case '/profile':
         return 'Your Profile';
+      case '/profile/achievements':
+        return 'Achievements';
       case '/signin':
         return 'Sign In';
       case '/signup':
@@ -449,6 +448,9 @@ const Header: React.FC<HeaderProps> = ({ profileVersion, userData }) => {
                       {upcomingWorkoutCount}
                     </span>
                   </button>
+                  {isSignedIn && (
+                    <button onClick={() => { closeExploreDrawer(); navigate('/profile/achievements'); }}>Achievements</button>
+                  )}
                   <button
                     onClick={() => {
                       try { window.dispatchEvent(new CustomEvent('fitbuddyai-open-chat')); } catch {}
@@ -458,9 +460,11 @@ const Header: React.FC<HeaderProps> = ({ profileVersion, userData }) => {
                   >
                     Chat
                   </button>
-                  <button onClick={() => { closeExploreDrawer(); navigate('/nutrition'); }}>Nutrition</button>
                   <button onClick={() => { closeExploreDrawer(); navigate('/blog'); }}>Blog</button>
-                  <button onClick={() => { closeExploreDrawer(); navigate('/pricing'); }}>Pricing</button>
+                  {/* Pricing temporarily removed from the drawer; keep code for quick reinstatement. */}
+                  {false && (
+                    <button onClick={() => { closeExploreDrawer(); navigate('/pricing'); }}>Pricing</button>
+                  )}
                   <button onClick={() => { closeExploreDrawer(); navigate('/shop'); }} >Shop</button>
                   {isSignedIn && (
                     <div className="explore-footer">

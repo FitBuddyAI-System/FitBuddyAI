@@ -1,7 +1,7 @@
 // Buy a shop item and update user on server and localStorage
 import attachAuthHeaders from './apiAuth';
 import { supabase } from './supabaseClient';
-import { saveUserData, saveAuthToken, clearAuthToken, loadUserData } from './localStorage';
+import { saveUserData, saveAuthToken, clearAuthToken, loadUserData, saveSupabaseSession, clearSupabaseSession } from './localStorage';
 
 const DEFAULT_ENERGY = 10000;
 
@@ -103,7 +103,8 @@ export async function signIn(email: string, password: string): Promise<User> {
       throw new Error(msg);
     }
     // Store token and user for attachAuthHeaders/local usage
-  const token = result.data.session.access_token;
+    const session = result.data.session;
+    const token = session?.access_token ?? null;
     const user = result.data.user as any;
     // Determine username: prefer user_metadata.username, else fallback to email temporarily
     let usernameVal = (user.user_metadata && user.user_metadata.username) || null;
@@ -116,6 +117,7 @@ export async function signIn(email: string, password: string): Promise<User> {
         // ignore; we'll fallback to email
       }
     }
+    try { saveSupabaseSession(session); } catch {}
   const fallbackEnergy = (user.user_metadata && user.user_metadata.energy) ?? DEFAULT_ENERGY;
   const toSave = { data: { id: user.id, email: user.email, username: usernameVal || user.email, energy: fallbackEnergy } };
   // Clear any cross-tab 'no auto restore' guard set during sign-out so sign-in can persist data
@@ -166,12 +168,14 @@ export async function signUp(email: string, username: string, password: string):
     const result = await supabase.auth.signUp({ email: normalizedEmail, password, options: { data: { username, energy: DEFAULT_ENERGY } } });
     if (result.error) throw new Error(result.error.message || 'Sign up failed');
     // Supabase may not return a session depending on config; if a session exists save token
-    const token = result.data?.session?.access_token ?? null;
+    const session = result.data?.session ?? null;
+    const token = session?.access_token ?? null;
     const user = result.data?.user ?? null;
   const toSave = user ? { id: user.id, email: user.email, username, energy: DEFAULT_ENERGY } : null;
   // Only persist client-side if we actually received a session/token. For email-verify flows
   // Supabase may require the user to confirm via email before signing in; do not mark them
   // as signed-in (or persist their profile) until a token exists.
+    try { saveSupabaseSession(session); } catch {}
   if (token && toSave) {
     try { sessionStorage.removeItem('fitbuddyai_no_auto_restore'); } catch {}
     try { localStorage.removeItem('fitbuddyai_no_auto_restore'); } catch {}
@@ -284,6 +288,7 @@ export function getCurrentUser(): User | null {
 
 export function signOut() {
   try { clearAuthToken(); } catch {}
+  try { clearSupabaseSession(); } catch {}
   try { sessionStorage.removeItem('fitbuddyai_no_auto_restore'); } catch {}
   try { localStorage.removeItem('fitbuddyai_no_auto_restore'); } catch {}
   try { const { clearUserData } = require('./localStorage'); clearUserData(); } catch {}
