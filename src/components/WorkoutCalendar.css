@@ -695,6 +695,7 @@ body.theme-dark .calendar-day.streak-complete.bridge-day .workout-indicator {
   background: linear-gradient(135deg, rgba(30,203,123,0.06), rgba(30,144,203,0.03));
   position: relative;
   z-index: 2;
+  box-shadow: 0 0 0 2px rgba(30,203,123,0.45);
 }
 
 /* Visual style for days selected for deletion */
@@ -702,6 +703,7 @@ body.theme-dark .calendar-day.streak-complete.bridge-day .workout-indicator {
   background: linear-gradient(135deg, rgba(255,77,79,0.06), rgba(255,77,79,0.03));
   position: relative;
   z-index: 2;
+  box-shadow: 0 0 0 2px rgba(255,77,79,0.45);
 }
 
 .calendar-day.delete-selected::after {
@@ -1625,6 +1627,54 @@ body.theme-dark .day-number {
   display: flex;
   gap: 8px;
   align-items: center;
+}
+
+.move-btn {
+  background: var(--primary-color, #2563eb);
+  color: #fff;
+  border: none;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: filter 0.2s ease;
+}
+
+.move-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.move-group-panel {
+  margin-top: 12px;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid var(--border-light);
+  background: var(--bg-secondary);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.move-group-summary {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-medium);
+}
+
+.move-group-panel label {
+  display: block;
+  margin-top: 12px;
+  margin-bottom: 4px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.move-group-actions {
+  margin-top: 12px;
+  display: flex;
+  gap: 8px;
 }
 
 .edit-tips {

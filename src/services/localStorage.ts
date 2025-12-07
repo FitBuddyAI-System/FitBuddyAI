@@ -24,6 +24,7 @@ const AUTH_KEYS = {
 };
 // Auto-backup: import cloud backup helper and provide a debounced scheduler
 import { backupUserDataToServer } from './cloudBackupService';
+import { ensureUserId } from '../utils/userHelpers';
 
 // Helper: parse a value that may be a JSON string, a double-encoded JSON string, or an object
 function safeParseStored<T = any>(raw: string | null): T | null {
@@ -184,6 +185,7 @@ export const saveUserData = (userData: any, opts?: { skipBackup?: boolean }): vo
     } else {
       toStore.data = userData || null;
     }
+    toStore.data = ensureUserId(toStore.data);
     const payload = { ...toStore, timestamp: Date.now() };
     // Persist unified user payload in sessionStorage only (do not store sensitive user payload in localStorage)
     try { sessionStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(payload)); } catch {}

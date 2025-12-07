@@ -4,7 +4,13 @@ import BackgroundDots from './BackgroundDots';
 import './AchievementsPage.css';
 import { loadUserData, saveUserData } from '../services/localStorage';
 
-  const achievements = [
+const PROGRESS_STROKE_WIDTH = 5;
+const PROGRESS_VIEWBOX_SIZE = 80;
+const PROGRESS_CENTER = PROGRESS_VIEWBOX_SIZE / 2;
+const PROGRESS_RADIUS = PROGRESS_CENTER - PROGRESS_STROKE_WIDTH;
+const PROGRESS_CIRCUMFERENCE = 2 * Math.PI * PROGRESS_RADIUS;
+
+const achievements = [
   {
     label: '1-Day Spark',
     days: 1,
@@ -19,7 +25,8 @@ import { loadUserData, saveUserData } from '../services/localStorage';
     description: 'You kept the ember lit for a full week—momentum unlocked.',
     level: 'level-1',
     reward: '+100 Energy + Ember Badge',
-    energyReward: 100
+    energyReward: 100,
+    durationLabel: '1 week'
   },
   {
     label: 'Two-Week Streak',
@@ -27,7 +34,8 @@ import { loadUserData, saveUserData } from '../services/localStorage';
     description: 'Two weeks of focus stoked the flame brighter.',
     level: 'level-2',
     reward: '+250 Energy + Flame Ring Frame',
-    energyReward: 250
+    energyReward: 250,
+    durationLabel: '2 weeks'
   },
   {
     label: 'Three-Week Streak',
@@ -35,7 +43,8 @@ import { loadUserData, saveUserData } from '../services/localStorage';
     description: 'Three weeks of dedication blazes into legend status.',
     level: 'level-3',
     reward: '+500 Energy + Legendary Flame',
-    energyReward: 500
+    energyReward: 500,
+    durationLabel: '3 weeks'
   }
   ,
   {
@@ -44,7 +53,8 @@ import { loadUserData, saveUserData } from '../services/localStorage';
     description: 'A full month of consistency turns your fire into a beacon.',
     level: 'level-4',
     reward: '+700 Energy + Inferno Emblem',
-    energyReward: 700
+    energyReward: 700,
+    durationLabel: '1 month'
   }
   ,
   {
@@ -53,7 +63,8 @@ import { loadUserData, saveUserData } from '../services/localStorage';
     description: 'Three months of streaks forge a legendary flame that lights the room.',
     level: 'level-5',
     reward: '+1500 Energy + Phoenix Crest',
-    energyReward: 1500
+    energyReward: 1500,
+    durationLabel: '3 months'
   }
   ,
   {
@@ -62,7 +73,8 @@ import { loadUserData, saveUserData } from '../services/localStorage';
     description: 'A full year of streaks causes your fire to become a blazing beacon of dedication.',
     level: 'level-6',
     reward: '+3000 Energy + Beacon of Fire',
-    energyReward: 3000
+    energyReward: 3000,
+    durationLabel: '1 year'
   }
   ,
   {
@@ -71,7 +83,8 @@ import { loadUserData, saveUserData } from '../services/localStorage';
     description: 'Three years of relentless streaks make your flame eternal and unstoppable.',
     level: 'level-7',
     reward: '+6000 Energy + Eternity Flame',
-    energyReward: 6000
+    energyReward: 6000,
+    durationLabel: '3 years'
   }
   ,
   {
@@ -80,7 +93,8 @@ import { loadUserData, saveUserData } from '../services/localStorage';
     description: 'A decade of consistency turns your fire into a guiding legacy for every future streak.',
     level: 'level-8',
     reward: '+50000 Energy + Legacy Radiance',
-    energyReward: 50000
+    energyReward: 50000,
+    durationLabel: '10 years'
   }
 ];
 
@@ -158,26 +172,44 @@ const AchievementsPage: React.FC = () => {
           </div>
         </header>
       <div className="achievement-grid">
-        {achievements.map(({ label, days, description, level, reward }) => {
+        {achievements.map(({ label, days, reward, level, durationLabel }) => {
           const progress = Math.min(1, currentStreak / Math.max(1, days));
           const completed = currentStreak >= days;
+          const progressOffset = PROGRESS_CIRCUMFERENCE - progress * PROGRESS_CIRCUMFERENCE;
+          const durationText = durationLabel ?? `${days}-Day streak`;
           return (
             <article key={label} className={`achievement-card ${level}`}>
               <div
                 className="flame-wrapper"
-                style={{ ['--progress-angle' as string]: `${progress * 360}deg` }}
                 aria-label={`${label} progress ${Math.round(progress * 100)}%`}
               >
-                <span className="flame-progress-ring" />
-                <Flame size={32} className="flame-icon" />
-                {completed && <Check size={18} className="flame-check" aria-hidden="true" />}
+                <svg
+                  className="flame-progress-ring"
+                  viewBox={`0 0 ${PROGRESS_VIEWBOX_SIZE} ${PROGRESS_VIEWBOX_SIZE}`}
+                  aria-hidden="true"
+                >
+                  <circle
+                    className="flame-progress-track"
+                    cx={PROGRESS_CENTER}
+                    cy={PROGRESS_CENTER}
+                    r={PROGRESS_RADIUS}
+                    strokeWidth={PROGRESS_STROKE_WIDTH}
+                  />
+                  <circle
+                    className="flame-progress-fill"
+                    cx={PROGRESS_CENTER}
+                    cy={PROGRESS_CENTER}
+                    r={PROGRESS_RADIUS}
+                    strokeWidth={PROGRESS_STROKE_WIDTH}
+                    strokeDasharray={PROGRESS_CIRCUMFERENCE}
+                    strokeDashoffset={progressOffset}
+                  />
+                </svg>
+                <Flame size={48} className="flame-icon" />
+                {completed && <Check size={20} className="flame-check" aria-hidden="true" />}
               </div>
-              <div>
-                <p className="achievement-label">{label}</p>
-                <p className="achievement-days">{days}-Day Streak</p>
-                <p className="achievement-desc">{description}</p>
-              </div>
-              <div className="achievement-boost">{reward}</div>
+              <p className="achievement-streak-length">{durationText}</p>
+              <p className="achievement-boost">{reward}</p>
             </article>
           );
         })}

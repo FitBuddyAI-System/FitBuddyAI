@@ -11,10 +11,18 @@
   overflow:hidden;
   min-height:100vh;
   padding-top:32px;
-  background:var(--bg);
+  background:transparent;
   display:flex;
   justify-content:center;
   align-items:flex-start;
+}
+
+.gemini-page-root::before {
+  content:'';
+  position:absolute;
+  inset:0;
+  background: var(--bg);
+  z-index:-2;
 }
 .gemini-page{
   display:flex;
@@ -24,7 +32,7 @@
   min-height:calc(100vh - 80px);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
   position: relative;
-  z-index: 0;
+  z-index: 1;
 }
 .gemini-container{
   width:100%;
@@ -215,6 +223,10 @@ body.theme-dark .gemini-page{
   background: transparent;
 }
 body.theme-dark .gemini-page-root{
+  background: transparent;
+}
+
+body.theme-dark .gemini-page-root::before {
   background: linear-gradient(135deg, #0b111b 0%, #0f1828 100%);
 }
 body.theme-dark .gemini-container{
