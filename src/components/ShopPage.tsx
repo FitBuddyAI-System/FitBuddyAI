@@ -61,8 +61,7 @@ const ShopPage: React.FC<ShopPageProps> = ({ user, onPurchase, onRedeemStreakSav
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const tabsRef = useRef<HTMLDivElement | null>(null);
   const indicatorRef = useRef<HTMLDivElement | null>(null);
-  const prevEnergyRef = useRef<number | undefined>(undefined);
-  const [energyPulse, setEnergyPulse] = useState(false);
+  
 
   // Poll user from server every 1s if logged in
   useEffect(() => {
@@ -118,21 +117,7 @@ const ShopPage: React.FC<ShopPageProps> = ({ user, onPurchase, onRedeemStreakSav
     return ()=> root.removeEventListener('keydown', onKey as any);
   }, [selectedTab]);
 
-  // track energy increases to show a brief pulse
-  useEffect(()=>{
-    const prev = prevEnergyRef.current ?? user?.energy ?? 0;
-    const now = user?.energy ?? 0;
-    if (now > prev) {
-      setEnergyPulse(true);
-      const t = setTimeout(()=>setEnergyPulse(false), 900);
-      return ()=> clearTimeout(t);
-    }
-    prevEnergyRef.current = now;
-  }, [user?.energy]);
-
-  const energyFillPercent = Math.min(100, Math.round(((user?.energy||0) / (user?.maxEnergy||DEFAULT_ENERGY)) * 100));
-  const energyFillBucket = Math.round(energyFillPercent / 5) * 5; // bucket to nearest 5%
-  const energyFillClass = `fill--${energyFillBucket}`;
+  
 
   // Fetch user after purchase
   const handlePurchase = async (item: any) => {
@@ -225,14 +210,7 @@ const ShopPage: React.FC<ShopPageProps> = ({ user, onPurchase, onRedeemStreakSav
         <header className="shop-header">
           <Dumbbell size={32} className="shop-logo" />
           <h1 className="shop-title gradient-text">FitBuddyAI Shop</h1>
-          <div className="shop-energy">
-            <div className={`energy-pill ${energyPulse ? 'pulse' : ''}`} aria-live="polite">
-              <span className="energy-value shop-balance-text">Balence: {user?.energy ?? 0}</span>
-              <div className="energy-meter" aria-hidden>
-                <div className={`fill ${energyFillClass}`} />
-              </div>
-            </div>
-          </div>
+          
         </header>
         <aside className="shop-inventory">
           <div className="inventory-header">
