@@ -219,7 +219,7 @@ export default async function handler(req: any, res: any) {
       console.warn('[api/ai/generate] GEMINI_API_KEY missing — returning local mock response (development)');
       // Minimal valid WorkoutPlan JSON to satisfy client parsing
       const today = new Date().toISOString().split('T')[0];
-      const mockPlan = {
+      const _mockPlan = {
         id: `mock-${Date.now()}`,
         name: 'Local Mock Plan',
         description: 'This is a local mock workout plan used when GEMINI API key is not configured.',

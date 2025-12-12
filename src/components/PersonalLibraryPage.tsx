@@ -198,18 +198,18 @@ const PersonalLibraryPage: React.FC = () => {
                     ) : null}
                     <div className="meta-chip-group">
                       {(() => {
-                        const chips = [] as Array<{ key: string; label: string; value: any }>;
-                        const si = (selectedItem as any);
-                        if (si.force) chips.push({ key: 'force', label: 'Force', value: si.force });
-                        if (si.mechanic) chips.push({ key: 'mechanic', label: 'Mechanic', value: si.mechanic });
-                        if (si.equipment) chips.push({ key: 'equipment', label: 'Equipment', value: Array.isArray(si.equipment) ? si.equipment.join(', ') : si.equipment });
-                        return chips.map(c => (
-                          <span key={c.key} className="meta-chip">
-                            <strong>{c.label}</strong>
-                            <span className="chip-value">{capitalizeWords(String(c.value))}</span>
-                          </span>
-                        ));
-                      })()}
+                          const chips = [] as Array<{ key: string; label: string; value: any }>;
+                          const si = (selectedItem as any);
+                          if (si.force) chips.push({ key: 'force', label: 'Force', value: si.force });
+                          if (si.mechanic) chips.push({ key: 'mechanic', label: 'Mechanic', value: si.mechanic });
+                          if (si.equipment) chips.push({ key: 'equipment', label: 'Equipment', value: Array.isArray(si.equipment) ? si.equipment.join(', ') : si.equipment });
+                          return chips.map(c => (
+                            <span key={c.key} className="meta-chip">
+                              <strong>{c.label}</strong>
+                              <span className="chip-value">{capitalizeWords(String(c.value))}</span>
+                            </span>
+                          ));
+                        })()}
                     </div>
                   </div>
                 </div>
@@ -222,9 +222,8 @@ const PersonalLibraryPage: React.FC = () => {
                     <iframe src={(selectedItem as any).video} title={`${selectedItem.title} video`} frameBorder={0} allowFullScreen />
                   ) : (selectedItem.images && selectedItem.images.length > 0) ? (
                     <div className="gallery">
-                      {selectedItem.images.map((src, i) => (
-                        // eslint-disable-next-line react/no-array-index-key
-                        <img key={i} src={src} alt={selectedItem.imageCaptions?.[i] || `${selectedItem.title} ${i + 1}`} />
+                      {(selectedItem.images ?? []).map((src) => (
+                        <img key={src} src={src} alt={selectedItem.imageCaptions?.[selectedItem.images?.indexOf(src) ?? 0] || `${selectedItem.title}`} />
                       ))}
                     </div>
                   ) : (
@@ -239,7 +238,7 @@ const PersonalLibraryPage: React.FC = () => {
                     <section className="instructions">
                       <h4>Instructions</h4>
                       <ol>
-                        {(selectedItem as any).instructions.map((ins: string, idx: number) => <li key={idx}>{ins}</li>)}
+                        {(selectedItem as any).instructions.map((ins: string, idx: number) => <li key={`${idx}-${ins?.slice(0,20)}`}>{ins}</li>)}
                       </ol>
                     </section>
                   )}
@@ -280,7 +279,7 @@ const PersonalLibraryPage: React.FC = () => {
                       <h4>Resources</h4>
                       <ul>
                         {(selectedItem as any).resources.map((r: any, i: number) => (
-                          <li key={i}><a href={r.url} target="_blank" rel="noreferrer">{r.label}</a></li>
+                          <li key={r.url || i}><a href={r.url} target="_blank" rel="noreferrer">{r.label}</a></li>
                         ))}
                       </ul>
                     </section>

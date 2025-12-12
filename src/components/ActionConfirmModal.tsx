@@ -1,13 +1,7 @@
 import React from 'react';
 import './ActionConfirmModal.css';
 
-declare global {
-  namespace JSX {
-    interface IntrinsicElements {
-      [elemName: string]: any;
-    }
-  }
-}
+// JSX intrinsic elements are declared in a dedicated types file
 
 type Update = {
   op: string;

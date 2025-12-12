@@ -668,7 +668,7 @@ const Questionnaire: React.FC<QuestionnaireProps> = ({ onComplete }) => {
   useEffect(() => {
     if (hasRestoredProgress || Object.keys(answers).length > 0) {
       // Strip React icons before saving
-      const rawQs = allQuestions.map(({ icon, ...rest }) => rest);
+      const rawQs = allQuestions.map(({ icon: _icon, ...rest }) => rest);
       saveQuestionnaireProgress({
         currentQuestion,
         answers,
@@ -861,13 +861,11 @@ const Questionnaire: React.FC<QuestionnaireProps> = ({ onComplete }) => {
   // Note: safeNavigateToLoading already calls navigate('/loading') when allowed.
   // We call it here and not call navigate('/loading') directly.
   // (kept for clarity)
-  // eslint-disable-next-line @typescript-eslint/no-floating-promises
   safeNavigateToLoading();
   try {
         // Send answers to Google Sheet before plan generation (fire-and-forget)
         // We don't await this because webhook failures should not block plan generation.
         // sendToSheet already logs errors internally.
-        // eslint-disable-next-line @typescript-eslint/no-floating-promises
         sendToSheet(answers, allQuestions);
          // Process answers to include custom inputs for "Other" options
          const processedAnswers = { ...answers };
@@ -994,7 +992,7 @@ const Questionnaire: React.FC<QuestionnaireProps> = ({ onComplete }) => {
         setIsCompleted(true);
         setShowCompletionOptions(true);
         try {
-          const rawQs = allQuestions.map(({ icon, ...rest }) => rest);
+          const rawQs = allQuestions.map(({ icon: _icon, ...rest }) => rest);
           saveQuestionnaireProgress({
             currentQuestion,
             answers,
@@ -1018,12 +1016,12 @@ const Questionnaire: React.FC<QuestionnaireProps> = ({ onComplete }) => {
             onComplete(finalUser, workoutPlan);
             } else {
             // No signed-in account: ensure generated userData cannot masquerade as a real account
-            const { id, token, access_token, jwt, sub, ...sanitized } = (userData as any) || {};
+            const { id: _id, token: _token, access_token: _access_token, jwt: _jwt, sub: _sub, ...sanitized } = (userData as any) || {};
             onComplete(sanitized, workoutPlan);
           }
         } catch (err) {
     // Fallback: sanitize generated data to avoid accidental sign-in state
-    const { id, token, access_token, jwt, sub, ...sanitized } = (userData as any) || {};
+    const { id: _id, token: _token, access_token: _access_token, jwt: _jwt, sub: _sub, ...sanitized } = (userData as any) || {};
     onComplete(sanitized, workoutPlan);
         }
       }
@@ -1476,7 +1474,7 @@ const Questionnaire: React.FC<QuestionnaireProps> = ({ onComplete }) => {
       setIsCompleted(true);
       setShowCompletionOptions(true);
       try {
-        const rawQs = currentQs.map(({ icon, ...rest }) => rest);
+        const rawQs = currentQs.map(({ icon: _icon, ...rest }) => rest);
         saveQuestionnaireProgress({
           currentQuestion: 0,
           answers: currentAnswers,
@@ -1497,11 +1495,11 @@ const Questionnaire: React.FC<QuestionnaireProps> = ({ onComplete }) => {
               const finalUser = { ...(currentUser as any), ...signedIn };
               onComplete(finalUser, mergedPlan);
             } else {
-              const { id, token, access_token, jwt, sub, ...sanitized } = (currentUser as any) || {};
+              const { id: _id, token: _token, access_token: _access_token, jwt: _jwt, sub: _sub, ...sanitized } = (currentUser as any) || {};
               onComplete(sanitized as UserData, mergedPlan);
             }
           } catch (err) {
-            const { id, token, access_token, jwt, sub, ...sanitized } = (currentUser as any) || {};
+            const { id: _id, token: _token, access_token: _access_token, jwt: _jwt, sub: _sub, ...sanitized } = (currentUser as any) || {};
             onComplete(sanitized as UserData, mergedPlan);
           }
       navigate('/calendar');
