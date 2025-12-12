@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 // import { Lock } from 'lucide-react';
 import './ProfilePage.css';
 import { getCurrentUser, fetchUserById } from '../services/authService';
+import { ensureUserId } from '../utils/userHelpers';
 // Supabase auth metadata updates are handled server-side; no client import needed here
 import { useNavigate } from 'react-router-dom';
 import SignOutButton from './SignOutButton';
@@ -191,8 +192,11 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onProfileUpdate, pr
       });
       if (res.ok) {
         const updated = await res.json();
-        setUser(updated.user);
-        onProfileUpdate(updated.user);
+        const normalized = ensureUserId(updated.user || user);
+        if (normalized) {
+          setUser(normalized);
+          onProfileUpdate(normalized);
+        }
         setEditMode(false);
         try { window.showFitBuddyNotification?.({ title: 'Profile Saved', message: 'Your profile was updated successfully.', variant: 'success' }); } catch {}
         // NOTE: Supabase auth metadata update is handled server-side to avoid
@@ -305,7 +309,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onProfileUpdate, pr
             </div>
             <div className="profile-actions-row">
               <button className="btn edit-profile" onClick={handleEdit}>Edit Profile</button>
-              <button className="btn view-achievements">View Achievements</button>
+              <button className="btn view-achievements" onClick={() => navigate('/profile/achievements')}>View Achievements</button>
               <SignOutButton />
             </div>
           </>

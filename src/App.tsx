@@ -10,6 +10,7 @@ import Footer from './components/Footer';
 
 import LoadingPage from './components/LoadingPage';
 import ProfilePage from './components/ProfilePage';
+import AchievementsPage from './components/AchievementsPage';
 
 import SignInPage from './components/SignInPage';
 import SignUpPage from './components/SignUpPage';
@@ -18,10 +19,11 @@ import EmailVerifyPage from './components/EmailVerifyPage';
 
 
 import { WorkoutPlan, DayWorkout, Exercise } from './types';
-import { loadUserData, loadWorkoutPlan, saveUserData, saveWorkoutPlan, clearUserData, getAuthToken } from './services/localStorage';
+import { loadUserData, loadWorkoutPlan, saveUserData, saveWorkoutPlan, clearUserData, getAuthToken, loadSupabaseSession, saveSupabaseSession, clearSupabaseSession, saveAuthToken } from './services/localStorage';
 import { fetchUserById } from './services/authService';
 import { format } from 'date-fns';
 import { getPrimaryType, isWorkoutCompleteForStreak, resolveWorkoutTypes } from './utils/streakUtils';
+import { supabase } from './services/supabaseClient';
 
 
 import NotFoundPage from './components/NotFoundPage';
@@ -30,6 +32,7 @@ import GeminiChatPage from './components/GeminiChatPage';
 import AdminPage from './components/AdminAuditPage';
 import { useCloudBackup } from './hooks/useCloudBackup';
 import RickrollPage from './components/RickrollPage';
+import BlogPage from './components/BlogPage';
 import AgreementBanner from './components/AgreementBanner';
 import TermsPage from './components/TermsPage';
 import PrivacyPage from './components/PrivacyPage';
@@ -39,6 +42,7 @@ import WorkoutsPage from './components/WorkoutsPage';
 import MyPlanPage from './components/MyPlanPage';
 import PersonalLibraryPage from './components/PersonalLibraryPage';
 import SuggestWorkout from './components/SuggestWorkout';
+import { autoSaveWorkoutsFromAssessment } from './services/assessmentWorkouts';
 
 function App() {
   const [userData, setUserData] = useState<any | null>(null);
@@ -47,6 +51,7 @@ function App() {
   const navigate = useNavigate();
   const [profileVersion, setProfileVersion] = useState(0);
   const [isHydratingUser, setIsHydratingUser] = useState(true);
+  const useSupabase = Boolean(import.meta.env.VITE_LOCAL_USE_SUPABASE || import.meta.env.VITE_SUPABASE_URL);
   // themeMode: 'auto' | 'light' | 'dark'
   const [themeMode, setThemeMode] = useState<'auto' | 'light' | 'dark'>(() => {
     if (typeof window === 'undefined') return 'auto';
@@ -61,6 +66,23 @@ function App() {
 
   // Cloud backup/restore integration
   useCloudBackup();
+
+  useEffect(() => {
+    if (!useSupabase) return;
+    const { data: authListener } = supabase.auth.onAuthStateChange((_, session) => {
+      if (session) {
+        try { saveSupabaseSession(session); } catch {}
+        if (session.access_token) {
+          try { saveAuthToken(session.access_token); } catch {}
+        }
+      } else {
+        try { clearSupabaseSession(); } catch {}
+      }
+    });
+    return () => {
+      try { authListener?.subscription?.unsubscribe(); } catch {}
+    };
+  }, [useSupabase]);
   // Apply effective theme to document based on themeMode and OS preference
   useEffect(() => {
     const applyEffective = (mode: 'auto' | 'light' | 'dark') => {
@@ -236,6 +258,23 @@ function App() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      if (useSupabase) {
+        try {
+          const storedSession = loadSupabaseSession();
+          if (storedSession?.access_token && storedSession?.refresh_token) {
+            await supabase.auth.setSession({
+              access_token: storedSession.access_token,
+              refresh_token: storedSession.refresh_token
+            });
+            if (storedSession.access_token) {
+              try { saveAuthToken(storedSession.access_token); } catch {}
+            }
+          }
+        } catch (err) {
+          console.warn('[App] Supabase session restore failed', err);
+          try { clearSupabaseSession(); } catch {}
+        }
+      }
       const savedUserData = loadUserData();
       const savedWorkoutPlan = loadWorkoutPlan();
       console.log('App startup - loadUserData ->', savedUserData);
@@ -459,6 +498,7 @@ function App() {
           setUserData(user);
           setProfileVersion(v => v + 1);
         }} profileVersion={profileVersion} />} />
+        <Route path="/profile/achievements" element={<AchievementsPage />} />
         <Route path="/profile/settings" element={<SettingsPage theme={effectiveThemeClass} onToggleTheme={toggleTheme} />} />
         <Route path="/loading" element={<LoadingPage />} />
         <Route 
@@ -472,6 +512,10 @@ function App() {
                     // use wrapper to ensure calendar re-renders when plan is set
                     setWorkoutPlan(plan);
                     setPlanVersion(v => v + 1);
+                    const autoSaveResult = autoSaveWorkoutsFromAssessment(data);
+                    if (autoSaveResult.added > 0) {
+                      console.info(`[AI] Auto-saved ${autoSaveResult.added} workouts from assessment.`);
+                    }
                     navigate('/calendar');
                   }} 
                 />
@@ -486,7 +530,6 @@ function App() {
               ? (
                 <AgreementGuard userData={userData}>
                   <WorkoutCalendar 
-                    key={planVersion}
                     workoutPlan={workoutPlan}
                     userData={userData}
                     onUpdatePlan={(plan) => { setWorkoutPlan(plan); setPlanVersion(v => v + 1); }}
@@ -498,7 +541,6 @@ function App() {
                   ? <LoadingPage />
                   // If not signed in, still allow preview calendar (component handles guest fallback)
                   : <WorkoutCalendar 
-                      key={planVersion}
                       workoutPlan={workoutPlan}
                       userData={userData}
                       onUpdatePlan={(plan) => { setWorkoutPlan(plan); setPlanVersion(v => v + 1); }}
@@ -515,6 +557,7 @@ function App() {
           } 
         />
         <Route path="/my-plan" element={<MyPlanPage />} />
+  <Route path="/blog" element={<BlogPage />} />
   <Route path="/chat" element={<AgreementGuard userData={userData}><GeminiChatPage userData={userData} /></AgreementGuard>} />
   <Route path="/admin" element={<AdminPage />} />
   <Route path="/help" element={<HelpCenter />} />

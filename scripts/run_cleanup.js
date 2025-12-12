@@ -25,7 +25,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
 
 async function run() {
   console.log(`Running cleanup_old_audit_logs(${days})`);
-  const { data, error } = await supabase.rpc('cleanup_old_audit_logs', { days });
+  const { data: _data, error } = await supabase.rpc('cleanup_old_audit_logs', { days });
   if (error) {
     console.error('Error running cleanup:', error);
     process.exit(1);

@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { ChevronLeft, ChevronRight, Calendar, Play, Check, Clock, Target, Edit3, Plus, Settings, Save, X, Trash2, Dumbbell, Flame, Snowflake } from 'lucide-react';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay } from 'date-fns';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { ChevronLeft, ChevronRight, Calendar, Play, Check, Clock, Target, Edit3, Plus, Settings, Save, X, Trash2, Dumbbell, Flame, Snowflake, ArrowRight } from 'lucide-react';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addDays, differenceInCalendarDays, startOfWeek, endOfWeek } from 'date-fns';
 import { WorkoutPlan, DayWorkout, WorkoutType } from '../types';
 import { getPrimaryType, isWorkoutCompleteForStreak, normalizeTypesExclusiveRest, resolveWorkoutTypes } from '../utils/streakUtils';
 import { UserData } from '../services/aiService';
@@ -10,6 +10,7 @@ import './WorkoutCalendar.css';
 import { generateWorkoutPlan, generateWorkoutForDay } from '../services/aiService';
 import { loadQuestionnaireProgress, loadUserData, loadWorkoutPlan, saveUserData, saveWorkoutPlan } from '../services/localStorage';
 import { restoreUserDataFromServer, backupUserDataToServer } from '../services/cloudBackupService';
+import confetti from 'canvas-confetti';
 
 interface WorkoutCalendarProps {
   workoutPlan: WorkoutPlan | null;
@@ -70,6 +71,21 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
   // Add delete mode state
   const [deleteMode, setDeleteMode] = useState(false);
   const [selectedForDeletion, setSelectedForDeletion] = useState<string[]>([]);
+  const [showGroupMovePanel, setShowGroupMovePanel] = useState(false);
+  const [groupMoveTargetDate, setGroupMoveTargetDate] = useState('');
+  const [manualRestOverrides, setManualRestOverrides] = useState<string[]>([]);
+  const addManualRestOverrides = (dates: string[]) => {
+    if (!dates.length) return;
+    setManualRestOverrides(prev => {
+      const next = new Set(prev);
+      dates.forEach(date => next.add(date));
+      return Array.from(next);
+    });
+  };
+  const removeManualRestOverrides = (dates: string[]) => {
+    if (!dates.length) return;
+    setManualRestOverrides(prev => prev.filter(date => !dates.includes(date)));
+  };
   const previewPlanSeededRef = useRef(false);
   const lastPlanIdRef = useRef<string | null>(initialStoredPlanId);
   const guestUserData: UserData = {
@@ -85,6 +101,39 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
   };
   const effectiveUserData: UserData = userData || guestUserData;
   const isGuestUser = !userData;
+
+  const parseDaysPerWeekValue = (input?: string | number | null): number | null => {
+    if (typeof input === 'number' && !Number.isNaN(input)) {
+      return Math.floor(input);
+    }
+    if (typeof input === 'string') {
+      const match = input.match(/\d+/);
+      if (match) {
+        return Number(match[0]);
+      }
+    }
+    return null;
+  };
+
+  const deriveDaysPerWeekFromStructure = (structure?: string[] | null): number | null => {
+    if (!Array.isArray(structure) || structure.length === 0) return null;
+    const count = structure.reduce((acc, entry) => {
+      if (!entry || typeof entry !== 'string') return acc;
+      if (entry.toLowerCase().includes('rest')) return acc;
+      return acc + 1;
+    }, 0);
+    return count > 0 ? Math.min(count, 7) : null;
+  };
+
+  const workoutDaysPerWeekGoal = useMemo(() => {
+    const fromSurvey = parseDaysPerWeekValue(effectiveUserData.daysPerWeek);
+    if (fromSurvey && fromSurvey >= 1 && fromSurvey <= 7) return fromSurvey;
+    const fromPlan = deriveDaysPerWeekFromStructure(workoutPlan?.weeklyStructure || []);
+    if (fromPlan && fromPlan >= 1 && fromPlan <= 7) return fromPlan;
+    return 3;
+  }, [effectiveUserData.daysPerWeek, workoutPlan?.weeklyStructure]);
+
+  const allowedRestDaysPerWeek = Math.max(0, 7 - workoutDaysPerWeekGoal);
 
   useEffect(() => {
     if (workoutPlan || previewPlanSeededRef.current) return;
@@ -228,7 +277,7 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
 
   useEffect(() => {
     // no-op: kept for potential future side-effects when workoutPlan changes
-  }, [workoutPlan]);
+  }, [workoutPlan, manualRestOverrides]);
 
   // Persist multi-type days to user profile for history/backup
   useEffect(() => {
@@ -249,6 +298,13 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
   }, [workoutPlan]);
 
   useEffect(() => {}, []);
+
+  useEffect(() => {
+    if (selectedForDeletion.length === 0) {
+      setShowGroupMovePanel(false);
+      setGroupMoveTargetDate('');
+    }
+  }, [selectedForDeletion.length]);
 
   // Apply widths to progress-fill elements based on their `data-progress` attribute.
   // This avoids inline JSX styles which some tooling warns about.
@@ -334,9 +390,12 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ workoutPlan, userData
               const dateStr = format(d, 'yyyy-MM-dd');
               const patternIndex = i % 7;
               const slot = (pattern[patternIndex] || '').toString().toLowerCase();
-              if (slot.includes('rest')) {
-                // if there's no existing entry for this date, insert a Rest Day
-                if (!existingDates.has(dateStr)) {
+          if (slot.includes('rest')) {
+            if (manualRestOverrides.includes(dateStr)) {
+              continue;
+            }
+            // if there's no existing entry for this date, insert a Rest Day
+            if (!existingDates.has(dateStr)) {
                   const restWorkout = {
                     date: dateStr,
                     workouts: [{
@@ -410,6 +469,13 @@ updatedWorkouts = updatedWorkouts.map(workout => {
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
   const monthDays = eachDayOfInterval({ start: monthStart, end: monthEnd });
+  const sortedSelectionForDisplay = [...selectedForDeletion].sort();
+  const selectionEarliestLabel = sortedSelectionForDisplay.length
+    ? format(parseLocalDateString(sortedSelectionForDisplay[0]), 'MMM d, yyyy')
+    : '';
+  const selectionLatestLabel = sortedSelectionForDisplay.length
+    ? format(parseLocalDateString(sortedSelectionForDisplay[sortedSelectionForDisplay.length - 1]), 'MMM d, yyyy')
+    : '';
 
   const legendCategories: Array<{ type: WorkoutType; label: string; colorClass: string; title: string }> = [
     { type: 'strength', label: 'Strength Training', colorClass: 'strength', title: 'Drag onto a date to generate a strength workout' },
@@ -452,6 +518,48 @@ updatedWorkouts = updatedWorkouts.map(workout => {
     }
 
     return format(date, 'yyyy-MM-dd');
+  };
+
+  function parseLocalDateString(dateString: string): Date {
+    if (!dateString) return new Date('');
+    const [year, month, day] = dateString.split('-').map(Number);
+    if ([year, month, day].some(value => Number.isNaN(value))) {
+      return new Date('');
+    }
+    return new Date(year, month - 1, day);
+  }
+
+  const getWeekRestCount = (date: Date) => {
+    if (!workoutPlan) return 0;
+    const weekStart = startOfWeek(date, { weekStartsOn: 0 });
+    const weekEnd = endOfWeek(date, { weekStartsOn: 0 });
+    return workoutPlan.dailyWorkouts.reduce((count, day) => {
+      const dayDate = parseLocalDateString(day.date);
+      if (Number.isNaN(dayDate.getTime())) return count;
+      if (dayDate < weekStart || dayDate > weekEnd) return count;
+      return getPrimaryType(day) === 'rest' ? count + 1 : count;
+    }, 0);
+  };
+
+  const canAssignRestDay = (targetDate: Date, existingWorkout?: DayWorkout) => {
+    if (!targetDate || Number.isNaN(targetDate.getTime())) return false;
+    const restDaysThisWeek = getWeekRestCount(targetDate);
+    const existingIsRest = existingWorkout ? getPrimaryType(existingWorkout) === 'rest' : false;
+    const wouldIncrement = !existingIsRest;
+    if (restDaysThisWeek + (wouldIncrement ? 1 : 0) > allowedRestDaysPerWeek) {
+      const restPlural = allowedRestDaysPerWeek === 1 ? '' : 's';
+      const alreadyPlural = restDaysThisWeek === 1 ? '' : 's';
+      const baseMessage = allowedRestDaysPerWeek === 0
+        ? `You requested ${workoutDaysPerWeekGoal} workout days per week, so no rest days are allowed in a single week.`
+        : `You already have ${restDaysThisWeek} rest day${alreadyPlural} this week. With ${workoutDaysPerWeekGoal} workout days per week you can only have ${allowedRestDaysPerWeek} rest day${restPlural}.`;
+      window.showFitBuddyNotification?.({
+        title: 'Rest day limit reached',
+        message: baseMessage,
+        variant: 'warning'
+      });
+      return false;
+    }
+    return true;
   };
 
   // Normalize per-day types to an array (max 4, de-duped) for rendering and logic
@@ -784,6 +892,10 @@ updatedWorkouts = updatedWorkouts.map(workout => {
       // Prefer the userData prop (current session) before falling back to storage
       const existingUser = (userData && typeof userData === 'object') ? userData : loadUserData();
       if (!existingUser) return;
+      const storedStreak = typeof existingUser.streak === 'number' ? existingUser.streak : undefined;
+      if (typeof storedStreak === 'number' && storedStreak === streak) {
+        return;
+      }
       const nextUser = { ...(existingUser || {}), streak };
       saveUserData({ data: nextUser });
       // Broadcast to any listeners that streak changed
@@ -853,6 +965,14 @@ updatedWorkouts = updatedWorkouts.map(workout => {
   const handleSaveWorkout = () => {
     if (!editingWorkout || !workoutPlan) return;
     
+    const originalWorkout = workoutPlan.dailyWorkouts.find(w => w.date === editingWorkout.date);
+    const updatedPrimary = getPrimaryType(editingWorkout);
+    const originalPrimary = originalWorkout ? getPrimaryType(originalWorkout) : null;
+    if (updatedPrimary === 'rest' && originalPrimary !== 'rest') {
+      const targetDate = parseLocalDateString(editingWorkout.date);
+      if (!canAssignRestDay(targetDate, originalWorkout || undefined)) return;
+    }
+    
     const updatedWorkouts = workoutPlan.dailyWorkouts.map(workout => 
       workout.date === editingWorkout.date ? editingWorkout : workout
     );
@@ -863,6 +983,12 @@ updatedWorkouts = updatedWorkouts.map(workout => {
     };
     
     onUpdatePlan(updatedPlan);
+    confetti({
+      particleCount: 130,
+      spread: 70,
+      origin: { y: 0.4 },
+      zIndex: 9999,
+    });
     setIsEditing(false);
     setShowEditMenu(false);
     setEditingWorkout(null);
@@ -890,6 +1016,7 @@ updatedWorkouts = updatedWorkouts.map(workout => {
     
     // Check if workout already exists for this date
     const existingWorkout = workoutPlan.dailyWorkouts.find(w => w.date === dateString);
+    if (!canAssignRestDay(targetDate, existingWorkout)) return;
     if (existingWorkout) {
       // Update existing workout to rest day
       const updatedWorkout = {
@@ -937,6 +1064,7 @@ updatedWorkouts = updatedWorkouts.map(workout => {
     };
 
     onUpdatePlan(updatedPlan);
+    removeManualRestOverrides([dateString]);
   };
   const handleAddRestDayWithPicker = () => {
     if (selectedAddDate) {
@@ -977,6 +1105,9 @@ updatedWorkouts = updatedWorkouts.map(workout => {
       // enter selection mode
       setAddMode(true);
       setDeleteMode(false);
+      setSelectedForDeletion([]);
+      setShowGroupMovePanel(false);
+      setGroupMoveTargetDate('');
       setSelectedForAdd([]);
       setShowBatchAddPanel(false);
       // ensure the edit menu (sidebar) is open so selection UI is visible
@@ -1092,8 +1223,10 @@ updatedWorkouts = updatedWorkouts.map(workout => {
   try { console.log('[WorkoutCalendar] Saving batch-generated plan to localStorage:', { totalDays: updatedPlan.totalDays, dailyWorkoutsCount: updatedPlan.dailyWorkouts.length }); saveWorkoutPlan(updatedPlan); } catch (err) { console.warn('Failed to save batch-generated plan locally:', err); }
 
   // clear loading states and selection when done
+  const datesToClearOverrides = [...selectedForAdd];
   setLoadingDates([]);
   setSelectedForAdd([]);
+  removeManualRestOverrides(datesToClearOverrides);
   };
   const handleAddWorkoutDay = async (date?: Date, workoutType?: 'strength' | 'cardio' | 'flexibility' | 'rest' | 'mixed', preferences?: any) => {
     if (!workoutPlan) return;
@@ -1226,7 +1359,6 @@ updatedWorkouts = updatedWorkouts.map(workout => {
       const others = workoutPlan.dailyWorkouts.filter(d => d.date !== workout.date);
       // Request a single-day workout from Gemini AI
       const currentDayList = [...workout.workouts, ...workout.alternativeWorkouts];
-      // eslint-disable-next-line no-console
       console.log('[AI] Sending generateWorkoutForDay request:', {
         username: effectiveUserData?.username,
         date: workout.date,
@@ -1245,7 +1377,6 @@ updatedWorkouts = updatedWorkouts.map(workout => {
         currentDayList
       );
 
-      // eslint-disable-next-line no-console
       console.log('[AI] Received response for generateWorkoutForDay:', newDay);
 
       // Normalize AI response to match app DayWorkout shape and ensure the date matches the target
@@ -1309,7 +1440,6 @@ updatedWorkouts = updatedWorkouts.map(workout => {
       };
 
       const normalized = normalizeDay(newDay);
-      // eslint-disable-next-line no-console
       console.log('[REGenerate] Normalized regenerated day:', normalized);
 
       // Replace only the specific day in current plan with the normalized day
@@ -1317,8 +1447,13 @@ updatedWorkouts = updatedWorkouts.map(workout => {
       const updatedPlan = { ...workoutPlan, dailyWorkouts: updatedDaily };
       onUpdatePlan(updatedPlan);
       // Persist immediately to localStorage to avoid race with server restore
-      try { console.log('[WorkoutCalendar] Saving regenerated plan to localStorage:', { dailyWorkoutsCount: updatedPlan.dailyWorkouts.length }); saveWorkoutPlan(updatedPlan); // eslint-disable-next-line no-console
-        console.log('[REGenerate] saved regenerated plan to localStorage'); } catch (err) { console.warn('Failed to save regenerated plan locally:', err); }
+      try {
+        console.log('[WorkoutCalendar] Saving regenerated plan to localStorage:', { dailyWorkoutsCount: updatedPlan.dailyWorkouts.length });
+        saveWorkoutPlan(updatedPlan);
+        console.log('[REGenerate] saved regenerated plan to localStorage');
+      } catch (err) {
+        console.warn('Failed to save regenerated plan locally:', err);
+      }
       // Re-open modal with the normalized day so user sees the updated content immediately
       setSelectedDay(normalized);
       setShowWorkoutModal(true);
@@ -1359,7 +1494,6 @@ updatedWorkouts = updatedWorkouts.map(workout => {
       const others = workoutPlan.dailyWorkouts.filter(d => d.date !== selectedWorkoutDate);
 
       // Request a single-day workout from Gemini AI
-      // eslint-disable-next-line no-console
       console.log('[AI] Sending generateWorkoutForDay request:', {
         username: effectiveUserData?.username,
         date: selectedWorkoutDate,
@@ -1389,16 +1523,18 @@ updatedWorkouts = updatedWorkouts.map(workout => {
         completedTypes: []
       };
 
-      // eslint-disable-next-line no-console
       console.log('[AI] Received response for generateWorkoutForDay:', newDay);
 
       // Add the new day to the current plan
       const updatedDaily = [...workoutPlan.dailyWorkouts, normalizedNewDay];
       const updatedPlan = { ...workoutPlan, dailyWorkouts: updatedDaily };
       onUpdatePlan(updatedPlan);
-      try { saveWorkoutPlan(updatedPlan); } catch (err) { console.warn('Failed to save generated day locally:', err); }
+      try {
+        saveWorkoutPlan(updatedPlan);
+      } catch (err) {
+        console.warn('Failed to save generated day locally:', err);
+      }
 
-      // eslint-disable-next-line no-console
       console.log('[Calendar] Updated plan after generation:', {
         totalDays: updatedPlan.totalDays || updatedPlan.dailyWorkouts.length,
         dailyWorkoutsCount: updatedPlan.dailyWorkouts.length,
@@ -1514,6 +1650,7 @@ updatedWorkouts = updatedWorkouts.map(workout => {
     }
     const updatedDaily = workoutPlan.dailyWorkouts.filter(w => w.date !== draggedWorkout.date);
     const updatedPlan = { ...workoutPlan, dailyWorkouts: updatedDaily, totalDays: updatedDaily.length };
+    addManualRestOverrides([draggedWorkout.date]);
     onUpdatePlan(updatedPlan);
     try { saveWorkoutPlan(updatedPlan); } catch (err) { console.warn('Failed to save plan after legend drop delete:', err); }
 
@@ -1632,6 +1769,7 @@ updatedWorkouts = updatedWorkouts.map(workout => {
         const nextDaily = [...withoutTarget, normalizedDay].sort((a, b) => a.date.localeCompare(b.date));
         const updatedPlan = { ...workoutPlan, dailyWorkouts: nextDaily, totalDays: nextDaily.length };
         onUpdatePlan(updatedPlan);
+        removeManualRestOverrides([targetDateString]);
         try { saveWorkoutPlan(updatedPlan); } catch (err) { console.warn('Failed to save generated day locally:', err); }
         setLastUpdatedDate(targetDateString);
         window.setTimeout(() => setLastUpdatedDate(null), 2000);
@@ -1728,6 +1866,7 @@ updatedWorkouts = updatedWorkouts.map(workout => {
     // Persist cleared plan and update UI
     onUpdatePlan(clearedPlan);
     try { saveWorkoutPlan(clearedPlan); } catch (err) { console.warn('Failed to persist cleared plan:', err); }
+    setManualRestOverrides([]);
 
     // If user is signed in, also overwrite their server backup immediately
     try {
@@ -1742,6 +1881,8 @@ updatedWorkouts = updatedWorkouts.map(workout => {
 
     setShowEditMenu(false);
     setDeleteMode(false);
+    setShowGroupMovePanel(false);
+    setGroupMoveTargetDate('');
     window.showFitBuddyNotification?.({ title: 'Cleared', message: 'Calendar has been cleared!', variant: 'success' });
   };
 
@@ -1754,15 +1895,114 @@ updatedWorkouts = updatedWorkouts.map(workout => {
       return;
     }
     const updated = workoutPlan.dailyWorkouts.filter(w => !selectedForDeletion.includes(w.date));
+    addManualRestOverrides(selectedForDeletion);
     onUpdatePlan({ ...workoutPlan, dailyWorkouts: updated });
     setSelectedForDeletion([]);
     setDeleteMode(false);
     setShowEditMenu(false);
+    setShowGroupMovePanel(false);
+    setGroupMoveTargetDate('');
+  };
+
+  const handleOpenGroupMovePanel = () => {
+    if (selectedForDeletion.length === 0) {
+      window.showFitBuddyNotification?.({ title: 'Select Days', message: 'Pick at least one day before moving the group.', variant: 'warning' });
+      return;
+    }
+    setShowGroupMovePanel(true);
+    if (!groupMoveTargetDate) {
+      const sorted = [...selectedForDeletion].sort();
+      if (sorted[0]) setGroupMoveTargetDate(sorted[0]);
+    }
+  };
+
+  const handleMoveSelection = () => {
+    if (!workoutPlan) return;
+    const selectionCount = selectedForDeletion.length;
+    if (selectionCount === 0) {
+      window.showFitBuddyNotification?.({ title: 'Nothing selected', message: 'Highlight the workouts you want to move.', variant: 'warning' });
+      return;
+    }
+    if (!groupMoveTargetDate) {
+      window.showFitBuddyNotification?.({ title: 'Choose a date', message: 'Select a new start date for the group.', variant: 'warning' });
+      return;
+    }
+
+    const sortedSelection = [...selectedForDeletion].sort();
+    const earliestDate = parseLocalDateString(sortedSelection[0]);
+    const targetStart = parseLocalDateString(groupMoveTargetDate);
+    if (Number.isNaN(earliestDate.getTime()) || Number.isNaN(targetStart.getTime())) {
+      window.showFitBuddyNotification?.({ title: 'Invalid date', message: 'Something went wrong with the selected dates.', variant: 'error' });
+      return;
+    }
+
+    const offsets = sortedSelection.map(date => differenceInCalendarDays(parseLocalDateString(date), earliestDate));
+    const newDates = offsets.map(offset => format(addDays(targetStart, offset), 'yyyy-MM-dd'));
+    const selectionSet = new Set(sortedSelection);
+    const conflict = newDates.some(newDate => {
+      if (selectionSet.has(newDate)) return false;
+      return workoutPlan.dailyWorkouts.some(workout => workout.date === newDate);
+    });
+    if (conflict) {
+      window.showFitBuddyNotification?.({
+        title: 'Move blocked',
+        message: 'One or more target dates already have workouts. Choose a different start date or clear those days first.',
+        variant: 'error'
+      });
+      return;
+    }
+
+    const hitsPast = newDates.some(date => isDateInPast(parseLocalDateString(date)));
+    if (hitsPast) {
+      window.showFitBuddyNotification?.({ title: 'Past dates not allowed', message: 'Please move the group to today or a future date.', variant: 'error' });
+      return;
+    }
+
+    const selectionMap = new Map<string, string>();
+    sortedSelection.forEach((date, idx) => {
+      selectionMap.set(date, newDates[idx]);
+    });
+
+    const updatedDaily = workoutPlan.dailyWorkouts.map(workout => {
+      if (selectionMap.has(workout.date)) {
+        return { ...workout, date: selectionMap.get(workout.date)! };
+      }
+      return workout;
+    });
+
+    const sortedDaily = [...updatedDaily].sort((a, b) => a.date.localeCompare(b.date));
+    setIsManualDateChange(true);
+    setCurrentDate(currentDate);
+    window.setTimeout(() => setIsManualDateChange(false), 2000);
+
+    const updatedPlan = { ...workoutPlan, dailyWorkouts: sortedDaily };
+    onUpdatePlan(updatedPlan);
+    window.showFitBuddyNotification?.({
+      title: 'Group moved',
+      message: `Moved ${selectionCount} day${selectionCount === 1 ? '' : 's'} to the new start date.`,
+      variant: 'success'
+    });
+    if (newDates.length) {
+      setLastUpdatedDate(newDates[0]);
+      window.setTimeout(() => setLastUpdatedDate(null), 2000);
+    }
+    setSelectedForDeletion([]);
+    setDeleteMode(false);
+    setShowEditMenu(false);
+    setShowGroupMovePanel(false);
+    setGroupMoveTargetDate('');
+  };
+
+  const handleCancelGroupMove = () => {
+    setShowGroupMovePanel(false);
+    setGroupMoveTargetDate('');
   };
 
   const handleCancelDeletion = () => {
     setSelectedForDeletion([]);
     setDeleteMode(false);
+    setShowGroupMovePanel(false);
+    setGroupMoveTargetDate('');
   };
 
   return (
@@ -1778,11 +2018,12 @@ updatedWorkouts = updatedWorkouts.map(workout => {
           </div>
         )}
         {/* Header */}
-        <div className="calendar-header">
-          <div className="user-info">
-            <h1>Welcome back, {displayName}!</h1>
-            <p>{workoutPlan.description}</p>
-          </div>
+          <div className="calendar-header">
+            <div className="user-info">
+              <div className="welcome-badge">
+              <h1>Welcome back, {displayName}!</h1>
+            </div>
+            </div>
           
           <div className="progress-stats">
             <div className="stat-card">
@@ -1884,7 +2125,7 @@ updatedWorkouts = updatedWorkouts.map(workout => {
         {/* Calendar Grid */}
         <div className="calendar-grid">
           {/* Day headers */}
-          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+          {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map(day => (
             <div key={day} className="day-header">
               {day}
             </div>
@@ -2038,15 +2279,6 @@ updatedWorkouts = updatedWorkouts.map(workout => {
         />
       )}
 
-      {/* Floating Edit Button */}
-      <button
-        className={`edit-fab ${showEditMenu ? 'active' : ''}`}
-        onClick={() => setShowEditMenu(!showEditMenu)}
-        aria-label="Edit workouts"
-      >
-        {showEditMenu ? <X size={24} /> : <Edit3 size={24} />}
-      </button>
-
       {/* Edit Menu */}
       <div className={`edit-menu ${showEditMenu ? 'open' : ''}`}>
         <div className="edit-menu-header">
@@ -2107,6 +2339,11 @@ updatedWorkouts = updatedWorkouts.map(workout => {
                   setDeleteMode(prev => {
                     const next = !prev;
                     if (next) setAddMode(false);
+                    if (!next) {
+                      setSelectedForDeletion([]);
+                      setShowGroupMovePanel(false);
+                      setGroupMoveTargetDate('');
+                    }
                     return next;
                   });
                 }}
@@ -2114,12 +2351,46 @@ updatedWorkouts = updatedWorkouts.map(workout => {
                 <Trash2 size={16} /> {deleteMode ? 'Stop Delete' : 'Delete Days'}
               </button>
               {deleteMode && (
-                <div className="delete-action-row">
-                  <button className="confirm-btn" onClick={handleConfirmDeletion} disabled={selectedForDeletion.length === 0}>
-                    <Trash2 size={16} /> Delete {selectedForDeletion.length > 0 ? `(${selectedForDeletion.length})` : ''}
-                  </button>
-                  <button className="cancel-btn" onClick={handleCancelDeletion}>Cancel</button>
-                </div>
+                <>
+                  <div className="delete-action-row">
+                    <button className="confirm-btn" onClick={handleConfirmDeletion} disabled={selectedForDeletion.length === 0}>
+                      <Trash2 size={16} /> Delete {selectedForDeletion.length > 0 ? `(${selectedForDeletion.length})` : ''}
+                    </button>
+                    <button
+                      className="move-btn"
+                      onClick={handleOpenGroupMovePanel}
+                      disabled={selectedForDeletion.length === 0}
+                    >
+                      <ArrowRight size={16} />
+                      Move Selected
+                    </button>
+                    <button className="cancel-btn" onClick={handleCancelDeletion}>Cancel</button>
+                  </div>
+                  {showGroupMovePanel && (
+                    <div className="move-group-panel">
+                      <p className="move-group-summary">
+                        {selectedForDeletion.length} day{selectedForDeletion.length === 1 ? '' : 's'} selected
+                        {selectionEarliestLabel && selectionLatestLabel
+                          ? ` between ${selectionEarliestLabel} and ${selectionLatestLabel}`
+                          : ''
+                        }. Pick a new start date and the group will keep the same spacing.
+                      </p>
+                      <label htmlFor="group-move-target">New start date:</label>
+                      <input
+                        id="group-move-target"
+                        className="date-input"
+                        type="date"
+                        value={groupMoveTargetDate}
+                        onChange={(e) => setGroupMoveTargetDate(e.target.value)}
+                        min={format(new Date(), 'yyyy-MM-dd')}
+                      />
+                      <div className="move-group-actions">
+                        <button className="save-btn" onClick={handleMoveSelection}>Move</button>
+                        <button className="cancel-btn" onClick={handleCancelGroupMove}>Cancel</button>
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
               <button 
                 className="edit-action-btn clear-calendar-btn" 
