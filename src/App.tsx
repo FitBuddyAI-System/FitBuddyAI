@@ -32,6 +32,7 @@ import GeminiChatPage from './components/GeminiChatPage';
 import AdminPage from './components/AdminAuditPage';
 import { useCloudBackup } from './hooks/useCloudBackup';
 import RickrollPage from './components/RickrollPage';
+import BlogPage from './components/BlogPage';
 import AgreementBanner from './components/AgreementBanner';
 import TermsPage from './components/TermsPage';
 import PrivacyPage from './components/PrivacyPage';
@@ -556,6 +557,7 @@ function App() {
           } 
         />
         <Route path="/my-plan" element={<MyPlanPage />} />
+  <Route path="/blog" element={<BlogPage />} />
   <Route path="/chat" element={<AgreementGuard userData={userData}><GeminiChatPage userData={userData} /></AgreementGuard>} />
   <Route path="/admin" element={<AdminPage />} />
   <Route path="/help" element={<HelpCenter />} />

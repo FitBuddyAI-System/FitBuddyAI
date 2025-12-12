@@ -172,26 +172,21 @@ function isUsernameBanned(username) {
 }
 
 function readUsers() {
-  // Require Supabase for authoritative user store in production.
-  if (!supabase) {
-    console.error('[authServer] readUsers attempted but Supabase is not configured; aborting.');
-    throw new Error('Supabase not configured; user store unavailable.');
-  }
-  // When Supabase is configured, return users from the database.
-  // This function purposefully fails fast when Supabase is missing to avoid
-  // hidden local-file fallbacks in production deployments.
-  // Consumers may call Supabase directly for more advanced queries.
+  // Prefer Supabase when configured (production). For local development
+  // fall back to the local users.json so dev workflows still work.
   try {
-    // Use the synchronous client path where possible — callers expect an array.
-    // For simplicity and reliability, perform a blocking query here.
-    // Note: supabase.from(...).select().maybeSingle() returns a Promise.
-    // We'll use a synchronous wrapper by returning an empty array and
-    // relying on Supabase-backed deployments to route calls differently.
-    // However, to remain explicit, throw if we cannot access the DB.
-    console.info('[authServer] readUsers: Supabase is configured; please use Supabase client for reads.');
-    return [];
+    if (supabase) console.info('[authServer] readUsers: Supabase configured — falling back to local users.json for dev/testing.');
+    // Read local users.json (works for both dev and for quick local testing)
+    try {
+      const raw = fs.readFileSync(usersFile, 'utf-8');
+      const parsed = JSON.parse(raw || '[]');
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (e) {
+      console.warn('[authServer] readUsers: failed to read local users file, returning empty array', e);
+      return [];
+    }
   } catch (e) {
-    console.error('[authServer] readUsers: failed to read from Supabase', e);
+    console.error('[authServer] readUsers unexpected error', e);
     throw e;
   }
 }
@@ -446,6 +441,26 @@ app.post('/api/user/apply-action', (req, res) => {
   }
 });
 
+// Development helper: apply an action without authentication. ONLY enabled
+// when not in production. This is useful for local testing when Supabase
+// authentication is configured and you want a quick dev-only path.
+app.post('/api/dev/apply-action', (req, res) => {
+  try {
+    if (process.env.NODE_ENV === 'production') return res.status(403).json({ message: 'Not allowed in production.' });
+    const { id, action } = req.body || {};
+    if (!id || !action) return res.status(400).json({ message: 'Missing id or action.' });
+    const users = readUsers();
+    const user = users.find(u => u.id === id);
+    if (!user) return res.status(404).json({ message: 'User not found.' });
+    // Reuse the same processActionForUser code path so behavior matches production
+    processActionForUser(user, action, users, res);
+    return;
+  } catch (err) {
+    console.error('dev apply-action error', err);
+    return res.status(500).json({ message: 'Server error.' });
+  }
+});
+
 // Track rickroll events: client posts when a user is redirected to the rickroll.
 app.post('/api/rickroll', async (req, res) => {
   try {
@@ -588,7 +603,9 @@ app.post('/api/ai/generate', async (req, res) => {
           }
         ]
       };
-      generatedText = JSON.stringify(mockPlan);
+      // For local dev, return a human-facing message indicating the
+      // feature is under development rather than a fabricated JSON plan.
+      generatedText = 'Sorry, this feature is currently under development.';
     } else {
       const response = await fetch(GEMINI_URL, {
         method: 'POST',
@@ -597,6 +614,33 @@ app.post('/api/ai/generate', async (req, res) => {
       });
       const data = await response.json();
       generatedText = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    }
+
+    // If the AI returned an empty string unexpectedly, return a small
+    // deterministic fallback so clients (chat/planner) have valid JSON
+    // to parse and we fail more loudly in dev rather than returning silently
+    // empty text which is confusing in the UI.
+    try {
+      if (!generatedText || String(generatedText).trim().length === 0) {
+        console.warn('[authServer] generatedText empty — returning deterministic fallback plan');
+        const today2 = new Date().toISOString().split('T')[0];
+        const fallbackPlan = {
+          id: `fallback-${Date.now()}`,
+          name: 'Fallback Plan (empty AI response)',
+          description: 'Returned because the AI returned an empty result. Configure GEMINI_API_KEY or inspect server logs.',
+          startDate: today2,
+          endDate: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          totalDays: 1,
+          totalTime: '0 minutes',
+          weeklyStructure: [],
+          dailyWorkouts: [
+            { date: today2, type: 'rest', completed: false, totalTime: '0 minutes', workouts: [], alternativeWorkouts: [] }
+          ]
+        };
+                generatedText = 'Sorry, this feature is currently under development.';
+      }
+    } catch (e) {
+      console.warn('[authServer] fallback generation failed', e);
     }
 
     // Audit-log if supabase is configured

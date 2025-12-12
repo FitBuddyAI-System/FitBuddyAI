@@ -1,5 +1,7 @@
 # FitBuddyAI - Enterprise AI Fitness Platform
 
+> Deployment sync: last synced to production: 2025-12-11 23:30:00 UTC
+
 ## Business Overview
 
 FitBuddyAI is a comprehensive AI-powered fitness web application designed for business use, featuring user authentication, cloud persistence, administrative controls, and intelligent workout generation. The platform provides a complete fitness solution with modern UX/UI patterns inspired by successful apps like Duolingo.

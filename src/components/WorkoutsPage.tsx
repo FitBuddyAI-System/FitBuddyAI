@@ -11,9 +11,7 @@ const workouts = getAllWorkouts();
 const categoryOptions = getCategoryOptions();
 const categoryBuckets = getCategoryBuckets();
 
-const ITEMS_PER_BATCH = 18;
-const INITIAL_BATCHES = 5;
-const INITIAL_VISIBLE_COUNT = ITEMS_PER_BATCH * INITIAL_BATCHES;
+const ITEMS_PER_PAGE = 24;
 
 const normalizeCategoryLabel = (value: string) => String(value || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'all';
 
@@ -25,8 +23,7 @@ const WorkoutsPage: React.FC = () => {
   const [mySavedNames, setMySavedNames] = useState<string[]>(() => loadSavedNames());
   const [saveNotice, setSaveNotice] = useState<string | null>(null);
   const [aiSaving, setAiSaving] = useState(false);
-  const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE_COUNT);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const removeFromPlan = (item: Workout & { title: string }) => {
     setMySavedNames(prev => {
@@ -54,50 +51,11 @@ const WorkoutsPage: React.FC = () => {
     });
   }, [workouts, categoryBuckets, query, difficulty, categorySort]);
 
-  const loadMoreRef = React.useRef<HTMLDivElement | null>(null);
-  const visibleCountRef = React.useRef(visibleCount);
-  const loadingRef = React.useRef(isLoadingMore);
-  const filteredLengthRef = React.useRef(filtered.length);
-  const loadTimerRef = React.useRef<number | null>(null);
-
+  // simple pagination to avoid rendering a huge list at once
   React.useEffect(() => {
-    if (loadTimerRef.current) {
-      window.clearTimeout(loadTimerRef.current);
-      loadTimerRef.current = null;
-    }
-    setVisibleCount(Math.min(filtered.length, INITIAL_VISIBLE_COUNT));
-    setIsLoadingMore(false);
+    // reset to first page when filters change
+    setCurrentPage(1);
   }, [filtered]);
-
-  React.useEffect(() => { visibleCountRef.current = visibleCount; }, [visibleCount]);
-  React.useEffect(() => { loadingRef.current = isLoadingMore; }, [isLoadingMore]);
-  React.useEffect(() => { filteredLengthRef.current = filtered.length; }, [filtered.length]);
-
-  React.useEffect(() => {
-    const trigger = loadMoreRef.current;
-    if (!trigger) return;
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (!entry.isIntersecting) return;
-        if (loadingRef.current) return;
-        if (visibleCountRef.current >= filteredLengthRef.current) return;
-        setIsLoadingMore(true);
-        loadTimerRef.current = window.setTimeout(() => {
-          setVisibleCount((prev) => Math.min(prev + ITEMS_PER_BATCH, filteredLengthRef.current));
-          setIsLoadingMore(false);
-          loadTimerRef.current = null;
-        }, 420);
-      });
-    }, { rootMargin: '160px' });
-    observer.observe(trigger);
-    return () => {
-      observer.disconnect();
-      if (loadTimerRef.current) {
-        window.clearTimeout(loadTimerRef.current);
-        loadTimerRef.current = null;
-      }
-    };
-  }, []);
 
   React.useEffect(() => {
     const unsub = subscribeSavedNames((list) => setMySavedNames(list));
@@ -121,7 +79,8 @@ const WorkoutsPage: React.FC = () => {
 
   
 
-  const visibleWorkouts = filtered.slice(0, Math.min(visibleCount, filtered.length));
+  const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
+  const visibleWorkouts = filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
   const selectedWorkout = selected ? workouts.find(w => w.title === selected) : undefined;
 
@@ -259,14 +218,12 @@ const WorkoutsPage: React.FC = () => {
         ))}
       </div>
 
-      <div className="workouts-grid-footer">
-        <div ref={loadMoreRef} className="load-more-trigger" aria-hidden="true" />
-        {isLoadingMore && (
-          <div className="loading-indicator" role="status">
-            <span className="spinner" aria-hidden="true" />
-            Loading more workouts…
-          </div>
-        )}
+      <div className="workouts-grid-footer pagination-footer">
+        <div className="pagination-controls">
+          <button className="btn-ghost" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>Prev</button>
+          <span className="pagination-info">Page {currentPage} of {totalPages} ({filtered.length} results)</span>
+          <button className="btn-ghost" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}>Next</button>
+        </div>
       </div>
 
       {selectedWorkout && (

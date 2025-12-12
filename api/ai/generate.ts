@@ -241,7 +241,9 @@ export default async function handler(req: any, res: any) {
           }
         ]
       };
-      generatedText = JSON.stringify(mockPlan);
+      // Feature under development: return a short human-friendly message
+      // rather than a fabricated plan JSON so the UI shows a clear status.
+      generatedText = 'Sorry, this feature is currently under development.';
     } else {
       const response = await fetch(GEMINI_URL, {
         method: 'POST',
@@ -250,6 +252,9 @@ export default async function handler(req: any, res: any) {
       });
       const data = await response.json();
       generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      if (!generatedText || String(generatedText).trim().length === 0) {
+        generatedText = 'Sorry, this feature is currently under development.';
+      }
     }
 
     // Log to audit_logs if supabase is configured

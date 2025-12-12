@@ -808,7 +808,19 @@ export async function getAITextResponse(payload: { prompt: string; workoutPlan?:
   // Strip code fences if present for display, but also return raw
   const fenceMatch = rawText.match(/```(?:json)?\n([\s\S]*?)```/);
   const cleaned = fenceMatch && fenceMatch[1] ? fenceMatch[1].trim() : rawText.trim();
-  // Avoid returning an empty string so the UI can show a helpful fallback
-  const fallback = data?.message || 'AI Coach is currently unavailable. Please try again later.';
-  return { text: cleaned || fallback, raw: rawText || fallback };
+  // Avoid returning an empty string so the UI can show a helpful fallback.
+  // If the server returned an empty text payload, provide a diagnostic hint
+  // so the user sees an actionable hint instead of a silent blank message.
+  const defaultFallback = data?.message || 'AI Coach is currently unavailable. Please try again later.';
+  const emptyServerHint = 'AI returned an empty response from the server. Check the backend logs or set GEMINI_API_KEY / enable LOCAL_AI_MOCK for local dev.';
+  let finalText = cleaned && cleaned.length > 0 ? cleaned : (rawText && rawText.length > 0 ? rawText : (data && (data.message || data.error) ? String(data.message || data.error) : emptyServerHint));
+  // If the server returned a JSON-shaped workout plan (legacy fallback),
+  // prefer the simple developer-facing sentence so the chat shows a clear status.
+  try {
+    const looksLikePlan = String(finalText || '').trim().startsWith('{') && /"dailyWorkouts"|"workoutPlan"/.test(String(finalText));
+    if (looksLikePlan) {
+      finalText = 'Sorry, this feature is currently under development.';
+    }
+  } catch (e) { /* ignore */ }
+  return { text: finalText || defaultFallback, raw: rawText || defaultFallback };
 }
