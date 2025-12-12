@@ -222,8 +222,8 @@ const PersonalLibraryPage: React.FC = () => {
                     <iframe src={(selectedItem as any).video} title={`${selectedItem.title} video`} frameBorder={0} allowFullScreen />
                   ) : (selectedItem.images && selectedItem.images.length > 0) ? (
                     <div className="gallery">
-                      {selectedItem.images.map((src) => (
-                        <img key={src} src={src} alt={selectedItem.imageCaptions?.[selectedItem.images.indexOf(src)] || `${selectedItem.title}`} />
+                      {(selectedItem.images ?? []).map((src) => (
+                        <img key={src} src={src} alt={selectedItem.imageCaptions?.[selectedItem.images?.indexOf(src) ?? 0] || `${selectedItem.title}`} />
                       ))}
                     </div>
                   ) : (
