@@ -962,4 +962,5 @@ app.use((req, res) => {
 });
 
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => { console.log(`Auth server running on port ${PORT}`); });
+// Bind to 0.0.0.0 so the dev server is reachable from other hosts (Live Share, containers, VMs)
+app.listen(PORT, '0.0.0.0', () => { console.log(`Auth server running on port ${PORT}`); });
