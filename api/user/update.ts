@@ -37,7 +37,7 @@ export default async function handler(req: any, res: any) {
     if (!data) return res.status(404).json({ message: 'User not found.' });
 
     // Remove sensitive fields
-    const { password, ...userSafe } = data as any;
+    const { password: _password, ...userSafe } = data as any;
     return res.json({ user: userSafe });
   } catch (err: any) {
     console.error('[api/user/update] error', err);

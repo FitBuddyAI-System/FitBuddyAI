@@ -1359,7 +1359,6 @@ updatedWorkouts = updatedWorkouts.map(workout => {
       const others = workoutPlan.dailyWorkouts.filter(d => d.date !== workout.date);
       // Request a single-day workout from Gemini AI
       const currentDayList = [...workout.workouts, ...workout.alternativeWorkouts];
-      // eslint-disable-next-line no-console
       console.log('[AI] Sending generateWorkoutForDay request:', {
         username: effectiveUserData?.username,
         date: workout.date,
@@ -1378,7 +1377,6 @@ updatedWorkouts = updatedWorkouts.map(workout => {
         currentDayList
       );
 
-      // eslint-disable-next-line no-console
       console.log('[AI] Received response for generateWorkoutForDay:', newDay);
 
       // Normalize AI response to match app DayWorkout shape and ensure the date matches the target
@@ -1442,7 +1440,6 @@ updatedWorkouts = updatedWorkouts.map(workout => {
       };
 
       const normalized = normalizeDay(newDay);
-      // eslint-disable-next-line no-console
       console.log('[REGenerate] Normalized regenerated day:', normalized);
 
       // Replace only the specific day in current plan with the normalized day
@@ -1450,8 +1447,13 @@ updatedWorkouts = updatedWorkouts.map(workout => {
       const updatedPlan = { ...workoutPlan, dailyWorkouts: updatedDaily };
       onUpdatePlan(updatedPlan);
       // Persist immediately to localStorage to avoid race with server restore
-      try { console.log('[WorkoutCalendar] Saving regenerated plan to localStorage:', { dailyWorkoutsCount: updatedPlan.dailyWorkouts.length }); saveWorkoutPlan(updatedPlan); // eslint-disable-next-line no-console
-        console.log('[REGenerate] saved regenerated plan to localStorage'); } catch (err) { console.warn('Failed to save regenerated plan locally:', err); }
+      try {
+        console.log('[WorkoutCalendar] Saving regenerated plan to localStorage:', { dailyWorkoutsCount: updatedPlan.dailyWorkouts.length });
+        saveWorkoutPlan(updatedPlan);
+        console.log('[REGenerate] saved regenerated plan to localStorage');
+      } catch (err) {
+        console.warn('Failed to save regenerated plan locally:', err);
+      }
       // Re-open modal with the normalized day so user sees the updated content immediately
       setSelectedDay(normalized);
       setShowWorkoutModal(true);
@@ -1492,7 +1494,6 @@ updatedWorkouts = updatedWorkouts.map(workout => {
       const others = workoutPlan.dailyWorkouts.filter(d => d.date !== selectedWorkoutDate);
 
       // Request a single-day workout from Gemini AI
-      // eslint-disable-next-line no-console
       console.log('[AI] Sending generateWorkoutForDay request:', {
         username: effectiveUserData?.username,
         date: selectedWorkoutDate,
@@ -1522,16 +1523,18 @@ updatedWorkouts = updatedWorkouts.map(workout => {
         completedTypes: []
       };
 
-      // eslint-disable-next-line no-console
       console.log('[AI] Received response for generateWorkoutForDay:', newDay);
 
       // Add the new day to the current plan
       const updatedDaily = [...workoutPlan.dailyWorkouts, normalizedNewDay];
       const updatedPlan = { ...workoutPlan, dailyWorkouts: updatedDaily };
       onUpdatePlan(updatedPlan);
-      try { saveWorkoutPlan(updatedPlan); } catch (err) { console.warn('Failed to save generated day locally:', err); }
+      try {
+        saveWorkoutPlan(updatedPlan);
+      } catch (err) {
+        console.warn('Failed to save generated day locally:', err);
+      }
 
-      // eslint-disable-next-line no-console
       console.log('[Calendar] Updated plan after generation:', {
         totalDays: updatedPlan.totalDays || updatedPlan.dailyWorkouts.length,
         dailyWorkoutsCount: updatedPlan.dailyWorkouts.length,

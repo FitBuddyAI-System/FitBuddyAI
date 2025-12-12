@@ -180,7 +180,7 @@ export const saveUserData = (userData: any, opts?: { skipBackup?: boolean }): vo
       toStore.data = userData.data || null;
       // If a token was provided, move it into sessionStorage via helper (do not persist token into localStorage)
       if ('token' in userData && userData.token) {
-        try { sessionStorage.setItem(AUTH_KEYS.TOKEN, String(userData.token)); } catch {};
+        try { sessionStorage.setItem(AUTH_KEYS.TOKEN, String(userData.token)); } catch {}
       }
     } else {
       toStore.data = userData || null;
