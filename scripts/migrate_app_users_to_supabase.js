@@ -37,10 +37,12 @@ function randomPassword() {
   // Generates a 12-character password (alphanumeric), then adds 'A1!' to satisfy complexity requirements
   const length = 12;
   const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  const bytes = crypto.randomBytes(length);
   let password = '';
-  for (let i = 0; i < length; i++) {
-    password += charset[bytes[i] % charset.length];
+  while (password.length < length) {
+    // rejection sampling: only use bytes less than 62*4=248
+    const byte = crypto.randomBytes(1)[0];
+    if (byte >= 62 * 4) continue;
+    password += charset[byte % charset.length];
   }
   return password + 'A1!';
 }
