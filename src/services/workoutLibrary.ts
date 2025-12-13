@@ -30,7 +30,7 @@ export type Workout = {
 };
 
 const modules = (import.meta as any).glob('../data/exercises/*.json', { eager: true }) as Record<string, any>;
-const assets = (import.meta as any).glob('../data/exercises/**', { eager: true, as: 'url' }) as Record<string, string>;
+const assets = import.meta.glob('../data/exercises/**', { eager: true, query: '?url', import: 'default' }) as Record<string, string>;
 
 const capitalizeWords = (value?: string) => {
   if (!value) return '';
