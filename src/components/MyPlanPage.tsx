@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import './WorkoutsPage.css';
+import BackgroundDots from './BackgroundDots';
 import {
   loadSavedWorkouts,
   subscribeSavedWorkouts,
@@ -27,19 +28,21 @@ const MyPlanPage: React.FC = () => {
   };
 
   return (
-    <div className="saved-library-page">
-      <div className="saved-hero">
-        <div>
-          <p className="eyebrow">Personal Library</p>
-          <h1>Saved Workouts</h1>
-          <p className="hero-sub">Anything you tap “Save” on in the library lands here. Keep your short list tidy.</p>
+    <div className="page-with-dots">
+      <BackgroundDots />
+      <div className="saved-library-page">
+        <div className="saved-hero">
+          <div>
+            <p className="eyebrow">Personal Library</p>
+            <h1>Saved Workouts</h1>
+            <p className="hero-sub">Anything you tap “Save” on in the library lands here. Keep your short list tidy.</p>
+          </div>
+          <div className="saved-controls">
+            <span className="saved-count-pill">{plan.length} saved</span>
+            <a className="btn-ghost" href="/workouts">Back to Library</a>
+            <button className="btn-ghost danger" onClick={clearAll} disabled={plan.length === 0}>Clear all</button>
+          </div>
         </div>
-        <div className="saved-controls">
-          <span className="saved-count-pill">{plan.length} saved</span>
-          <a className="btn-ghost" href="/workouts">Back to Library</a>
-          <button className="btn-ghost danger" onClick={clearAll} disabled={plan.length === 0}>Clear all</button>
-        </div>
-      </div>
 
       {plan.length === 0 ? (
         <div className="saved-empty">
@@ -92,6 +95,7 @@ const MyPlanPage: React.FC = () => {
         </div>
       )}
     </div>
+  </div>
   );
 };
 

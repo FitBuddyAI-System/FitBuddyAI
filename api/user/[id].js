@@ -20,7 +20,7 @@ export default async function handler(req, res) {
         return res.status(500).json({ message: 'Supabase error.' });
       }
       if (!data) return res.status(404).json({ message: 'User not found.' });
-      const { password, ...userSafe } = data;
+      const { password: _password, ...userSafe } = data;
       return res.status(200).json({ user: userSafe });
     }
 

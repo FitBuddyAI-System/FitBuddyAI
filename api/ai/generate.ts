@@ -219,7 +219,7 @@ export default async function handler(req: any, res: any) {
       console.warn('[api/ai/generate] GEMINI_API_KEY missing — returning local mock response (development)');
       // Minimal valid WorkoutPlan JSON to satisfy client parsing
       const today = new Date().toISOString().split('T')[0];
-      const mockPlan = {
+      const _mockPlan = {
         id: `mock-${Date.now()}`,
         name: 'Local Mock Plan',
         description: 'This is a local mock workout plan used when GEMINI API key is not configured.',
@@ -241,7 +241,9 @@ export default async function handler(req: any, res: any) {
           }
         ]
       };
-      generatedText = JSON.stringify(mockPlan);
+      // Feature under development: return a short human-friendly message
+      // rather than a fabricated plan JSON so the UI shows a clear status.
+      generatedText = 'Sorry, this feature is currently under development.';
     } else {
       const response = await fetch(GEMINI_URL, {
         method: 'POST',
@@ -250,6 +252,9 @@ export default async function handler(req: any, res: any) {
       });
       const data = await response.json();
       generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      if (!generatedText || String(generatedText).trim().length === 0) {
+        generatedText = 'Sorry, this feature is currently under development.';
+      }
     }
 
     // Log to audit_logs if supabase is configured

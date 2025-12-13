@@ -26,7 +26,7 @@ export default async function handler(req: any, res: any) {
         return res.status(500).json({ message: 'Supabase error.' });
       }
       if (!data) return res.status(404).json({ message: 'User not found.' });
-      const { password, ...safe } = data as any;
+      const { password: _password, ...safe } = data as any;
       return res.status(200).json({ user: safe });
     }
 
@@ -55,7 +55,7 @@ export default async function handler(req: any, res: any) {
           console.error('[api/user/index] update error', error);
           return res.status(500).json({ code: 'ERR_INTERNAL', message: 'Failed to update user.' });
         }
-        const { password, ...safe } = (data as any) || {};
+        const { password: _password, ...safe } = (data as any) || {};
 
         // Attempt to update Supabase auth user metadata (display name / username) using admin API.
         // This is non-fatal; if it fails we still return the updated app_users record.
@@ -140,7 +140,7 @@ export default async function handler(req: any, res: any) {
         }
         if (!updated) return res.status(500).json({ code: 'ERR_INTERNAL', message: 'Failed to update user.' });
 
-        const { password, ...userSafe } = (updated as any) || {};
+        const { password: _password, ...userSafe } = (updated as any) || {};
         return res.status(200).json({ user: userSafe });
       }
 

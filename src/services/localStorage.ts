@@ -15,7 +15,8 @@ const STORAGE_KEYS = {
   USER_DATA: 'fitbuddyai_user_data',
   USER_DATA_PERSISTED: 'fitbuddyai_user_data_persisted',
   ASSESSMENT_DATA: 'fitbuddyai_assessment_data',
-  WORKOUT_PLAN: 'fitbuddyai_workout_plan'
+  WORKOUT_PLAN: 'fitbuddyai_workout_plan',
+  SUPABASE_SESSION: 'fitbuddyai_supabase_session'
 };
 const AUTH_KEYS = {
   TOKEN: 'fitbuddyai_token',
@@ -23,6 +24,7 @@ const AUTH_KEYS = {
 };
 // Auto-backup: import cloud backup helper and provide a debounced scheduler
 import { backupUserDataToServer } from './cloudBackupService';
+import { ensureUserId } from '../utils/userHelpers';
 
 // Helper: parse a value that may be a JSON string, a double-encoded JSON string, or an object
 function safeParseStored<T = any>(raw: string | null): T | null {
@@ -178,11 +180,12 @@ export const saveUserData = (userData: any, opts?: { skipBackup?: boolean }): vo
       toStore.data = userData.data || null;
       // If a token was provided, move it into sessionStorage via helper (do not persist token into localStorage)
       if ('token' in userData && userData.token) {
-        try { sessionStorage.setItem(AUTH_KEYS.TOKEN, String(userData.token)); } catch {};
+        try { sessionStorage.setItem(AUTH_KEYS.TOKEN, String(userData.token)); } catch {}
       }
     } else {
       toStore.data = userData || null;
     }
+    toStore.data = ensureUserId(toStore.data);
     const payload = { ...toStore, timestamp: Date.now() };
     // Persist unified user payload in sessionStorage only (do not store sensitive user payload in localStorage)
     try { sessionStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(payload)); } catch {}
@@ -288,6 +291,41 @@ export const clearAuthToken = () => {
   try { sessionStorage.removeItem(AUTH_KEYS.TOKEN); } catch {}
 };
 
+export const saveSupabaseSession = (session: any | null) => {
+  try {
+    if (!session) {
+      localStorage.removeItem(STORAGE_KEYS.SUPABASE_SESSION);
+      return;
+    }
+    const payload: any = {
+      access_token: session.access_token,
+      refresh_token: session.refresh_token,
+      expires_at: session.expires_at ?? (session.expires_in ? Math.round(Date.now() / 1000) + Number(session.expires_in || 0) : undefined)
+    };
+    localStorage.setItem(STORAGE_KEYS.SUPABASE_SESSION, JSON.stringify(payload));
+  } catch (error) {
+    console.warn('[localStorage] saveSupabaseSession failed:', error);
+  }
+};
+
+export const loadSupabaseSession = (): { access_token?: string; refresh_token?: string; expires_at?: number } | null => {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.SUPABASE_SESSION);
+    if (!raw) return null;
+    return safeParseStored(raw);
+  } catch (error) {
+    return null;
+  }
+};
+
+export const clearSupabaseSession = () => {
+  try {
+    localStorage.removeItem(STORAGE_KEYS.SUPABASE_SESSION);
+  } catch (error) {
+    // ignore
+  }
+};
+
 // Workout Plan
 export const saveWorkoutPlan = (workoutPlan: any): void => {
   try {
@@ -305,17 +343,18 @@ export const saveWorkoutPlan = (workoutPlan: any): void => {
         totalTime: plan.totalTime,
         weeklyStructure: Array.isArray(plan.weeklyStructure) ? plan.weeklyStructure.slice() : [],
         // filter out null/undefined entries (handles sparse arrays created by index assignments)
-        dailyWorkouts: Array.isArray(plan.dailyWorkouts) ? plan.dailyWorkouts.filter(Boolean).map((d: any) => ({
-          date: typeof d?.date === 'string' ? d.date : (d?.date ? new Date(d.date).toISOString().split('T')[0] : ''),
-          type: d?.type,
-          types: Array.isArray(d?.types) ? d.types.filter(Boolean).slice(0, 4) : (d?.type ? [d.type] : []),
-          completed: !!d?.completed,
-          completedTypes: Array.isArray(d?.completedTypes) ? d.completedTypes.filter(Boolean) : [],
-          energyRewarded: d?.energyRewarded ? true : undefined,
-          totalTime: d?.totalTime || '',
-          workouts: Array.isArray(d?.workouts) ? d.workouts.filter(Boolean).map((w: any) => ({
-            name: w?.name ?? '',
-            description: w?.description ?? '',
+          dailyWorkouts: Array.isArray(plan.dailyWorkouts) ? plan.dailyWorkouts.filter(Boolean).map((d: any) => ({
+            date: typeof d?.date === 'string' ? d.date : (d?.date ? new Date(d.date).toISOString().split('T')[0] : ''),
+            type: d?.type,
+            types: Array.isArray(d?.types) ? d.types.filter(Boolean).slice(0, 4) : (d?.type ? [d.type] : []),
+            completed: !!d?.completed,
+            completedTypes: Array.isArray(d?.completedTypes) ? d.completedTypes.filter(Boolean) : [],
+            energyRewarded: d?.energyRewarded ? true : undefined,
+            totalTime: d?.totalTime || '',
+            streakSaverBridge: d?.streakSaverBridge ? true : undefined,
+            workouts: Array.isArray(d?.workouts) ? d.workouts.filter(Boolean).map((w: any) => ({
+              name: w?.name ?? '',
+              description: w?.description ?? '',
             difficulty: w?.difficulty ?? 'beginner',
             duration: w?.duration ?? '',
             reps: w?.reps ?? '',
@@ -360,6 +399,11 @@ export const saveWorkoutPlan = (workoutPlan: any): void => {
 
     // schedule cloud backup (if user signed in)
     scheduleBackup();
+    try {
+      if (typeof window !== 'undefined' && window?.dispatchEvent) {
+        window.dispatchEvent(new CustomEvent('fitbuddyai-workout-plan-updated', { detail: { plan: normalized } }));
+      }
+    } catch {}
   } catch (error) {
     console.warn('Failed to save workout plan:', error);
   }
@@ -392,7 +436,12 @@ export const loadWorkoutPlan = (): any | null => {
 export const clearWorkoutPlan = (): void => {
   try {
     localStorage.removeItem(STORAGE_KEYS.WORKOUT_PLAN);
-  scheduleBackup();
+    scheduleBackup();
+    try {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('fitbuddyai-workout-plan-updated', { detail: { plan: null } }));
+      }
+    } catch {}
   } catch (error) {
     console.warn('Failed to clear workout plan:', error);
   }

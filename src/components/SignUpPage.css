@@ -3,15 +3,15 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: transparent;
+  background: var(--background-light, #f7f7f7);
   position: relative;
   z-index: 1;
 }
 
 .signup-form {
-  background: #fff;
+  background: var(--background-white, #fff);
   border-radius: 1.5rem;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
   padding: 2.5rem 2rem;
   width: 100%;
   max-width: 350px;
@@ -30,23 +30,25 @@
 
 .signup-form label {
   font-weight: 500;
-  color: var(--color-text, #222);
+  color: var(--text-dark, #222);
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
 }
 
 .signup-form input {
-  border: 1px solid #cce5d6;
+  border: 1px solid rgba(30, 144, 203, 0.4);
   border-radius: 0.5rem;
   padding: 0.7rem;
   font-size: 1rem;
   outline: none;
-  transition: border 0.2s;
+  background: transparent;
+  transition: border 0.2s, background 0.2s;
 }
 
 .signup-form input:focus {
-  border-color: var(--color-primary, #1ecb7b);
+  border-color: var(--primary-green, #58cc02);
+  background: rgba(30, 196, 139, 0.05);
 }
 
 .btn {
@@ -119,6 +121,54 @@
   font-weight: 600;
   cursor: pointer;
   text-decoration: underline;
+}
+
+body.theme-dark .signup-page {
+  background: linear-gradient(135deg, #0f1621 0%, #0d1b2a 100%);
+}
+
+body.theme-dark .signup-form {
+  background: var(--background-white, #111a27);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.55);
+}
+
+body.theme-dark .signup-form label {
+  color: var(--text-medium, #c0c7d4);
+}
+
+body.theme-dark .signup-form input {
+  border-color: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-dark, #e9eef5);
+}
+
+body.theme-dark .signup-form input:focus {
+  border-color: var(--secondary-blue, #1cb0f6);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+body.theme-dark .btn-google {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-dark, #e9eef5);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+body.theme-dark .btn-google:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+body.theme-dark .error {
+  color: var(--color-error, #f38679);
+  background: rgba(244, 162, 162, 0.2);
+}
+
+body.theme-dark .signin-link {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+body.theme-dark .signin-link span {
+  color: var(--primary-green, #58cc02);
 }
 
 @keyframes fadeIn {
