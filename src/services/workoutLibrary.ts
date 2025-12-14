@@ -68,9 +68,8 @@ const buildWorkoutLibrary = () => {
   const items = Object.entries(modules).map(([path, mod]) => {
     const data = mod && mod.default;
     if (!data) {
-      throw new Error(
-        `Invalid module structure for "${path}". Expected an object with a "default" property, but got: ${JSON.stringify(mod)}`
-      );
+      const moduleSummary = mod && typeof mod === 'object' ? ` module keys: ${Object.keys(mod).join(', ')}` : ` module type: ${typeof mod}`;
+      throw new Error(`Invalid module structure for "${path}". Expected an object with a "default" property.${moduleSummary}`);
     }
     const title = data.name || data.id || path.split('/').pop()?.replace('.json', '') || 'Unknown';
 
