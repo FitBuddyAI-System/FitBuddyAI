@@ -305,7 +305,11 @@ function WorkoutModal({ title, data, onClose, onAdd, isSaved }: { title: string;
           </div>
 
           <div className="modal-info">
-            <p className="long-desc">{(typeof data.meta?.description === 'string' ? data.meta.description : data.exampleNote) || ''}</p>
+            <p className="long-desc">{typeof data.meta?.description === 'string'
+              ? data.meta.description
+              : typeof data.exampleNote === 'string'
+                ? data.exampleNote
+                : ''}</p>
 
             {Array.isArray(data.instructions) && data.instructions.length > 0 && (
               <section className="instructions">
