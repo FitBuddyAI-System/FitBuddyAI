@@ -55,10 +55,10 @@
 .fb-notice .fb-notice-close { background: transparent; border: none; color: rgba(0,0,0,var(--fb-close-opacity)); cursor: pointer; font-size: 14px; }
 
 /* Variants */
-.fb-notice.success { background: linear-gradient(90deg, rgba(30,203,123,0.22), rgba(30,203,123,0.08)); border: 1px solid rgba(30,203,123,0.22); }
-.fb-notice.info { background: linear-gradient(90deg, rgba(30,144,203,0.20), rgba(30,144,203,0.07)); border: 1px solid rgba(30,144,203,0.22); }
-.fb-notice.warning { background: linear-gradient(90deg, rgba(255,179,71,0.20), rgba(255,179,71,0.07)); border: 1px solid rgba(255,179,71,0.22); }
-.fb-notice.error { background: linear-gradient(90deg, rgba(255,107,107,0.20), rgba(255,107,107,0.07)); border: 1px solid rgba(255,107,107,0.22); }
+.fb-notice.success { background: linear-gradient(90deg, rgba(30,203,123,0.52), rgba(30,203,123,0.38)); border: 1px solid rgba(30,203,123,0.22); }
+.fb-notice.info { background: linear-gradient(90deg, rgba(30,144,203,0.50), rgba(30,144,203,0.37)); border: 1px solid rgba(30,144,203,0.22); }
+.fb-notice.warning { background: linear-gradient(90deg, rgba(255,179,71,0.50), rgba(255,179,71,0.37)); border: 1px solid rgba(255,179,71,0.22); }
+.fb-notice.error { background: linear-gradient(90deg, rgba(255,107,107,0.50), rgba(255,107,107,0.37)); border: 1px solid rgba(255,107,107,0.22); }
 
 /* Dark mode support: prefers-color-scheme and explicit .dark body class */
 @media (prefers-color-scheme: dark) {
@@ -73,16 +73,13 @@
     background: linear-gradient(90deg, rgba(24,24,28,0.96), rgba(18,18,20,0.94));
     color: var(--fb-text);
   }
-  .fb-notice .fb-notice-icon { background: linear-gradient(135deg,var(--fb-primary),var(--fb-accent)); }
-  .fb-notice.success { border: 1px solid rgba(30,203,123,0.22); }
-  .fb-notice.info { border: 1px solid rgba(30,144,203,0.22); }
-  .fb-notice.warning { border: 1px solid rgba(255,179,71,0.22); }
-  .fb-notice.error { border: 1px solid rgba(255,107,107,0.22); }
+
   /* Slightly stronger tint for variants in dark mode to improve legibility */
   .fb-notice.success { background: linear-gradient(90deg, rgba(30,203,123,0.14), rgba(30,203,123,0.06)); }
   .fb-notice.info { background: linear-gradient(90deg, rgba(30,144,203,0.12), rgba(30,144,203,0.05)); }
   .fb-notice.warning { background: linear-gradient(90deg, rgba(255,179,71,0.12), rgba(255,179,71,0.05)); }
   .fb-notice.error { background: linear-gradient(90deg, rgba(255,107,107,0.12), rgba(255,107,107,0.05)); }
+
   .fb-notice .fb-notice-message { color: rgba(255,255,255,var(--fb-message-opacity)); }
   .fb-notice .fb-notice-close { color: rgba(255,255,255,var(--fb-close-opacity)); }
   .fb-notice .fb-notice-title { color: var(--fb-text); }
@@ -90,32 +87,22 @@
 }
 
 /* Support both `dark` and the app's `theme-dark` class */
-body.dark .fb-notice,
-body.theme-dark .fb-notice,
-.theme-dark .fb-notice {
+body.dark .fb-notice, body.theme-dark .fb-notice, .theme-dark .fb-notice {
   box-shadow: 0 10px 40px rgba(0,0,0,0.6);
   background: linear-gradient(90deg, rgba(24,24,28,0.96), rgba(18,18,20,0.94));
   color: var(--fb-text);
 }
 
-body.dark .fb-notice .fb-notice-message,
-body.theme-dark .fb-notice .fb-notice-message,
-.theme-dark .fb-notice .fb-notice-message {
+body.dark .fb-notice .fb-notice-message, body.theme-dark .fb-notice .fb-notice-message, .theme-dark .fb-notice .fb-notice-message {
   color: rgba(255,255,255,var(--fb-message-opacity));
 }
-body.dark .fb-notice .fb-notice-close,
-body.theme-dark .fb-notice .fb-notice-close,
-.theme-dark .fb-notice .fb-notice-close {
+body.dark .fb-notice .fb-notice-close, body.theme-dark .fb-notice .fb-notice-close, .theme-dark .fb-notice .fb-notice-close {
   color: rgba(255,255,255,var(--fb-close-opacity));
 }
-body.dark .fb-notice .fb-notice-title,
-body.theme-dark .fb-notice .fb-notice-title,
-.theme-dark .fb-notice .fb-notice-title {
+body.dark .fb-notice .fb-notice-title, body.theme-dark .fb-notice .fb-notice-title, .theme-dark .fb-notice .fb-notice-title {
   color: #fff;
 }
-body.dark .fb-notice .fb-notice-body,
-body.theme-dark .fb-notice .fb-notice-body,
-.theme-dark .fb-notice .fb-notice-body {
+body.dark .fb-notice .fb-notice-body, body.theme-dark .fb-notice .fb-notice-body, .theme-dark .fb-notice .fb-notice-body {
   color: #fff;
 }
 

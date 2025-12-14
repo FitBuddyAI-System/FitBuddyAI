@@ -6,6 +6,8 @@ import { loadSavedNames, subscribeSavedNames, persistSavedNames } from '../utils
 const PersonalLibraryPage: React.FC = () => {
   type LibItem = {
     title: string;
+    id?: string;
+    name?: string;
     images?: string[];
     imageCaptions?: string[];
     displayDifficulty?: string;
@@ -14,7 +16,7 @@ const PersonalLibraryPage: React.FC = () => {
     categoryClass?: string;
     difficulty?: string;
     duration?: string;
-    meta?: { description?: string } | Record<string, any>;
+    meta?: Record<string, unknown>;
     // Additional fields from exercises JSON
     primaryMuscles?: string[];
     secondaryMuscles?: string[];
@@ -43,11 +45,26 @@ const PersonalLibraryPage: React.FC = () => {
       if (s === 'expert' || s === 'advanced' || s === 'hard') return 'Hard';
       return 'Varies';
     };
-    const modules = (import.meta as any).glob('../data/exercises/*.json', { eager: true }) as Record<string, any>;
-    const assets = (import.meta as any).glob('../data/exercises/**', { eager: true, as: 'url' }) as Record<string, string>;
+    const modules = import.meta.glob('../data/exercises/*.json', { eager: true }) as Record<string, { default: Partial<LibItem> }>;
+    const assets = import.meta.glob('../data/exercises/**', { eager: true, query: '?url', import: 'default' }) as Record<string, string>;
     const map = new Map<string, LibItem>();
     Object.entries(modules).forEach(([path, mod]) => {
-      const data = (mod && mod.default) ? mod.default : mod;
+      if (!mod || !mod.default) {
+        let moduleSummary: string;
+        if (mod && typeof mod === 'object') {
+          let keys: string;
+          try {
+            keys = Object.keys(mod).join(', ');
+          } catch {
+            keys = 'unavailable';
+          }
+          moduleSummary = ` module keys: ${keys}`;
+        } else {
+          moduleSummary = ` module type: ${typeof mod}`;
+        }
+        throw new Error(`Invalid module structure for "${path}": missing default export.${moduleSummary}`);
+      }
+      const data = mod.default;
       const title = data.name || data.id || path.split('/').pop()?.replace('.json', '') || 'Unknown';
       const images: string[] = Array.isArray(data.images) ? data.images.map((p: string) => {
         const exactKey = `../data/exercises/${p}`;
@@ -87,8 +104,8 @@ const PersonalLibraryPage: React.FC = () => {
         video,
         featuredVideo,
         // Important detail fields used in modal header
-        force: data.force || data.meta?.force,
-        level: data.level || data.difficulty || data.meta?.level,
+        force: data.force || (data.meta?.force as string | undefined),
+        level: data.level || data.difficulty || (data.meta?.level as string | undefined),
         mechanic: data.mechanic,
         equipment: data.equipment,
         category: data.category,

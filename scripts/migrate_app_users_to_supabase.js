@@ -21,6 +21,7 @@ import 'dotenv/config';
 import fs from 'fs';
 import path from 'path';
 import { createClient } from '@supabase/supabase-js';
+import crypto from 'crypto';
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -33,7 +34,17 @@ if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
 const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, { auth: { persistSession: false } });
 
 function randomPassword() {
-  return [...Array(12)].map(() => (Math.random().toString(36)[2] || 'a')).join('') + 'A1!';
+  // Generates a 12-character password (alphanumeric), then adds 'A1!' to satisfy complexity requirements
+  const length = 12;
+  const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let password = '';
+  while (password.length < length) {
+    // rejection sampling: only use bytes less than 62*4=248
+    const byte = crypto.randomBytes(1)[0];
+    if (byte >= 62 * 4) continue;
+    password += charset[byte % charset.length];
+  }
+  return password + 'A1!';
 }
 
 async function fetchAppUsers() {
