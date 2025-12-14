@@ -273,6 +273,12 @@ const WorkoutModal: React.FC<WorkoutModalProps> = ({
     if (onUpdateWorkout) {
       onUpdateWorkout(normalizedWorkout);
     }
+    confetti({
+      particleCount: 120,
+      spread: 80,
+      origin: { y: 0.45 },
+      zIndex: 9999,
+    });
     setIsEditing(false);
     onClose(); // Close modal to reflect changes in calendar view
   };

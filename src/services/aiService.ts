@@ -1,5 +1,7 @@
 // Removed incorrect import of UserData from '../App'. Use the local UserData interface below.
-import { WorkoutPlan } from '../types';
+import { WorkoutPlan, WorkoutType } from '../types';
+import { normalizeTypesExclusiveRest } from '../utils/streakUtils';
+import { loadSavedWorkouts, SavedWorkout } from '../utils/savedLibrary';
 
 // API endpoint and key for Gemini via REST call
 // Prefer server-side env (process.env.GEMINI_API_KEY) — set this in Vercel or
@@ -71,18 +73,67 @@ const buildEquipmentContext = (equipmentList: string[] = []) => {
   return { cleaned, allowedSet };
 };
 
+const splitTypeCandidates = (value?: string | string[] | null): string[] => {
+  if (!value) return [];
+  const normalizedValue = Array.isArray(value) ? value.join(',') : value.toString();
+  return normalizedValue
+    .split(/\s*(?:,|\/|&|\+|and)\s*/i)
+    .map(candidate => candidate.trim())
+    .filter(Boolean);
+};
+
+const formatSavedWorkoutEntry = (workout: SavedWorkout, index: number): string => {
+  const difficulty = workout.displayDifficulty || workout.difficulty || 'Varies';
+  const duration = workout.duration || 'Varies';
+  const summary = workout.meta?.description || workout.exampleNote || '';
+  const keyStep = Array.isArray(workout.instructions) && workout.instructions.length ? workout.instructions[0] : '';
+  const parts = [
+    `${index + 1}. ${workout.title}`,
+    `(Difficulty: ${difficulty}; Duration: ${duration})`
+  ];
+  if (summary) parts.push(summary);
+  if (keyStep) parts.push(`Key step: ${keyStep}`);
+  return parts.join(' ');
+};
+
+const getSavedWorkoutsContext = (limit = 6): { text: string; count: number } => {
+  if (typeof window === 'undefined') {
+    return { text: 'Saved workouts list is not available in this environment.', count: 0 };
+  }
+  const stored = loadSavedWorkouts();
+  if (!stored.length) {
+    return { text: 'Saved workouts list is currently empty (no saved workouts).', count: 0 };
+  }
+  const entries = stored.slice(0, limit).map((workout, idx) => formatSavedWorkoutEntry(workout, idx));
+  const additionalNote = stored.length > limit ? `... plus ${stored.length - limit} more saved workouts.` : '';
+  return {
+    text: `${entries.join('\n')}${additionalNote ? `\n${additionalNote}` : ''}`,
+    count: stored.length
+  };
+};
+
+const deriveWorkoutTypesFromDay = (day: any): WorkoutType[] => {
+  const candidates: string[] = [];
+  if (Array.isArray(day?.types)) {
+    candidates.push(...day.types.map((typ: any) => typ?.toString?.().trim()).filter(Boolean));
+  }
+  candidates.push(...splitTypeCandidates(day?.type));
+  const normalized = normalizeTypesExclusiveRest(candidates);
+  return normalized.length > 0 ? normalized : ['strength'];
+};
+
 // Deterministic fallback plan used when the AI response is empty or non-JSON.
 const buildFallbackPlan = (userData: UserData, answers: Record<string, any>): WorkoutPlan => {
   const start = answers.startDate || new Date().toISOString().split('T')[0];
   const startDate = new Date(start);
-  const pattern: Array<'strength' | 'cardio' | 'flexibility' | 'rest' | 'mixed'> = [
+  const pattern: Array<'strength' | 'cardio' | 'flexibility' | 'rest'> = [
     'strength',
     'cardio',
     'strength',
     'flexibility',
-    'mixed',
     'cardio',
-    'rest'
+    'rest',
+    'strength'
   ];
   const dailyWorkouts = pattern.map((type, idx) => {
     const d = new Date(startDate);
@@ -99,9 +150,11 @@ const buildFallbackPlan = (userData: UserData, answers: Record<string, any>): Wo
       muscleGroups: type === 'cardio' ? ['cardio'] : ['full body'],
       equipment: []
     };
+    const fallbackTypes = type === 'rest' ? ['rest'] as WorkoutType[] : [type];
     return {
       date: dateStr,
-      type,
+      type: fallbackTypes[0],
+      types: fallbackTypes,
       completed: false,
       totalTime: type === 'rest' ? '0 minutes' : '30 minutes',
       workouts: [baseWorkout],
@@ -148,6 +201,11 @@ export const generateWorkoutPlan = async (
           "properties": {
             "date": { "type": "string", "pattern": "\\d{4}-\\d{2}-\\d{2}" },
             "type": { "type": "string" },
+            "types": {
+              "type": "array",
+              "items": { "type": "string" },
+              "minItems": 1
+            },
             "completed": { "type": "boolean" },
             "totalTime": { "type": "string" },
             "workouts": {
@@ -200,11 +258,17 @@ export const generateWorkoutPlan = async (
   const equipmentInstructionsText = equipmentContext.cleaned.length
     ? `Equipment from Question 17: ${equipmentContext.cleaned.join(', ')}. Only use these items when specifying required equipment inside workouts (bodyweight is always allowed). Do NOT introduce or require any other equipment.`
     : 'Question 17 indicates no equipment is available, so generate bodyweight-only workouts and do not reference other equipment.';
+  const savedWorkoutsContext = getSavedWorkoutsContext(8);
+  const savedWorkoutsSection = savedWorkoutsContext.count
+    ? `Saved workouts (${savedWorkoutsContext.count} total, showing up to 8 entries). Use these entries when filling the main "workouts" array for each day so the calendar reflects the workouts saved in the library:\n${savedWorkoutsContext.text}`
+    : 'Saved workouts list is empty; create new main workouts as needed but keep them inside the "workouts" array.';
   const answersContext = JSON.stringify(answers, null, 2);
-  const instructions = `Please strictly adhere to the following JSON schema without adding any extra text, markdown, or code fences. Ensure all required fields are present and match the specified types. For the 'type' field in dailyWorkouts, use only one of the following values: 'strength', 'cardio', 'flexibility', 'rest', or 'mixed'.`;
+  const instructions = `Please strictly adhere to the following JSON schema without adding any extra text, markdown, or code fences. Ensure all required fields are present and match the specified types. For the 'type' field in dailyWorkouts, use only one of the following values: 'strength', 'cardio', 'flexibility', or 'rest'. Do NOT use 'mixed'. When a day combines multiple workout focuses, include a 'types' array that lists each focus (e.g. ["strength","cardio"]) and set the 'type' field to the first entry in that array. Each day's 'workouts' array is the main workout section—keep it populated (ideally referencing the saved workouts listed below) and reserve 'alternativeWorkouts' for optional substitutes only.`;
   const fullPrompt = `${instructions}
 
 ${equipmentInstructionsText}
+
+${savedWorkoutsSection}
 
 Schema:
 ${planSchema}
@@ -342,65 +406,69 @@ const parseAIResponse = (responseText: string, userData: UserData): WorkoutPlan 
         }
         return result;
       };
-      const dailyWorkouts = parsedResponse.dailyWorkouts.map((day: any) => ({
-        date: day.date,
-        totalTime: day.totalTime || '',
-        workouts: ((day.workouts ?? day.exercises) || []).map((w: any) => {
-          if (typeof w === 'string') {
-            return { name: w, description: w, difficulty: 'beginner' as 'beginner', muscleGroups: [], equipment: [], duration: '', reps: '' };
-          }
-          // choose correct field for name
-          const name = w.name ?? w.exercise ?? '';
-          const description = w.description ?? w.instructions ?? '';
-          const duration = w.duration ?? (w.durationSeconds ? `${w.durationSeconds} sec` : '');
-          const sets = w.sets;
-          const reps = w.reps ?? '';
-          const rest = w.rest ?? '';
-          const difficultyValue = w.difficulty || 'beginner';
-          const validDifficulty = ['beginner', 'intermediate', 'advanced'].includes(difficultyValue) 
-            ? (difficultyValue as 'beginner' | 'intermediate' | 'advanced')
-            : 'beginner' as const;
-          return {
-            name,
-            description,
-            difficulty: validDifficulty,
-            muscleGroups: w.muscleGroups || [],
-            equipment: filterEquipmentList(w.equipment),
-            duration,
-            reps,
-            ...(sets !== undefined ? { sets } : {}),
-            ...(rest ? { rest } : {})
-          };
-        }),
-        alternativeWorkouts: ((day.alternativeWorkouts ?? day.alternatives) || []).map((w: any) => {
-          if (typeof w === 'string') {
-            return { name: w, description: w, difficulty: 'beginner' as 'beginner', muscleGroups: [], equipment: [], duration: '', reps: '' };
-          }
-          const name = w.name ?? w.exercise ?? '';
-          const description = w.description ?? w.instructions ?? '';
-          const duration = w.duration ?? (w.durationSeconds ? `${w.durationSeconds} sec` : '');
-          const sets = w.sets;
-          const reps = w.reps ?? '';
-          const rest = w.rest ?? '';
-          const difficultyValue = w.difficulty || 'beginner';
-          const validDifficulty = ['beginner', 'intermediate', 'advanced'].includes(difficultyValue)
-            ? (difficultyValue as 'beginner' | 'intermediate' | 'advanced')
-            : 'beginner' as const;
-          return {
-            name,
-            description,
-            difficulty: validDifficulty,
-            muscleGroups: w.muscleGroups || [],
-            equipment: filterEquipmentList(w.equipment),
-            duration,
-            reps,
-            ...(sets !== undefined ? { sets } : {}),
-            ...(rest ? { rest } : {})
-          };
-        }),
-        completed: day.completed ?? false,
-        type: day.type || 'mixed'
-      }));
+      const dailyWorkouts = parsedResponse.dailyWorkouts.map((day: any) => {
+        const dayTypes = deriveWorkoutTypesFromDay(day);
+        return {
+          date: day.date,
+          totalTime: day.totalTime || '',
+          workouts: ((day.workouts ?? day.exercises) || []).map((w: any) => {
+            if (typeof w === 'string') {
+              return { name: w, description: w, difficulty: 'beginner' as 'beginner', muscleGroups: [], equipment: [], duration: '', reps: '' };
+            }
+            // choose correct field for name
+            const name = w.name ?? w.exercise ?? '';
+            const description = w.description ?? w.instructions ?? '';
+            const duration = w.duration ?? (w.durationSeconds ? `${w.durationSeconds} sec` : '');
+            const sets = w.sets;
+            const reps = w.reps ?? '';
+            const rest = w.rest ?? '';
+            const difficultyValue = w.difficulty || 'beginner';
+            const validDifficulty = ['beginner', 'intermediate', 'advanced'].includes(difficultyValue) 
+              ? (difficultyValue as 'beginner' | 'intermediate' | 'advanced')
+              : 'beginner' as const;
+            return {
+              name,
+              description,
+              difficulty: validDifficulty,
+              muscleGroups: w.muscleGroups || [],
+              equipment: filterEquipmentList(w.equipment),
+              duration,
+              reps,
+              ...(sets !== undefined ? { sets } : {}),
+              ...(rest ? { rest } : {})
+            };
+          }),
+          alternativeWorkouts: ((day.alternativeWorkouts ?? day.alternatives) || []).map((w: any) => {
+            if (typeof w === 'string') {
+              return { name: w, description: w, difficulty: 'beginner' as 'beginner', muscleGroups: [], equipment: [], duration: '', reps: '' };
+            }
+            const name = w.name ?? w.exercise ?? '';
+            const description = w.description ?? w.instructions ?? '';
+            const duration = w.duration ?? (w.durationSeconds ? `${w.durationSeconds} sec` : '');
+            const sets = w.sets;
+            const reps = w.reps ?? '';
+            const rest = w.rest ?? '';
+            const difficultyValue = w.difficulty || 'beginner';
+            const validDifficulty = ['beginner', 'intermediate', 'advanced'].includes(difficultyValue)
+              ? (difficultyValue as 'beginner' | 'intermediate' | 'advanced')
+              : 'beginner' as const;
+            return {
+              name,
+              description,
+              difficulty: validDifficulty,
+              muscleGroups: w.muscleGroups || [],
+              equipment: filterEquipmentList(w.equipment),
+              duration,
+              reps,
+              ...(sets !== undefined ? { sets } : {}),
+              ...(rest ? { rest } : {})
+            };
+          }),
+          completed: day.completed ?? false,
+          type: dayTypes[0],
+          types: dayTypes
+        };
+      });
 
       console.log('Mapped daily workouts:', dailyWorkouts);
 
@@ -447,6 +515,11 @@ export const generateWorkoutForDay = async (
     "properties": {
       "date": { "type": "string", "pattern": "\\d{4}-\\d{2}-\\d{2}" },
       "type": { "type": "string" },
+      "types": {
+        "type": "array",
+        "items": { "type": "string" },
+        "minItems": 1
+      },
       "totalTime": { "type": "string" },
       "workouts": { "type": "array", "items": { "type": "object" } },
       "alternativeWorkouts": { "type": "array", "items": { "type": "object" } }
@@ -462,6 +535,11 @@ export const generateWorkoutForDay = async (
   const equipmentNoteDay = equipmentContextDay.cleaned.length
     ? `Equipment from Question 17: ${equipmentContextDay.cleaned.join(', ')}. Only include these items when specifying required equipment for the workouts (bodyweight is always allowed) and avoid mentioning other equipment.`
     : 'Question 17 indicates no equipment; keep this day strictly bodyweight and do not reference equipment.';
+  const savedWorkoutsContextDay = getSavedWorkoutsContext(4);
+  const savedWorkoutsSectionDay = savedWorkoutsContextDay.count
+    ? `Saved workouts (${savedWorkoutsContextDay.count} total, showing up to 4 entries). Include these exercises inside the main "workouts" array for ${targetDate}:\n${savedWorkoutsContextDay.text}`
+    : 'Saved workouts list is empty; invent the main workouts freely but keep them inside the "workouts" array.';
+  
   const basePrompt = `Here is the JSON schema for a DayWorkout:
 ${daySchema}
 
@@ -470,6 +548,8 @@ User data:
 ${userContext}
 
 ${equipmentNoteDay}
+
+${savedWorkoutsSectionDay}
 
 User questionnaire schema and answers:
 ${questionsContext}
@@ -481,27 +561,34 @@ Current day old workout:
 ${currentContext}
 
 Current date: ${today}
-Generate one DayWorkout JSON for ${targetDate}, type '${workoutType}', compatible with others. No wrappers, no markdown, pure JSON.`;
-  const schemaReminderDay = '\nIMPORTANT: return only the pure JSON object matching the DayWorkout schema, no markdown or code fences.';
+Always keep the saved workouts inside the 'workouts' array (the main section) and use 'alternativeWorkouts' only for optional substitutions.
+Generate one DayWorkout JSON for ${targetDate}, type '${workoutType}', compatible with others. Do not label the day as 'mixed'; if multiple focuses exist, include a 'types' array (e.g. ["strength","cardio"]) and keep the 'type' field equal to the first array entry. No wrappers, no markdown, pure JSON.`;
+  const schemaReminderDay = '\nIMPORTANT: return only the pure JSON object matching the DayWorkout schema, no markdown or code fences. Include a \'types\' array when combining focuses and never use \'mixed\'.';
 
-  const fallbackDay = () => ({
-    date: targetDate,
-    type: (workoutType || 'mixed'),
-    completed: false,
-    totalTime: '30 minutes',
-    workouts: [{
-      name: workoutType === 'cardio' ? 'Tempo Walk' : workoutType === 'rest' ? 'Rest Day' : 'Bodyweight Circuit',
-      description: workoutType === 'rest'
-        ? 'Take a breather to recover.'
-        : 'A quick, equipment-free session to keep you moving.',
-      difficulty: 'beginner' as 'beginner',
-      duration: workoutType === 'rest' ? '0 min' : '30 minutes',
-      reps: workoutType === 'rest' ? '' : '3 rounds',
-      muscleGroups: workoutType === 'cardio' ? ['cardio'] : ['full body'],
-      equipment: []
-    }],
-    alternativeWorkouts: []
-  });
+  const fallbackDay = () => {
+    const fallbackCandidates = splitTypeCandidates(workoutType);
+    const normalizedFallbackTypes = normalizeTypesExclusiveRest(fallbackCandidates.length > 0 ? fallbackCandidates : [workoutType]);
+    const fallbackType = normalizedFallbackTypes[0];
+    return {
+      date: targetDate,
+      type: fallbackType,
+      types: normalizedFallbackTypes,
+      completed: false,
+      totalTime: '30 minutes',
+      workouts: [{
+        name: workoutType === 'cardio' ? 'Tempo Walk' : workoutType === 'rest' ? 'Rest Day' : 'Bodyweight Circuit',
+        description: workoutType === 'rest'
+          ? 'Take a breather to recover.'
+          : 'A quick, equipment-free session to keep you moving.',
+        difficulty: 'beginner' as 'beginner',
+        duration: workoutType === 'rest' ? '0 min' : '30 minutes',
+        reps: workoutType === 'rest' ? '' : '3 rounds',
+        muscleGroups: workoutType === 'cardio' ? ['cardio'] : ['full body'],
+        equipment: []
+      }],
+      alternativeWorkouts: []
+    };
+  };
   // attempt fetch+parse up to 2 times
   for (let attempt = 1; attempt <= 2; attempt++) {
     // add nonce/ts to per-day prompt to avoid identical outputs
@@ -721,7 +808,19 @@ export async function getAITextResponse(payload: { prompt: string; workoutPlan?:
   // Strip code fences if present for display, but also return raw
   const fenceMatch = rawText.match(/```(?:json)?\n([\s\S]*?)```/);
   const cleaned = fenceMatch && fenceMatch[1] ? fenceMatch[1].trim() : rawText.trim();
-  // Avoid returning an empty string so the UI can show a helpful fallback
-  const fallback = data?.message || 'Buddy is currently unavailable. Please try again later.';
-  return { text: cleaned || fallback, raw: rawText || fallback };
+  // Avoid returning an empty string so the UI can show a helpful fallback.
+  // If the server returned an empty text payload, provide a diagnostic hint
+  // so the user sees an actionable hint instead of a silent blank message.
+  const defaultFallback = data?.message || 'AI Coach is currently unavailable. Please try again later.';
+  const emptyServerHint = 'AI returned an empty response from the server. Check the backend logs or set GEMINI_API_KEY / enable LOCAL_AI_MOCK for local dev.';
+  let finalText = cleaned && cleaned.length > 0 ? cleaned : (rawText && rawText.length > 0 ? rawText : (data && (data.message || data.error) ? String(data.message || data.error) : emptyServerHint));
+  // If the server returned a JSON-shaped workout plan (legacy fallback),
+  // prefer the simple developer-facing sentence so the chat shows a clear status.
+  try {
+    const looksLikePlan = String(finalText || '').trim().startsWith('{') && /"dailyWorkouts"|"workoutPlan"/.test(String(finalText));
+    if (looksLikePlan) {
+      finalText = 'Sorry, this feature is currently under development.';
+    }
+  } catch (e) { /* ignore */ }
+  return { text: finalText || defaultFallback, raw: rawText || defaultFallback };
 }

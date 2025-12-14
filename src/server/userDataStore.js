@@ -1,7 +1,5 @@
 // server/userDataStore.js
 // Express router for saving and loading user questionnaire progress and workout plan
-import fs from 'fs';
-import path from 'path';
 import express from 'express';
 import { createClient } from '@supabase/supabase-js';
 

@@ -6,15 +6,33 @@
   --text-dark: #222;
   --text-medium: #555;
 }
+.gemini-page-root{
+  position:relative;
+  overflow:hidden;
+  min-height:100vh;
+  padding-top:32px;
+  background:transparent;
+  display:flex;
+  justify-content:center;
+  align-items:flex-start;
+}
+
+.gemini-page-root::before {
+  content:'';
+  position:absolute;
+  inset:0;
+  background: var(--bg);
+  z-index:-2;
+}
 .gemini-page{
   display:flex;
   justify-content:center;
   padding:36px 16px;
-  background:var(--bg);
+  background:transparent;
   min-height:calc(100vh - 80px);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
   position: relative;
-  z-index: 0;
+  z-index: 1;
 }
 .gemini-container{
   width:100%;
@@ -39,6 +57,16 @@
   letter-spacing: -0.2px;
 }
 .gemini-sub{margin:8px 0 0;color:var(--text-medium);font-size:13px}
+.gemini-disclaimer{
+  margin:6px 0 0;
+  font-size:12px;
+  color:var(--text-medium);
+  line-height:1.4;
+}
+.gemini-disclaimer strong{
+  font-weight:700;
+  color:#1c4d3f;
+}
 
 .gemini-chat{
   padding:20px 22px;
@@ -48,10 +76,19 @@
   overflow:auto;
   max-height:62vh;
   scroll-behavior:smooth;
+  position:relative;
+  background:
+    radial-gradient(circle, rgba(16,24,18,0.24) 0.8px, rgba(16,24,18,0) 1px),
+    linear-gradient(180deg,#ffffff,#f8fff9);
+  background-size: 24px 24px, 100% 100%;
+  background-position: 0 0, 0 0;
+  background-repeat: repeat, repeat;
 }
 
 /* message bubbles */
 .msg{
+  position:relative;
+  z-index:1;
   max-width:82%;
   padding:12px 16px;
   border-radius:14px;
@@ -183,6 +220,13 @@
 
 /* Dark theme overrides */
 body.theme-dark .gemini-page{
+  background: transparent;
+}
+body.theme-dark .gemini-page-root{
+  background: transparent;
+}
+
+body.theme-dark .gemini-page-root::before {
   background: linear-gradient(135deg, #0b111b 0%, #0f1828 100%);
 }
 body.theme-dark .gemini-container{
@@ -194,7 +238,15 @@ body.theme-dark .gemini-header{
   border-bottom: 1px solid rgba(255,255,255,0.06);
 }
 body.theme-dark .gemini-sub{ color: var(--text-medium); }
-body.theme-dark .gemini-chat{ scrollbar-color: rgba(255,255,255,0.18) transparent; }
+body.theme-dark .gemini-chat{
+  scrollbar-color: rgba(255,255,255,0.18) transparent;
+  background:
+    radial-gradient(circle, rgba(255,255,255,0.28) 1px, rgba(255,255,255,0) 1px),
+    linear-gradient(180deg,#111a27,#0f1624) !important;
+  background-size: 26px 26px, 100% 100%;
+  background-position: 0 0, 0 0;
+  background-repeat: repeat, repeat;
+}
 body.theme-dark .msg{
   box-shadow: 0 10px 30px rgba(0,0,0,0.45);
 }

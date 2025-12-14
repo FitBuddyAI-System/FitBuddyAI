@@ -3,6 +3,13 @@
   --color-accent: #1e90cb;
   --text-medium: #555;
 }
+
+/* Hide the small info badge on very small/mobile screens to reduce header clutter */
+@media (max-width:480px) {
+  .tos-banner .tos-info {
+    display: none !important;
+  }
+}
 .tos-banner{
   background: linear-gradient(90deg, rgba(30,203,123,0.08), rgba(30,144,203,0.04));
   border-top: 1px solid rgba(0,0,0,0.04);
@@ -32,10 +39,63 @@
 .tos-banner.compact .inline-btn{height:36px;padding:6px 12px}
 
 @media (max-width:720px){
-  .tos-banner.compact{height:auto;padding:10px}
-  .tos-inner{flex-direction:column;align-items:flex-start}
-  .tos-left{width:100%}
-  .tos-text{white-space:normal}
+  /* On smaller screens constrain the banner width so it doesn't span edge-to-edge
+     and increase vertical padding/line-height so the banner reads as "thicker".
+     Also ensure wrapping and visual separation from the header. */
+  .tos-banner.compact{
+    height:auto;
+    padding:16px 14px;
+    /* Larger top margin on mobile so banner visually clears the sticky header */
+    margin:48px auto 12px auto;
+    max-width:calc(100% - 28px);
+    width: 100%;
+    box-shadow: 0 12px 36px rgba(6,24,40,0.11);
+    border-radius: 10px;
+    background: linear-gradient(90deg, rgba(30,203,123,0.08), rgba(30,144,203,0.04));
+    border: 1px solid rgba(0,0,0,0.05);
+    position: relative;
+    z-index: 1;
+  }
+
+  .tos-inner{
+    flex-direction:column;
+    align-items:center;
+    max-width:92%;
+    margin:0 auto;
+    gap:8px;
+  }
+
+  /* Stack the icon above the copy and center-align to create vertical thickness */
+  .tos-left{width:100%;display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px}
+  .tos-info{font-size:20px;margin-bottom:2px}
+  .tos-text{white-space:normal;line-height:1.55;font-size:15px;word-break:break-word;margin:0}
+
+  /* Override earlier desktop rule that forces ellipsis so the compact banner wraps on mobile */
+  .tos-banner.compact .tos-text{white-space:normal !important; overflow:visible !important; text-overflow:clip !important}
+
+  /* Make the info badge more prominent on mobile */
+  .tos-banner.compact .tos-info{
+    width:44px;
+    height:44px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    border-radius:10px;
+    background: rgba(255,255,255,0.95);
+    color: var(--color-primary);
+    font-size:20px;
+    box-shadow: 0 6px 18px rgba(6,24,40,0.06);
+  }
+
+  /* Dark-mode variant for the badge */
+  body.theme-dark .tos-banner.compact .tos-info{
+    background: rgba(255,255,255,0.04);
+    color: var(--color-primary);
+    box-shadow: none;
+  }
+
+  /* Ensure links wrap nicely and stay visible */
+  .tos-link{word-break:break-word}
 }
 
 /* Extra-small compact variant for the banner button to make it much shorter */

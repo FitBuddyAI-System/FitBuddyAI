@@ -84,9 +84,7 @@ if (typeof window !== 'undefined' && !document.getElementById(ROOT_ID)) {
   }
 }
 
-// Expose to console
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore
-window.showFitBuddyNotification = showFitBuddyNotification;
+// Expose to console (typed assignment)
+(window as any).showFitBuddyNotification = showFitBuddyNotification;
 
 export default NotificationManager;
