@@ -28,7 +28,7 @@ const WorkoutsPage: React.FC = () => {
   const removeFromPlan = (item: Workout & { title: string }) => {
     setMySavedNames(prev => {
       if (!prev.includes(item.title)) {
-        showFitBuddyNotification({message:'That workout is not in your saved list.', variant:'error'});
+        showFitBuddyNotification({ message: 'That workout is not in your saved list.', variant: 'error' });
         return prev;
       }
       const next = removeSavedName(item.title);
