@@ -47,7 +47,10 @@ const PersonalLibraryPage: React.FC = () => {
     const assets = import.meta.glob<string>('../data/exercises/**', { eager: true, query: '?url', import: 'default' });
     const map = new Map<string, LibItem>();
     Object.entries(modules).forEach(([path, mod]) => {
-      const data = (mod && mod.default) ? mod.default : mod;
+      if (!mod || !mod.default) {
+        throw new Error(`Invalid module structure for ${path}: missing default export`);
+      }
+      const data = mod.default;
       const title = data.name || data.id || path.split('/').pop()?.replace('.json', '') || 'Unknown';
       const images: string[] = Array.isArray(data.images) ? data.images.map((p: string) => {
         const exactKey = `../data/exercises/${p}`;
