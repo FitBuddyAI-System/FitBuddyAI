@@ -11,7 +11,7 @@ export type Workout = {
   difficulty?: string;
   duration?: string;
   exampleNote?: string;
-  meta?: Record<string, any>;
+  meta?: Record<string, unknown>;
   force?: string | null;
   level?: string;
   mechanic?: string | null;

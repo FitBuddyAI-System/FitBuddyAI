@@ -104,14 +104,14 @@ If automation is failing or you prefer manual control, change the preview link y
 
 ### Prerequisites
 
-- Node.js 16+ 
+- Node.js >=20.19.0
 - npm or yarn
 - Google Gemini API key (optional, for AI features)
 
 ### Employee Development Setup
 
 ### Prerequisites
-- **Node.js 18+** and npm
+- **Node.js >=20.19.0** and npm
 - **Git** for version control
 - **VS Code** recommended IDE
 - **Google Cloud Account** for Gemini AI API
