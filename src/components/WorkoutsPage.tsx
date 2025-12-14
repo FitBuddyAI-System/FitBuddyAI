@@ -68,7 +68,7 @@ const WorkoutsPage: React.FC = () => {
         return prev;
       }
       const next = addSavedName(item.title);
-      showFitBuddyNotification({message:item.title + ' saved to your workouts!'});
+      showFitBuddyNotification({ message: item.title + ' saved to your workouts!' });
       return next;
     });
   };
