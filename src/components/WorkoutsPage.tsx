@@ -103,7 +103,7 @@ const WorkoutsPage: React.FC = () => {
           try { persistSavedNames(next); } catch (e) {}
           return next;
         });
-        showFitBuddyNotification(added > 0 ? {message:`Saved ${added} workouts from your assessment.`} : {message:'Those workouts are already saved.',variant:'warning'});
+        showFitBuddyNotification(added > 0 ? { message: `Saved ${added} workouts from your assessment.` } : { message: 'Those workouts are already saved.', variant: 'warning' });
         setAiSaving(false);
       }, 120);
     } catch (err) {
