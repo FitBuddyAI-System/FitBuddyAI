@@ -10,6 +10,7 @@ leoProfanity.loadDictionary();
 
 import express from 'express';
 import userDataStoreRouter from './userDataStore.js';
+import rateLimit from 'express-rate-limit';
 import cors from 'cors';
 import bodyParser from 'body-parser';
 import { v4 as uuidv4 } from 'uuid';
@@ -984,7 +985,7 @@ app.get('/admin/audit', (req, res) => {
   }
 });
 
-app.get('/api/users', (req, res) => {
+app.get('/api/users', adminUsersLimiter, (req, res) => {
   try {
   const admin = verifyAdminFromToken(req);
     if (!admin) return res.status(403).json({ message: 'Forbidden' });
