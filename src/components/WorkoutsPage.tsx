@@ -112,8 +112,8 @@ const WorkoutsPage: React.FC = () => {
       }, 120);
     } catch (err) {
       console.warn('AI save failed', err);
-      showFitBuddyNotification({ message: 'Could not save workouts. Try again.', variant: 'error' });
       setAiSaving(false);
+      showFitBuddyNotification({ message: 'Could not save workouts. Try again.', variant: 'error' });
     }
   };
 
