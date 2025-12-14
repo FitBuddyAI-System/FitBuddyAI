@@ -55,7 +55,6 @@
 .fb-notice .fb-notice-close { background: transparent; border: none; color: rgba(0,0,0,var(--fb-close-opacity)); cursor: pointer; font-size: 14px; }
 
 /* Variants */
-.fb-notice .fb-notice-icon { background: linear-gradient(135deg,var(--fb-primary),var(--fb-accent)); }
 .fb-notice.success { background: linear-gradient(90deg, rgba(30,203,123,0.52), rgba(30,203,123,0.38)); border: 1px solid rgba(30,203,123,0.22); }
 .fb-notice.info { background: linear-gradient(90deg, rgba(30,144,203,0.50), rgba(30,144,203,0.37)); border: 1px solid rgba(30,144,203,0.22); }
 .fb-notice.warning { background: linear-gradient(90deg, rgba(255,179,71,0.50), rgba(255,179,71,0.37)); border: 1px solid rgba(255,179,71,0.22); }

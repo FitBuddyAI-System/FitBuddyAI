@@ -88,7 +88,8 @@
   display: flex; 
   align-items: center; 
   row-gap: 12px; 
-  column-gap: 0.1%; /*No idea why this puts it on a seperate line*/
+  /* Removed column-gap workaround; rely on .filters gap for spacing. 
+     If wrapping occurs, adjust child widths or flex properties as needed. */
   justify-content: flex-end; 
   flex-wrap: wrap; 
 }
