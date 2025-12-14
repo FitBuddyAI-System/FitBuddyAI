@@ -87,7 +87,7 @@
 .filters-row { 
   display: flex; 
   align-items: center; 
-  row-gap: 12px; 
+  gap: 12px; /* ensures both row and column gaps when items wrap */
   /* Removed column-gap workaround; rely on .filters gap for spacing. 
      If wrapping occurs, adjust child widths or flex properties as needed. */
   justify-content: flex-end; 
