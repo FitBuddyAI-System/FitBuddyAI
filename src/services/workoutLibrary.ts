@@ -66,7 +66,12 @@ export const mapLevel = (lvl?: string) => {
 const buildWorkoutLibrary = () => {
   const categoryMap = new Map<string, string>();
   const items = Object.entries(modules).map(([path, mod]) => {
-    const data = mod.default;
+    const data = mod && mod.default;
+    if (!data) {
+      throw new Error(
+        `Invalid module structure for "${path}". Expected an object with a "default" property, but got: ${JSON.stringify(mod)}`
+      );
+    }
     const title = data.name || data.id || path.split('/').pop()?.replace('.json', '') || 'Unknown';
 
     const images: string[] = Array.isArray(data.images) ? data.images.map((img: string) => {
