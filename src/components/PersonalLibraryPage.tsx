@@ -50,7 +50,19 @@ const PersonalLibraryPage: React.FC = () => {
     const map = new Map<string, LibItem>();
     Object.entries(modules).forEach(([path, mod]) => {
       if (!mod || !mod.default) {
-        throw new Error(`Invalid module structure for ${path}: missing default export`);
+        let moduleSummary: string;
+        if (mod && typeof mod === 'object') {
+          let keys: string;
+          try {
+            keys = Object.keys(mod).join(', ');
+          } catch {
+            keys = 'unavailable';
+          }
+          moduleSummary = ` module keys: ${keys}`;
+        } else {
+          moduleSummary = ` module type: ${typeof mod}`;
+        }
+        throw new Error(`Invalid module structure for "${path}": missing default export.${moduleSummary}`);
       }
       const data = mod.default;
       const title = data.name || data.id || path.split('/').pop()?.replace('.json', '') || 'Unknown';
