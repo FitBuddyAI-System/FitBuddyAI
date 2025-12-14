@@ -9,11 +9,15 @@
   --primary-green: #58cc02;
   --primary-green-hover: #4eb500;
   --primary-green-dark: #47a500;
+
   --secondary-blue: #1cb0f6;
   --secondary-blue-hover: #1899d6;
+
   --accent-orange: #ff9600;
   --accent-red: #ff4b4b;
+  --accent-red-dark: #ee5252;
   --accent-yellow: #ffc800;
+
   --background-light: #f7f7f7;
   --background-white: #ffffff;
   --text-dark: #3c3c41;
@@ -22,6 +26,7 @@
   --border-light: #e5e5e5;
   --shadow-light: rgba(0, 0, 0, 0.05);
   --shadow-medium: rgba(0, 0, 0, 0.1);
+
   --gradient-primary: linear-gradient(135deg, var(--primary-green), var(--secondary-blue));
   --gradient-accent: linear-gradient(135deg, var(--accent-orange), var(--accent-red));
 }
@@ -186,7 +191,10 @@ body {
 .btn-primary {
   background: var(--gradient-primary);
   color: white;
-  border-bottom: 4px solid var(--primary-green-dark);
+  border: none;
+  border-bottom: 2px solid var(--primary-green-dark);
+  cursor: pointer; 
+  font-weight: 700; 
 }
 
 .btn-primary:hover {

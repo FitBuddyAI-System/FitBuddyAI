@@ -1,7 +1,5 @@
 # FitBuddyAI - Enterprise AI Fitness Platform
 
-> Deployment sync: last synced to production: 2025-12-11 23:30:00 UTC
-
 ## Business Overview
 
 FitBuddyAI is a comprehensive AI-powered fitness web application designed for business use, featuring user authentication, cloud persistence, administrative controls, and intelligent workout generation. The platform provides a complete fitness solution with modern UX/UI patterns inspired by successful apps like Duolingo.
@@ -106,14 +104,14 @@ If automation is failing or you prefer manual control, change the preview link y
 
 ### Prerequisites
 
-- Node.js 16+ 
+- Node.js >=20.19.0
 - npm or yarn
 - Google Gemini API key (optional, for AI features)
 
 ### Employee Development Setup
 
 ### Prerequisites
-- **Node.js 18+** and npm
+- **Node.js >=20.19.0** and npm
 - **Git** for version control
 - **VS Code** recommended IDE
 - **Google Cloud Account** for Gemini AI API
