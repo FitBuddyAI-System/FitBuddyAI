@@ -1,0 +1,16 @@
+# FitBuddyAI robots.txt
+# Controls crawler access to the site. Adjust rules as needed.
+
+User-agent: *
+# Allow crawling of the main site
+Allow: /
+
+# Do not crawl API endpoints or server-side/admin routes
+Disallow: /api/
+Disallow: /admin/
+Disallow: /server/
+Disallow: /debug/
+Disallow: /scripts/
+
+# Optional crawl delay for polite crawling
+Crawl-delay: 10

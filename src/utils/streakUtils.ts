@@ -18,14 +18,15 @@ export const normalizeTypesExclusiveRest = (typesInput: (WorkoutType | string | 
   const filtered = (typesInput || [])
     .map(normalizeTypeValue)
     .filter(Boolean) as WorkoutType[];
-  const unique = Array.from(new Set(filtered)) as WorkoutType[];
+  const withoutMixed = filtered.filter((t) => t !== 'mixed');
+  const unique = Array.from(new Set(withoutMixed)) as WorkoutType[];
   if (unique.includes('rest') && unique.length > 1) {
     return ['rest'];
   }
-  const filteredOutMixed = unique.filter((t) => t !== 'mixed');
-  const normalized = filteredOutMixed.length > 0 ? filteredOutMixed : unique;
-  if (normalized.length === 0) return ['strength'];
-  return normalized.slice(0, 4) as WorkoutType[];
+  if (unique.length === 0) {
+    return ['strength'];
+  }
+  return unique.slice(0, 4) as WorkoutType[];
 };
 
 export const resolveWorkoutTypes = (workout: DayWorkout): WorkoutType[] => {

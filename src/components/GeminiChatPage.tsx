@@ -4,7 +4,7 @@ import { getAITextResponse } from '../services/aiService';
 import BackgroundDots from './BackgroundDots';
 // ActionConfirmModal removed: actions are applied automatically
 
-const ASSISTANT_GREETING = 'Hi! I am Buddy — your AI Fitness assistant. I can answer questions about your workouts, goals, and progress.';
+const ASSISTANT_GREETING = 'Hi! I am AI Coach — your AI Fitness assistant powered by Google Gemini. I can answer questions about your workouts, goals, and progress.';
 const MAX_PLAN_SNIPPET_CHARS = 500; // keep prompt small to return responses faster
 const MAX_HISTORY_MESSAGES = 12; // limit context length to speed up LLM responses
 
@@ -339,7 +339,7 @@ const GeminiChatPage: React.FC<GeminiChatPageProps> = ({ userData }) => {
               if (isRestoringRef.current) return;
               const uid = userData?.id || 'anon';
               // Avoid persisting the default assistant greeting immediately (it may overwrite restored chat)
-              const defaultGreeting = 'Hi! I am Buddy — your AI Fitness assistant. I can answer questions about your workouts, goals, and progress.';
+              const defaultGreeting = ASSISTANT_GREETING;
               if (messages.length === 1 && messages[0].role === 'assistant' && messages[0].text === defaultGreeting) return;
               try { sessionStorage.setItem(`fitbuddyai_chat_${uid}`, JSON.stringify(messages)); } catch { /* ignore sessionStorage failures */ }
             } catch {}
@@ -490,7 +490,7 @@ const GeminiChatPage: React.FC<GeminiChatPageProps> = ({ userData }) => {
       window.dispatchEvent(new Event('fitbuddyai-login'));
 
       // Append the assistant human-readable reply (from the AI reply text)
-      const humanReply = humanReplyText || j.humanReply || j.applied || 'Buddy applied the changes.';
+      const humanReply = humanReplyText || j.humanReply || j.applied || 'AI Coach applied the changes.';
       setMessages(m => [...m, { role: 'assistant', text: humanReply }]);
       try { const uid = userData?.id || user?.id; appendChatMessage({ role: 'assistant', text: humanReply, ts: Date.now() }, { userId: uid }); } catch {}
 
@@ -540,7 +540,7 @@ const GeminiChatPage: React.FC<GeminiChatPageProps> = ({ userData }) => {
   const planSnippet = userData?.workoutPlan ? (() => {
     try { return `\nUser workoutPlan: ${JSON.stringify(userData.workoutPlan).slice(0, MAX_PLAN_SNIPPET_CHARS)}`; } catch { return ''; }
   })() : '';
-  const basePrompt = `You are FitBuddyAI's AI assistant named Buddy. Use the following user profile to personalize answers: ${summarizeUser(userData)}\n\nConversation (most recent ${MAX_HISTORY_MESSAGES} messages):\n${conversation}\n\nRespond fully and directly to the user's last message. Keep answers actionable and concise.`;
+  const basePrompt = `You are FitBuddyAI's AI assistant called AI Coach and you respond through Google Gemini. You are not a health professional and you must not offer medical advice. Use the following user profile to personalize answers: ${summarizeUser(userData)}\n\nConversation (most recent ${MAX_HISTORY_MESSAGES} messages):\n${conversation}\n\nRespond fully and directly to the user's last message. Keep answers actionable and concise.`;
   const prompt = basePrompt + planSnippet + `\n\nWhen you propose changes to the user's profile or workout plan, produce both: (1) a human-readable reply, and (2) a JSON action block fenced as \`\`\`json containing {"__action":true, "updates":[...], "summary":"..."}. Only include the JSON block when you intend the site to apply changes. Close the JSON block with \`\`\`.` + EXAMPLE_PROMPT;
 
     try {
@@ -664,6 +664,9 @@ const GeminiChatPage: React.FC<GeminiChatPageProps> = ({ userData }) => {
         <header className="gemini-header">
           <h1>Chat with AI Coach</h1>
           <p className="gemini-sub">Ask your AI Coach about workouts, plans, or goals — it knows your profile.</p>
+          <p className="gemini-disclaimer">
+            Powered by Google Gemini. <strong>AI Coach is NOT giving health advice and is not a health professional in ANY way.</strong> Always consult a qualified healthcare provider before acting on any suggestions.
+          </p>
         </header>
 
         <div className="gemini-chat" ref={listRef} role="log" aria-live="polite">

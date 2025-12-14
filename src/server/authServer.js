@@ -21,6 +21,13 @@ import adminRoutes from './adminRoutes.js';
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
+// Simple request logger to help debug routing issues in dev
+app.use((req, res, next) => {
+  try {
+    console.log(`[authServer] ${req.method} ${req.originalUrl || req.url}`);
+  } catch (e) {}
+  next();
+});
 app.use(userDataStoreRouter);
 app.use(adminRoutes);
 
@@ -165,24 +172,32 @@ function isUsernameBanned(username) {
 }
 
 function readUsers() {
-  // Do not read local users file. Require Supabase for user store.
-  if (!supabase) {
-    console.error('[authServer] readUsers attempted but Supabase is not configured; local users file reads are disabled.');
-    throw new Error('Supabase not configured; user store unavailable.');
+  // Prefer Supabase when configured (production). For local development
+  // fall back to the local users.json so dev workflows still work.
+  try {
+    if (supabase) console.info('[authServer] readUsers: Supabase configured — falling back to local users.json for dev/testing.');
+    // Read local users.json (works for both dev and for quick local testing)
+    try {
+      const raw = fs.readFileSync(usersFile, 'utf-8');
+      const parsed = JSON.parse(raw || '[]');
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (e) {
+      console.warn('[authServer] readUsers: failed to read local users file, returning empty array', e);
+      return [];
+    }
+  } catch (e) {
+    console.error('[authServer] readUsers unexpected error', e);
+    throw e;
   }
-  // When Supabase is configured, callers should use Supabase-aware endpoints.
-  console.info('[authServer] readUsers: Supabase is configured; returning empty array. Use Supabase client directly for authoritative reads.');
-  return [];
 }
 
 function writeUsers(users) {
-  // Do not write to local users.json. Persist to Supabase if available, otherwise refuse.
+  // Require Supabase for writes in production — do not persist to local files.
   if (!supabase) {
-    console.error('[authServer] writeUsers attempted but Supabase is not configured; refusing to write local users file.');
+    console.error('[authServer] writeUsers attempted but Supabase is not configured; refusing to persist users.');
     throw new Error('Supabase not configured; cannot persist users.');
   }
   try {
-    // Upsert users into fitbuddyai_userdata (best-effort). Map only core fields to avoid leaking passwords.
     const rows = users.map(u => ({ user_id: u.id, email: u.email, username: u.username, avatar_url: u.avatar || '', chat_history: u.chat_history || [], role: u.role || null, banned: u.banned || false, updated_at: new Date().toISOString() }));
     supabase.from('fitbuddyai_userdata').upsert(rows, { onConflict: 'user_id' }).then(({ error }) => {
       if (error) console.error('[authServer] writeUsers: Supabase upsert error', error);
@@ -196,17 +211,29 @@ function writeUsers(users) {
   }
 }
 
-app.get('/api/user/:id', (req, res) => {
+app.get('/api/user/:id', async (req, res) => {
   try {
     const { id } = req.params;
     if (!id) return res.status(400).json({ message: 'User ID required.' });
-    const users = readUsers();
-    const user = users.find(u => u.id === id);
-    if (!user) return res.status(404).json({ message: 'User not found.' });
-    const { password, ...userSafe } = user;
-    res.json({ user: userSafe });
+    if (supabase) {
+      try {
+        const { data, error } = await supabase.from('fitbuddyai_userdata').select('*').eq('user_id', id).limit(1).maybeSingle();
+        if (error) {
+          console.error('[authServer] /api/user/:id supabase error', error);
+          return res.status(500).json({ message: 'Supabase error.' });
+        }
+        if (!data) return res.status(404).json({ message: 'User not found.' });
+        const { password, ...userSafe } = data || {};
+        return res.status(200).json({ user: userSafe });
+      } catch (e) {
+        console.error('[authServer] /api/user/:id error', e);
+        return res.status(500).json({ message: 'Server error.' });
+      }
+    }
+    return res.status(500).json({ message: 'Supabase not configured.' });
   } catch (err) {
-    res.status(500).json({ message: 'Server error.' });
+    console.error('[authServer] /api/user/:id unexpected', err);
+    return res.status(500).json({ message: 'Server error.' });
   }
 });
 
@@ -231,24 +258,108 @@ app.post('/api/user/buy', (req, res) => {
   }
 });
 
-app.post('/api/user/update', (req, res) => {
+app.post('/api/user/update', async (req, res) => {
   try {
-    const { id, username, avatar, streak } = req.body;
+    const { id, username, avatar, streak } = req.body || {};
     if (!id) return res.status(400).json({ message: 'User ID required.' });
     if (username && (leoProfanity.check(username) || isUsernameBanned(username))) {
       return res.status(400).json({ message: 'Username contains inappropriate or banned words.' });
     }
-    const users = readUsers();
-    const user = users.find(u => u.id === id);
-    if (!user) return res.status(404).json({ message: 'User not found.' });
-    if (username) user.username = username;
-    if (avatar) user.avatar = avatar;
-    if (typeof streak === 'number') user.streak = streak;
-    writeUsers(users);
-    const { password, ...userSafe } = user;
-    res.json({ user: userSafe });
+    if (!supabase) return res.status(500).json({ message: 'Supabase not configured.' });
+
+    // Build updates
+    const updates = {};
+    if (username !== undefined) updates.username = username;
+    if (avatar !== undefined) updates.avatar_url = avatar;
+    if (typeof streak === 'number') updates.streak = streak;
+    if (Object.keys(updates).length === 0) return res.status(400).json({ message: 'No update fields provided.' });
+
+    try {
+      const { data, error } = await supabase.from('fitbuddyai_userdata').update(updates).eq('user_id', id).select().limit(1).maybeSingle();
+      if (error) {
+        console.error('[authServer] update error', error);
+        return res.status(500).json({ message: 'Failed to update user.' });
+      }
+      if (!data) return res.status(404).json({ message: 'User not found.' });
+
+      const { password, ...safe } = data || {};
+
+      // Attempt to update Supabase auth metadata (admin API when available)
+      try {
+        if (supabase && typeof (supabase.auth?.admin?.updateUserById) === 'function') {
+          await (supabase.auth).admin.updateUserById(id, { user_metadata: { display_name: safe.username, username: safe.username } });
+        } else if (supabase && typeof (supabase.auth?.updateUser) === 'function') {
+          try {
+            await (supabase.auth).updateUser({ data: { display_name: safe.username, username: safe.username } });
+          } catch (e) {}
+        } else {
+          console.warn('[authServer] supabase auth admin update not available');
+        }
+      } catch (e) {
+        console.warn('[authServer] failed to update supabase auth metadata', e && e.message ? e.message : String(e));
+      }
+
+      return res.status(200).json({ user: safe });
+    } catch (e) {
+      console.error('[authServer] update user exception', e);
+      return res.status(500).json({ message: 'Server error.' });
+    }
   } catch (err) {
-    res.status(500).json({ message: 'Server error.' });
+    console.error('[authServer] /api/user/update unexpected', err);
+    return res.status(500).json({ message: 'Server error.' });
+  }
+});
+
+// Accept user-submitted workout suggestions. Stored in Supabase when configured,
+// otherwise appended to a local `suggestions.json` file in the dev server folder.
+app.post('/api/suggestions', async (req, res) => {
+  try {
+    const body = req.body || {};
+    const title = String(body.title || '').trim();
+    const description = String(body.description || '').trim();
+    const exercises = Array.isArray(body.exercises) ? body.exercises : (typeof body.exercises === 'string' ? String(body.exercises).split('\n').map(s=>s.trim()).filter(Boolean) : []);
+    const userId = body.userId || null;
+    if (!title) return res.status(400).json({ message: 'Title required.' });
+
+    const entry = {
+      id: uuidv4(),
+      user_id: userId,
+      title,
+      description,
+      exercises,
+      created_at: new Date().toISOString()
+    };
+
+    if (supabase) {
+      try {
+        const insert = { user_id: entry.user_id, title: entry.title, description: entry.description, exercises: entry.exercises, created_at: entry.created_at };
+        const { data, error } = await supabase.from('workout_suggestions').insert(insert).select().maybeSingle();
+        if (error) {
+          console.error('[authServer] suggestions insert error', error);
+          return res.status(500).json({ message: 'Failed to save suggestion.' });
+        }
+        return res.json({ ok: true, suggestion: data || insert });
+      } catch (e) {
+        console.warn('[authServer] suggestions supabase error', e);
+        return res.status(500).json({ message: 'Failed to save suggestion.' });
+      }
+    }
+
+    // Fallback: persist to local file for dev convenience
+    try {
+      const suggestionsFile = path.join(__dirname, 'suggestions.json');
+      let arr = [];
+      try { arr = JSON.parse(fs.readFileSync(suggestionsFile, 'utf8') || '[]'); } catch (e) { arr = []; }
+      arr.push(entry);
+      fs.writeFileSync(suggestionsFile, JSON.stringify(arr, null, 2), 'utf8');
+      return res.json({ ok: true, suggestion: entry });
+    } catch (e) {
+      console.error('[authServer] failed to persist suggestion locally', e);
+      return res.status(500).json({ message: 'Failed to save suggestion.' });
+    }
+  } catch (err) {
+    console.error('[authServer] /api/suggestions error', err);
+    return res.status(500).json({ message: 'Server error.' });
   }
 });
 
@@ -326,6 +437,26 @@ app.post('/api/user/apply-action', (req, res) => {
     processActionForUser(user, action, users, res);
   } catch (err) {
     console.error('apply-action error', err);
+    return res.status(500).json({ message: 'Server error.' });
+  }
+});
+
+// Development helper: apply an action without authentication. ONLY enabled
+// when not in production. This is useful for local testing when Supabase
+// authentication is configured and you want a quick dev-only path.
+app.post('/api/dev/apply-action', (req, res) => {
+  try {
+    if (process.env.NODE_ENV === 'production') return res.status(403).json({ message: 'Not allowed in production.' });
+    const { id, action } = req.body || {};
+    if (!id || !action) return res.status(400).json({ message: 'Missing id or action.' });
+    const users = readUsers();
+    const user = users.find(u => u.id === id);
+    if (!user) return res.status(404).json({ message: 'User not found.' });
+    // Reuse the same processActionForUser code path so behavior matches production
+    processActionForUser(user, action, users, res);
+    return;
+  } catch (err) {
+    console.error('dev apply-action error', err);
     return res.status(500).json({ message: 'Server error.' });
   }
 });
@@ -472,7 +603,9 @@ app.post('/api/ai/generate', async (req, res) => {
           }
         ]
       };
-      generatedText = JSON.stringify(mockPlan);
+      // For local dev, return a human-facing message indicating the
+      // feature is under development rather than a fabricated JSON plan.
+      generatedText = 'Sorry, this feature is currently under development.';
     } else {
       const response = await fetch(GEMINI_URL, {
         method: 'POST',
@@ -481,6 +614,33 @@ app.post('/api/ai/generate', async (req, res) => {
       });
       const data = await response.json();
       generatedText = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    }
+
+    // If the AI returned an empty string unexpectedly, return a small
+    // deterministic fallback so clients (chat/planner) have valid JSON
+    // to parse and we fail more loudly in dev rather than returning silently
+    // empty text which is confusing in the UI.
+    try {
+      if (!generatedText || String(generatedText).trim().length === 0) {
+        console.warn('[authServer] generatedText empty — returning deterministic fallback plan');
+        const today2 = new Date().toISOString().split('T')[0];
+        const fallbackPlan = {
+          id: `fallback-${Date.now()}`,
+          name: 'Fallback Plan (empty AI response)',
+          description: 'Returned because the AI returned an empty result. Configure GEMINI_API_KEY or inspect server logs.',
+          startDate: today2,
+          endDate: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          totalDays: 1,
+          totalTime: '0 minutes',
+          weeklyStructure: [],
+          dailyWorkouts: [
+            { date: today2, type: 'rest', completed: false, totalTime: '0 minutes', workouts: [], alternativeWorkouts: [] }
+          ]
+        };
+                generatedText = 'Sorry, this feature is currently under development.';
+      }
+    } catch (e) {
+      console.warn('[authServer] fallback generation failed', e);
     }
 
     // Audit-log if supabase is configured
@@ -836,9 +996,15 @@ app.get('/api/users', (req, res) => {
   }
 });
 
+// Lightweight health endpoint for quick checks
+app.get('/api/health', (req, res) => {
+  return res.json({ ok: true, time: new Date().toISOString() });
+});
+
 app.use((req, res) => {
   res.status(404).json({ message: 'Not found.' });
 });
 
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => { console.log(`Auth server running on port ${PORT}`); });
+// Bind to 0.0.0.0 so the dev server is reachable from other hosts (Live Share, containers, VMs)
+app.listen(PORT, '0.0.0.0', () => { console.log(`Auth server running on port ${PORT}`); });
