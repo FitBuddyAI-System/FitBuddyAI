@@ -32,7 +32,7 @@ const WorkoutsPage: React.FC = () => {
         return prev;
       }
       const next = removeSavedName(item.title);
-      showFitBuddyNotification({message:item.title + ' removed from your workouts.'});
+      showFitBuddyNotification({ message: item.title + ' removed from your workouts.' });
       return next;
     });
   };
