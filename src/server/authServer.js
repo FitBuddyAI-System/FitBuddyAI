@@ -677,6 +677,10 @@ function processActionForUser(user, action, users, res) {
       let cur = root;
       for (let i = 0; i < segments.length; i++) {
         const seg = segments[i];
+        // Prevent prototype-polluting segments
+        if (seg === '__proto__' || seg === 'constructor' || seg === 'prototype') {
+          return false;
+        }
         const isLast = i === segments.length - 1;
         const idx = String(seg).match(/^\d+$/) ? Number(seg) : null;
 
@@ -728,6 +732,10 @@ function processActionForUser(user, action, users, res) {
       let cur = root;
       for (let i = 0; i < segments.length; i++) {
         const seg = segments[i];
+        // Prevent prototype-polluting segments
+        if (seg === '__proto__' || seg === 'constructor' || seg === 'prototype') {
+          return false;
+        }
         const isLast = i === segments.length - 1;
         const idx = String(seg).match(/^\d+$/) ? Number(seg) : null;
 
