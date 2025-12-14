@@ -64,7 +64,7 @@ const WorkoutsPage: React.FC = () => {
     // Add only the workout name to the new saved-names list (no confetti)
     setMySavedNames(prev => {
       if (prev.includes(item.title)) {
-        showFitBuddyNotification({message:'Already saved to your workouts.'});
+        showFitBuddyNotification({ message: 'Already saved to your workouts.' });
         return prev;
       }
       const next = addSavedName(item.title);
