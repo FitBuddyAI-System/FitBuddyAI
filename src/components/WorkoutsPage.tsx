@@ -6,6 +6,7 @@ import { loadSavedNames, addSavedName, subscribeSavedNames, persistSavedNames, r
 import { loadAssessmentData } from '../services/localStorage';
 import { Workout, getAllWorkouts, getCategoryOptions, getCategoryBuckets } from '../services/workoutLibrary';
 import { pickWorkoutsFromAssessment } from '../services/assessmentWorkouts';
+import { showFitBuddyNotification } from './NotificationPopup';
 
 const workouts = getAllWorkouts();
 const categoryOptions = getCategoryOptions();
@@ -21,20 +22,17 @@ const WorkoutsPage: React.FC = () => {
   const [categorySort, setCategorySort] = useState<string>('all');
   const [selected, setSelected] = useState<string | null>(null);
   const [mySavedNames, setMySavedNames] = useState<string[]>(() => loadSavedNames());
-  const [saveNotice, setSaveNotice] = useState<string | null>(null);
   const [aiSaving, setAiSaving] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
 
   const removeFromPlan = (item: Workout & { title: string }) => {
     setMySavedNames(prev => {
       if (!prev.includes(item.title)) {
-        setSaveNotice('That workout is not in your saved list.');
-        window.setTimeout(() => setSaveNotice(null), 2600);
+        showFitBuddyNotification({ message: 'That workout is not in your saved list.', variant: 'error' });
         return prev;
       }
       const next = removeSavedName(item.title);
-      setSaveNotice('Removed from your workouts.');
-      window.setTimeout(() => setSaveNotice(null), 2600);
+      showFitBuddyNotification({ message: item.title + ' removed from your workouts.' });
       return next;
     });
   };
@@ -66,13 +64,11 @@ const WorkoutsPage: React.FC = () => {
     // Add only the workout name to the new saved-names list (no confetti)
     setMySavedNames(prev => {
       if (prev.includes(item.title)) {
-        setSaveNotice('Already saved to your workouts.');
-        window.setTimeout(() => setSaveNotice(null), 2600);
+        showFitBuddyNotification({ message: 'Already saved to your workouts.' });
         return prev;
       }
       const next = addSavedName(item.title);
-      setSaveNotice('Saved to your workouts!');
-      window.setTimeout(() => setSaveNotice(null), 2600);
+      showFitBuddyNotification({ message: item.title + ' saved to your workouts!' });
       return next;
     });
   };
@@ -88,7 +84,7 @@ const WorkoutsPage: React.FC = () => {
     try {
       const assessment = loadAssessmentData();
       if (!assessment) {
-        setSaveNotice('Complete the assessment first to let AI save workouts for you.');
+        showFitBuddyNotification({ message: 'Complete the assessment first to let AI save workouts for you.', variant: 'warning' });
         return;
       }
       setAiSaving(true);
@@ -107,13 +103,17 @@ const WorkoutsPage: React.FC = () => {
           try { persistSavedNames(next); } catch (e) {}
           return next;
         });
-        setSaveNotice(added > 0 ? `Saved ${added} workouts from your assessment.` : 'Those workouts are already saved.');
+        showFitBuddyNotification(
+          added > 0
+            ? { message: `Saved ${added} workouts from your assessment.` }
+            : { message: 'Those workouts are already saved.', variant: 'warning' }
+        );
         setAiSaving(false);
       }, 120);
     } catch (err) {
       console.warn('AI save failed', err);
-      setSaveNotice('Could not save workouts. Try again.');
       setAiSaving(false);
+      showFitBuddyNotification({ message: 'Could not save workouts. Try again.', variant: 'error' });
     }
   };
 
@@ -122,19 +122,7 @@ const WorkoutsPage: React.FC = () => {
       <BackgroundDots />
       <div className="workouts-page">
         <div className="workouts-hero">
-          <h1>
-            Workout Library
-            <span className="saved-count" aria-hidden="true"> ({mySavedNames.length} saved)</span>
-          </h1>
-          <p className="hero-sub">Explore exercises, watch technique videos, and view trusted resources — curated for quick practice.</p>
-          <div className="ai-save-row">
-            <button className="btn-primary ai-save-btn" onClick={saveFromAssessment} disabled={aiSaving}>
-              {aiSaving ? 'Saving from assessment…' : 'AI: Save for Me'}
-            </button>
-            <span className="ai-save-hint">Uses your assessment responses to pick workouts automatically.</span>
-          </div>
-        </div>
-        <div className="hero-right">
+          <h1>Workout Library</h1>
           <div className="search-wrap">
             <input
               className="search-input"
@@ -143,6 +131,16 @@ const WorkoutsPage: React.FC = () => {
               onChange={e => setQuery(e.target.value)}
               aria-label="Search workouts"
             />
+          </div>
+        </div>
+        <p className="hero-sub">Explore exercises, watch technique videos, and view trusted resources — curated for quick practice.</p>
+        <div className="hero-right">
+          <div className="ai-save-row">
+            <button className="btn-primary ai-save-btn" onClick={saveFromAssessment} disabled={aiSaving} title="Uses your assessment responses to pick workouts automatically.">
+              {aiSaving ? 'Saving from assessment…' : 'AI: Save for Me'}
+            </button>
+            <span className="saved-count-pill" aria-hidden="true"> {mySavedNames.length} saved</span>
+            <span className="ai-save-hint">Uses your assessment responses to pick workouts automatically.</span>
           </div>
           <div className="filters-row">
             <div className="filters">
@@ -173,11 +171,6 @@ const WorkoutsPage: React.FC = () => {
           </div>
         </div>
       </div>
-      {saveNotice && (
-        <div className="save-notice" role="status">
-          {saveNotice}
-        </div>
-      )}
 
       <div className="workouts-grid">
         {filtered.length === 0 && (
@@ -218,12 +211,10 @@ const WorkoutsPage: React.FC = () => {
         ))}
       </div>
 
-      <div className="workouts-grid-footer pagination-footer">
-        <div className="pagination-controls">
+      <div className="workouts-grid-footer">
           <button className="btn-ghost" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>Prev</button>
-          <span className="pagination-info">Page {currentPage} of {totalPages} ({filtered.length} results)</span>
+          <span>Page {currentPage} of {totalPages} ({filtered.length} results)</span>
           <button className="btn-ghost" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}>Next</button>
-        </div>
       </div>
 
       {selectedWorkout && (
@@ -314,7 +305,11 @@ function WorkoutModal({ title, data, onClose, onAdd, isSaved }: { title: string;
           </div>
 
           <div className="modal-info">
-            <p className="long-desc">{data.meta?.description || data.exampleNote}</p>
+            <p className="long-desc">{typeof data.meta?.description === 'string'
+              ? data.meta.description
+              : typeof data.exampleNote === 'string'
+                ? data.exampleNote
+                : ''}</p>
 
             {Array.isArray(data.instructions) && data.instructions.length > 0 && (
               <section className="instructions">
