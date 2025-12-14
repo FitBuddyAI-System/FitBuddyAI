@@ -29,7 +29,7 @@ export type Workout = {
   difficultyKey?: string;
 };
 
-const modules = (import.meta as any).glob('../data/exercises/*.json', { eager: true }) as Record<string, any>;
+const modules = import.meta.glob('../data/exercises/*.json', { eager: true }) as Record<string, { default: Partial<Workout> }>;
 const assets = import.meta.glob('../data/exercises/**', { eager: true, query: '?url', import: 'default' }) as Record<string, string>;
 
 const capitalizeWords = (value?: string) => {
@@ -66,7 +66,12 @@ export const mapLevel = (lvl?: string) => {
 const buildWorkoutLibrary = () => {
   const categoryMap = new Map<string, string>();
   const items = Object.entries(modules).map(([path, mod]) => {
-    const data = (mod && mod.default) ? mod.default : mod;
+    const data = mod && mod.default;
+    if (!data) {
+      throw new Error(
+        `Invalid module structure for "${path}". Expected an object with a "default" property, but got: ${JSON.stringify(mod)}`
+      );
+    }
     const title = data.name || data.id || path.split('/').pop()?.replace('.json', '') || 'Unknown';
 
     const images: string[] = Array.isArray(data.images) ? data.images.map((img: string) => {
