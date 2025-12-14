@@ -200,7 +200,7 @@ const WorkoutsPage: React.FC = () => {
               {mySavedNames.includes(w.title) ? (
                 <button className="btn-ghost danger" onClick={(e) => { e.stopPropagation(); removeFromPlan(w); }}>Remove</button>
               ) : (
-                <button className="btn-ghost" onClick={(e) => { e.stopPropagation(); addToPlan(w);}}>Save Workout</button>
+                <button className="btn-ghost" onClick={(e) => { e.stopPropagation(); addToPlan(w); }}>Save Workout</button>
               )}
             </div>
           </article>
