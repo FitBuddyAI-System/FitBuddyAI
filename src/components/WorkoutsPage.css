@@ -88,7 +88,7 @@
   display: flex; 
   align-items: center; 
   row-gap: 12px; 
-  column-gap: 0.1%; /*No idea why this puts it on a seperate line*/
+  column-gap: 0.1%; /*No idea why this puts it on a separate line*/
   justify-content: flex-end; 
   flex-wrap: wrap; 
 }
