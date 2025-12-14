@@ -54,6 +54,8 @@ export interface DayWorkout {
   types?: WorkoutType[];
   // Track which types within this day have been completed
   completedTypes?: WorkoutType[];
+  // Flag days bridged by multiple streak savers
+  streakSaverBridge?: boolean;
 }
 
 export interface WorkoutPlan {

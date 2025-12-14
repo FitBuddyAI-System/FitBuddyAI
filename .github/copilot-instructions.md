@@ -94,3 +94,4 @@ When working on this project, prioritize user experience, type safety, and maint
 
 ## Compatibility Policy
 - **Do NOT add compatibility helpers or legacy mapping code:** Fail fast on missing columns or schema mismatches. Avoid adding server-side compatibility shims that map legacy `fitbuddyai_*` keys to new columns. These helpers create code bloat and hidden behavior; prefer explicit schema changes and migrations.
+  - **Do NOT use local-file fallbacks or silent dev fallbacks in server code:** This project is production-first. Server code must require Supabase (or the configured production datastore) and fail loudly if it is not available. Do not add behavior that reads or writes local JSON files as a runtime fallback — that hides configuration problems and leads to inconsistent production behavior.

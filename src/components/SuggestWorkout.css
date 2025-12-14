@@ -1,0 +1,10 @@
+.suggest-workout-page { display:flex; justify-content:center; padding:32px 16px; }
+.suggest-card { max-width:760px; width:100%; padding:20px; border-radius:12px; }
+.suggest-card h2 { margin:0 0 8px 0; }
+.suggest-card .sub { color:var(--text-medium,#666); margin-bottom:12px }
+.suggest-card label { display:block; margin-bottom:12px; font-size:14px }
+.suggest-card .input { width:100%; padding:10px; border-radius:8px; border:1px solid var(--border-light); font-size:14px; background: var(--background-white); color: var(--text-dark); }
+.suggest-message { margin:8px 0; color:var(--text-medium,#333) }
+.actions-row { display:flex; gap:12px; margin-top:8px }
+.btn-primary { padding:12px 18px; border-radius:10px }
+.btn-secondary { padding:12px 18px; border-radius:10px }

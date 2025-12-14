@@ -5,7 +5,7 @@
 // This file targets the Supabase Edge Functions runtime which provides global fetch and
 // environment variables via globalThis.process?.env or Deno.env in some setups.
 
-export async function handler(req: Request): Promise<Response> {
+export async function handler(_req: Request): Promise<Response> {
   const env = (globalThis as any).process?.env || (globalThis as any).__env || {};
   const SUPABASE_URL = env.SUPABASE_URL;
   const SUPABASE_SERVICE_ROLE_KEY = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_KEY;
