@@ -84,8 +84,24 @@ const userUpdateLimiter = rateLimit({
 // Rate limiter for user purchases - stricter limits for financial operations
 const userBuyLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // limit each IP to 5 purchases per windowMs
-  message: { error: 'Too many purchase attempts, please try again later.' }
+  max: 5, // limit each user (or IP) to 5 purchases per windowMs
+  message: { error: 'Too many purchase attempts, please try again later.' },
+  keyGenerator: (req) => {
+    // Try JWT-based user ID first
+    try {
+      const auth = String(req.headers.authorization || '');
+      const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
+      if (token) {
+        const secret = process.env.JWT_SECRET || 'dev_secret_change_me';
+        const decoded = jwt.verify(token, secret);
+        if (decoded?.id) return `user_${decoded.id}`;
+      }
+    } catch (err) {
+      // JWT verification failed, fall back to IP
+    }
+    // Fallback to IP address
+    return req.ip || req.connection.remoteAddress || 'unknown';
+  }
 });
 
 const app = express();
