@@ -734,6 +734,9 @@ function processActionForUser(user, action, users, res) {
         const seg = segments[i];
         // Prevent prototype-polluting segments
         if (seg === '__proto__' || seg === 'constructor' || seg === 'prototype') {
+          console.warn(
+            `[SECURITY] Prototype pollution attempt detected in pushByPath: segment "${seg}" in path [${segments.join(', ')}]`
+          );
           return false;
         }
         const isLast = i === segments.length - 1;
