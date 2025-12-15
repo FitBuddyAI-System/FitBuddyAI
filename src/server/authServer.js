@@ -60,6 +60,34 @@ const adminUsersLimiter = rateLimit({
   }
 });
 
+// Rate limiter for suggestions endpoint - moderate limits for user-generated content
+const suggestionsLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20, // limit each IP to 20 suggestions per windowMs
+  message: { error: 'Too many suggestions submitted, please try again later.' }
+});
+
+// Rate limiter for user actions - moderate limits for user operations
+const userActionLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 30, // limit each IP to 30 user actions per windowMs
+  message: { error: 'Too many user actions, please try again later.' }
+});
+
+// Rate limiter for user updates - moderate limits for profile updates
+const userUpdateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // limit each IP to 10 user updates per windowMs
+  message: { error: 'Too many user updates, please try again later.' }
+});
+
+// Rate limiter for user purchases - stricter limits for financial operations
+const userBuyLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // limit each IP to 5 purchases per windowMs
+  message: { error: 'Too many purchase attempts, please try again later.' }
+});
+
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
@@ -279,7 +307,7 @@ app.get('/api/user/:id', async (req, res) => {
   }
 });
 
-app.post('/api/user/buy', (req, res) => {
+app.post('/api/user/buy', userBuyLimiter, (req, res) => {
   try {
     const { id, item } = req.body;
     if (!id || !item) return res.status(400).json({ message: 'User ID and item required.' });
@@ -300,7 +328,7 @@ app.post('/api/user/buy', (req, res) => {
   }
 });
 
-app.post('/api/user/update', async (req, res) => {
+app.post('/api/user/update', userUpdateLimiter, async (req, res) => {
   try {
     const { id, username, avatar, streak } = req.body || {};
     if (!id) return res.status(400).json({ message: 'User ID required.' });
@@ -405,7 +433,7 @@ app.post('/api/suggestions', suggestionsLimiter, async (req, res) => {
   }
 });
 
-app.post('/api/user/apply-action', (req, res) => {
+app.post('/api/user/apply-action', userActionLimiter, (req, res) => {
   try {
     const auth = String(req.headers.authorization || '');
     const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
