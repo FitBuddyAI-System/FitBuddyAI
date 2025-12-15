@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import './WorkoutsPage.css';
 import BackgroundDots from './BackgroundDots';
 import { loadSavedNames, subscribeSavedNames, persistSavedNames } from '../utils/savedNames';
@@ -132,6 +133,7 @@ const PersonalLibraryPage: React.FC = () => {
   }, [itemsByTitle]);
 
   const [selected, setSelected] = React.useState<string | null>(null);
+  const navigate = useNavigate();
 
   const selectedItem = selected ? (itemsByTitle.get(selected) || myPlan.find(p => p.title === selected)) : undefined;
 
@@ -163,7 +165,7 @@ const PersonalLibraryPage: React.FC = () => {
       <section className="my-plan-section">
         <header className="my-plan-header">
           <p className="hero-sub">{myPlan.length ? `${savedCountCopy}. Remove items to keep your list curated.` : emptyCopy}</p>
-          <a className="btn-ghost" href="/workouts">Open Workout Library</a>
+          <button className="btn-ghost" onClick={() => navigate('/workouts')}>Open Workout Library</button>
         </header>
         <div className="workouts-grid">
           {myPlan.length === 0 && <div className="empty">{emptyCopy}</div>}
