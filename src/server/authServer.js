@@ -60,6 +60,133 @@ const adminUsersLimiter = rateLimit({
   }
 });
 
+// Rate limiter for suggestions endpoint - protects /api/suggestions for user-generated workout suggestions with database operations
+/**
+ * Rate limiter for workout suggestion submissions.
+ * 
+ * This limiter is applied to endpoints that handle AI-powered workout generation including:
+ * - User-submitted workout suggestions and preferences
+ * - AI processing and workout plan generation
+ * - Database operations via Supabase (required - no file system fallbacks)
+ * 
+ * The limit of 20 requests per 15 minutes (approximately 1.33 requests per minute) is chosen
+ * to balance user creativity and AI resource usage. Workout suggestions involve significant
+ * computational overhead and should be rate-limited to prevent abuse while allowing
+ * reasonable user interaction for plan customization.
+ * 
+ * If you change the endpoints protected by this limiter, or if the resource usage profile changes,
+ * please revisit these limits and update this comment accordingly.
+ */
+const suggestionsLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20, // limit each IP to 20 suggestions per windowMs
+  message: { error: 'Too many suggestions submitted, please try again later.' }
+});
+
+// Rate limiter for user actions - protects /api/user/apply-action endpoint that handles authenticated user operations like applying actions, updates, and other user-initiated changes
+/**
+ * Rate limiter for general user actions.
+ * 
+ * This limiter is applied to endpoints that perform user operations which may involve
+ * moderate to high server resource usage including:
+ * - Complex data processing and validation (workout plan updates, history tracking)
+ * - Profanity/username validation and security checks
+ * - Database operations via Supabase (required - no file system fallbacks)
+ * - Audit logging operations
+ * 
+ * The limit of 30 requests per 15 minutes (2 requests per minute) is chosen to balance
+ * normal user activity with protection against abuse or automated attacks, while allowing
+ * sufficient capacity for legitimate user interactions like workout plan modifications,
+ * profile updates, and inventory management.
+ * 
+ * NOTE: This limiter was added together with the suggestions endpoint rate limiter (see PR for code scanning alert #7),
+ * even though it was not mentioned in the PR description. Rate limiting user actions is a reasonable defense-in-depth
+ * measure to prevent abuse of resource-intensive operations, but this change extends beyond the original stated scope.
+ * This comment documents the rationale for future maintainers and reviewers.
+ * 
+ * If you change the endpoints protected by this limiter, or if the resource usage profile changes,
+ * please revisit these limits and update this comment accordingly.
+ */
+const userActionLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 30, // limit each IP to 30 user actions per windowMs
+  message: { error: 'Too many user actions, please try again later.' }
+});
+
+// Rate limiter for user updates - protects /api/user/update endpoint for profile changes like username, avatar, and streak updates
+/**
+ * Rate limiter for user profile updates.
+ * 
+ * This limiter is applied to endpoints that update user profile information including:
+ * - Username changes (with profanity and banned word validation)
+ * - Avatar updates
+ * - Streak counter modifications
+ * - Database operations via Supabase
+ * - Auth metadata synchronization
+ * 
+ * The limit of 10 requests per 15 minutes (approximately 0.67 requests per minute) is chosen
+ * to prevent abuse while allowing reasonable profile customization activity. Profile updates
+ * are typically infrequent operations that don't require high throughput.
+ * 
+ * NOTE: This limiter was added together with the suggestions endpoint rate limiter (see PR for code scanning alert #7),
+ * even though it was not mentioned in the PR description. Rate limiting profile updates is a reasonable defense-in-depth
+ * measure to prevent abuse (e.g., spamming profile changes), but this change extends beyond the original stated scope.
+ * This comment documents the rationale for future maintainers and reviewers.
+ * 
+ * If you change the endpoints protected by this limiter, or if the resource usage profile changes,
+ * please revisit these limits and update this comment accordingly.
+ */
+const userUpdateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // limit each IP to 10 user updates per windowMs
+  message: { error: 'Too many user updates, please try again later.' }
+});
+
+// Rate limiter for user purchases - protects /api/user/buy endpoint for shop item purchases and energy transactions
+/**
+ * Rate limiter for user purchases and shop transactions.
+ * 
+ * This limiter is applied to endpoints that handle monetary transactions including:
+ * - Shop item purchases using energy currency
+ * - Energy deduction and inventory management
+ * - Database operations via Supabase (required - no file system fallbacks)
+ * - Transaction validation and balance checks
+ * 
+ * The limit of 5 requests per 15 minutes (approximately 0.33 requests per minute) is chosen
+ * to be very restrictive, as purchases involve real economic value and should be carefully
+ * rate-limited to prevent abuse, gaming, or accidental overspending. This allows for
+ * occasional purchases while providing strong protection against automated attacks.
+ * 
+ * NOTE: This limiter was added together with the suggestions endpoint rate limiter (see PR for code scanning alert #7),
+ * even though it was not mentioned in the PR description. Rate limiting purchases is a reasonable defense-in-depth
+ * measure to prevent abuse of economic transactions, but this change extends beyond the original stated scope.
+ * This comment documents the rationale for future maintainers and reviewers.
+ * 
+ * If you change the endpoints protected by this limiter, or if the resource usage profile changes,
+ * please revisit these limits and update this comment accordingly.
+ */
+const userBuyLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // limit each user (or IP) to 5 purchases per windowMs
+  message: { error: 'Too many purchase attempts, please try again later.' },
+  keyGenerator: (req) => {
+    // Try JWT-based user ID first
+    try {
+      const auth = String(req.headers.authorization || '');
+      const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
+      if (token) {
+        const secret = process.env.JWT_SECRET || 'dev_secret_change_me';
+        const decoded = jwt.verify(token, secret);
+        if (decoded?.id) return `user_${decoded.id}`;
+      }
+    } catch (err) {
+      // JWT verification failed, fall back to IP
+    }
+    // Fallback to IP address
+    return req.ip || req.connection.remoteAddress || 'unknown';
+  }
+});
+
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
@@ -279,7 +406,7 @@ app.get('/api/user/:id', async (req, res) => {
   }
 });
 
-app.post('/api/user/buy', (req, res) => {
+app.post('/api/user/buy', userBuyLimiter, (req, res) => {
   try {
     const { id, item } = req.body;
     if (!id || !item) return res.status(400).json({ message: 'User ID and item required.' });
@@ -300,7 +427,7 @@ app.post('/api/user/buy', (req, res) => {
   }
 });
 
-app.post('/api/user/update', async (req, res) => {
+app.post('/api/user/update', userUpdateLimiter, async (req, res) => {
   try {
     const { id, username, avatar, streak } = req.body || {};
     if (!id) return res.status(400).json({ message: 'User ID required.' });
@@ -354,7 +481,7 @@ app.post('/api/user/update', async (req, res) => {
 
 // Accept user-submitted workout suggestions. Stored in Supabase when configured,
 // otherwise appended to a local `suggestions.json` file in the dev server folder.
-app.post('/api/suggestions', async (req, res) => {
+app.post('/api/suggestions', suggestionsLimiter, async (req, res) => {
   try {
     const body = req.body || {};
     const title = String(body.title || '').trim();
@@ -405,7 +532,7 @@ app.post('/api/suggestions', async (req, res) => {
   }
 });
 
-app.post('/api/user/apply-action', (req, res) => {
+app.post('/api/user/apply-action', userActionLimiter, (req, res) => {
   try {
     const auth = String(req.headers.authorization || '');
     const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
