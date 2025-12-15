@@ -21,7 +21,7 @@ Tasks:
     - update readme.md for all the new features and how to use them
 ✅  - add a button for the shop on the homescreen
     - make user-greeting in header have the user's response summarized by AI then put there
-    - Add a Public PGP key to Security.md
+✅  - Add a Public PGP key to Security.md
     - Fix Calender Cutoff
 ⚠️  - Change all alert messages to toast notifs and add toast notifs where needed
     - Workout Library add a reverse organization feature (bottom to top)
