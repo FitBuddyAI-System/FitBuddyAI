@@ -91,6 +91,7 @@ mZBDgBfr331BrnpPoqKq8sG7zDR+qUnmw8APCAgDdgNNFuvjE3Yi0QpFW8m3u3JB
 oBUf6T35xzfhoACd9oAPotzgZWMz0RGwg/M38mp1taGQ/81rlMOw50PMUw==
 =PYGm
 -----END PGP PUBLIC KEY BLOCK-----
+```
 
 This key may be rotated periodically. The fingerprint above will always be kept up to date in this document.
 
