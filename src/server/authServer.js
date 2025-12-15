@@ -354,7 +354,7 @@ app.post('/api/user/update', async (req, res) => {
 
 // Accept user-submitted workout suggestions. Stored in Supabase when configured,
 // otherwise appended to a local `suggestions.json` file in the dev server folder.
-app.post('/api/suggestions', async (req, res) => {
+app.post('/api/suggestions', suggestionsLimiter, async (req, res) => {
   try {
     const body = req.body || {};
     const title = String(body.title || '').trim();
