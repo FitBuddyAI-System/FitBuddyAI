@@ -29,8 +29,33 @@ const healthLimiter = rateLimit({
 // Rate limiter for admin users endpoint - stricter limits for admin operations
 const adminUsersLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 10, // limit each IP to 10 admin requests per windowMs
-  message: { error: 'Too many admin requests, please try again later.' }
+  max: 50, // limit each user to 50 admin requests per windowMs
+  message: { error: 'Too many admin requests, please try again later.' },
+  // Use user identity instead of IP for rate limiting
+  keyGenerator: (req) => {
+    // Try JWT-based auth first
+    try {
+      const auth = String(req.headers.authorization || '');
+      const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
+      if (token) {
+        const secret = process.env.JWT_SECRET || 'dev_secret_change_me';
+        const decoded = jwt.verify(token, secret);
+        if (decoded?.id) return `user_${decoded.id}`;
+      }
+    } catch (err) {
+      // JWT verification failed, try admin token
+    }
+    
+    // Fall back to admin token or IP
+    const adminToken = process.env.ADMIN_API_TOKEN;
+    if (adminToken) {
+      const auth = String(req.headers.authorization || req.headers.Authorization || '');
+      if (auth === `Bearer ${adminToken}`) return `admin_token`;
+    }
+    
+    // Final fallback to IP
+    return req.ip || req.connection.remoteAddress || 'unknown';
+  }
 });
 
 const app = express();
@@ -56,7 +81,7 @@ function isAdminRequest(req) {
   return auth === `Bearer ${adminToken}`;
 }
 
-app.get('/api/admin/users', async (req, res) => {
+app.get('/api/admin/users', adminUsersLimiter, async (req, res) => {
   try {
     console.log('[authServer] /api/ai/generate request headers:', {
       ct: req.headers['content-type'] || req.headers['Content-Type'] || null,
@@ -81,7 +106,7 @@ app.get('/api/admin/users', async (req, res) => {
   }
 });
 
-app.post('/api/admin/users', async (req, res) => {
+app.post('/api/admin/users', adminUsersLimiter, async (req, res) => {
   try {
   if (!isAdminRequest(req)) return res.status(403).json({ message: 'Forbidden' });
     const action = req.query.action || req.body?.action;
@@ -984,7 +1009,7 @@ function verifyAdminFromToken(req) {
   }
 }
 
-app.get('/admin/audit', (req, res) => {
+app.get('/admin/audit', adminUsersLimiter, (req, res) => {
   try {
   const admin = verifyAdminFromToken(req);
     if (!admin) return res.status(403).json({ message: 'Forbidden' });
