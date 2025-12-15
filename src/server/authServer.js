@@ -719,6 +719,13 @@ function processActionForUser(user, action, users, res) {
       let cur = root;
       for (let i = 0; i < segments.length; i++) {
         const seg = segments[i];
+        // Prevent prototype-polluting segments
+        if (seg === '__proto__' || seg === 'constructor' || seg === 'prototype') {
+          console.warn(
+            '[SECURITY] Prototype pollution attempt blocked in setByPath: segment', seg, 'in path', segments, 'with value:', value
+          );
+          return false;
+        }
         const isLast = i === segments.length - 1;
         const idx = String(seg).match(/^\d+$/) ? Number(seg) : null;
 
@@ -770,6 +777,15 @@ function processActionForUser(user, action, users, res) {
       let cur = root;
       for (let i = 0; i < segments.length; i++) {
         const seg = segments[i];
+        // Prevent prototype-polluting segments
+        if (seg === '__proto__' || seg === 'constructor' || seg === 'prototype') {
+          console.warn(
+            '[SECURITY] Prototype pollution attempt detected in pushByPath: segment "%s" in path [%s]',
+            seg,
+            segments.join(', ')
+          );
+          return false;
+        }
         const isLast = i === segments.length - 1;
         const idx = String(seg).match(/^\d+$/) ? Number(seg) : null;
 
