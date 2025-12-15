@@ -19,6 +19,20 @@ import fs from 'fs';
 import { createClient } from '@supabase/supabase-js';
 import adminRoutes from './adminRoutes.js';
 
+// Rate limiter for health endpoint - allow more requests since it's lightweight
+const healthLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: { error: 'Too many health check requests, please try again later.' }
+});
+
+// Rate limiter for admin users endpoint - stricter limits for admin operations
+const adminUsersLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // limit each IP to 10 admin requests per windowMs
+  message: { error: 'Too many admin requests, please try again later.' }
+});
+
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
@@ -998,7 +1012,7 @@ app.get('/api/users', adminUsersLimiter, (req, res) => {
 });
 
 // Lightweight health endpoint for quick checks
-app.get('/api/health', (req, res) => {
+app.get('/api/health', healthLimiter, (req, res) => {
   return res.json({ ok: true, time: new Date().toISOString() });
 });
 
