@@ -10,7 +10,7 @@ leoProfanity.loadDictionary();
 
 import express from 'express';
 import userDataStoreRouter from './userDataStore.js';
-import rateLimit from 'express-rate-limit';
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import cors from 'cors';
 import bodyParser from 'body-parser';
 import { v4 as uuidv4 } from 'uuid';
@@ -56,7 +56,7 @@ const adminUsersLimiter = rateLimit({
     }
     
     // Final fallback to IP
-    return req.ip || req.connection.remoteAddress || 'unknown';
+    return ipKeyGenerator(req);
   }
 });
 
