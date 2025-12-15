@@ -60,10 +60,10 @@ const adminUsersLimiter = rateLimit({
   }
 });
 
-// Rate limiter for suggestions endpoint - moderate limits for user-generated content
+// Rate limiter for suggestions endpoint - stricter limits for filesystem-intensive user-generated content
 const suggestionsLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 20, // limit each IP to 20 suggestions per windowMs
+  windowMs: 60 * 1000, // 1 minute
+  max: 10, // limit each IP to 10 suggestions per windowMs
   message: { error: 'Too many suggestions submitted, please try again later.' }
 });
 
