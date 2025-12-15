@@ -60,15 +60,14 @@ const adminUsersLimiter = rateLimit({
   }
 });
 
-// Rate limiter for suggestions endpoint - protects /api/suggestions for user-generated workout suggestions with filesystem/database operations
+// Rate limiter for suggestions endpoint - protects /api/suggestions for user-generated workout suggestions with database operations
 /**
  * Rate limiter for workout suggestion submissions.
  * 
  * This limiter is applied to endpoints that handle AI-powered workout generation including:
  * - User-submitted workout suggestions and preferences
  * - AI processing and workout plan generation
- * - File system operations (storing suggestions locally when Supabase unavailable)
- * - Database operations when Supabase is configured
+ * - Database operations via Supabase (required - no file system fallbacks)
  * 
  * The limit of 20 requests per 15 minutes (approximately 1.33 requests per minute) is chosen
  * to balance user creativity and AI resource usage. Workout suggestions involve significant
@@ -90,10 +89,10 @@ const suggestionsLimiter = rateLimit({
  * 
  * This limiter is applied to endpoints that perform user operations which may involve
  * moderate to high server resource usage including:
- * - File system operations (reading/writing user data and audit logs)
  * - Complex data processing and validation (workout plan updates, history tracking)
  * - Profanity/username validation and security checks
- * - Database operations when Supabase is available
+ * - Database operations via Supabase (required - no file system fallbacks)
+ * - Audit logging operations
  * 
  * The limit of 30 requests per 15 minutes (2 requests per minute) is chosen to balance
  * normal user activity with protection against abuse or automated attacks, while allowing
@@ -150,7 +149,7 @@ const userUpdateLimiter = rateLimit({
  * This limiter is applied to endpoints that handle monetary transactions including:
  * - Shop item purchases using energy currency
  * - Energy deduction and inventory management
- * - File system operations for user data persistence
+ * - Database operations via Supabase (required - no file system fallbacks)
  * - Transaction validation and balance checks
  * 
  * The limit of 5 requests per 15 minutes (approximately 0.33 requests per minute) is chosen
