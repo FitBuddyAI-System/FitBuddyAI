@@ -28,11 +28,11 @@ const WorkoutsPage: React.FC = () => {
   const removeFromPlan = (item: Workout & { title: string }) => {
     setMySavedNames(prev => {
       if (!prev.includes(item.title)) {
-        showFitBuddyNotification({message:'That workout is not in your saved list.', variant:'error'});
+        showFitBuddyNotification({ message: 'That workout is not in your saved list.', variant: 'error' });
         return prev;
       }
       const next = removeSavedName(item.title);
-      showFitBuddyNotification({message:item.title + ' removed from your workouts.'});
+      showFitBuddyNotification({ message: item.title + ' removed from your workouts.' });
       return next;
     });
   };
@@ -64,11 +64,11 @@ const WorkoutsPage: React.FC = () => {
     // Add only the workout name to the new saved-names list (no confetti)
     setMySavedNames(prev => {
       if (prev.includes(item.title)) {
-        showFitBuddyNotification({message:'Already saved to your workouts.'});
+        showFitBuddyNotification({ message: 'Already saved to your workouts.' });
         return prev;
       }
       const next = addSavedName(item.title);
-      showFitBuddyNotification({message:item.title + ' saved to your workouts!'});
+      showFitBuddyNotification({ message: item.title + ' saved to your workouts!' });
       return next;
     });
   };
@@ -84,7 +84,7 @@ const WorkoutsPage: React.FC = () => {
     try {
       const assessment = loadAssessmentData();
       if (!assessment) {
-        showFitBuddyNotification({message:'Complete the assessment first to let AI save workouts for you.',variant:'warning'});
+        showFitBuddyNotification({ message: 'Complete the assessment first to let AI save workouts for you.', variant: 'warning' });
         return;
       }
       setAiSaving(true);
@@ -103,13 +103,17 @@ const WorkoutsPage: React.FC = () => {
           try { persistSavedNames(next); } catch (e) {}
           return next;
         });
-        showFitBuddyNotification(added > 0 ? {message:`Saved ${added} workouts from your assessment.`} : {message:'Those workouts are already saved.',variant:'warning'});
+        showFitBuddyNotification(
+          added > 0
+            ? { message: `Saved ${added} workouts from your assessment.` }
+            : { message: 'Those workouts are already saved.', variant: 'warning' }
+        );
         setAiSaving(false);
       }, 120);
     } catch (err) {
       console.warn('AI save failed', err);
-      showFitBuddyNotification({message:'Could not save workouts. Try again.',variant:'error'});
       setAiSaving(false);
+      showFitBuddyNotification({ message: 'Could not save workouts. Try again.', variant: 'error' });
     }
   };
 
@@ -200,7 +204,7 @@ const WorkoutsPage: React.FC = () => {
               {mySavedNames.includes(w.title) ? (
                 <button className="btn-ghost danger" onClick={(e) => { e.stopPropagation(); removeFromPlan(w); }}>Remove</button>
               ) : (
-                <button className="btn-ghost" onClick={(e) => { e.stopPropagation(); addToPlan(w);}}>Save Workout</button>
+                <button className="btn-ghost" onClick={(e) => { e.stopPropagation(); addToPlan(w); }}>Save Workout</button>
               )}
             </div>
           </article>
@@ -301,7 +305,11 @@ function WorkoutModal({ title, data, onClose, onAdd, isSaved }: { title: string;
           </div>
 
           <div className="modal-info">
-            <p className="long-desc">{data.meta?.description || data.exampleNote}</p>
+            <p className="long-desc">{typeof data.meta?.description === 'string'
+              ? data.meta.description
+              : typeof data.exampleNote === 'string'
+                ? data.exampleNote
+                : ''}</p>
 
             {Array.isArray(data.instructions) && data.instructions.length > 0 && (
               <section className="instructions">

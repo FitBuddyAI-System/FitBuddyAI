@@ -59,7 +59,7 @@ router.post('/api/userdata/save', async (req, res) => {
   if (isFetch) {
       try {
         // Query explicit columns only; fail fast if schema is missing them.
-        const { data, error } = await supabase.from('fitbuddyai_userdata').select('questionnaire_progress, workout_plan, chat_history, accepted_terms, accepted_privacy, streak').eq('user_id', userId).limit(1).maybeSingle();
+        const { data, error } = await supabase.from('fitbuddyai_userdata').select('questionnaire_progress, workout_plan, chat_history, accepted_terms, accepted_privacy, streak, energy').eq('user_id', userId).limit(1).maybeSingle();
       if (error) {
         console.error('[userDataStore] Supabase fetch error for userId', userId, error);
         // If column missing, return a clear, fail-fast error message requested by user
@@ -67,7 +67,7 @@ router.post('/api/userdata/save', async (req, res) => {
       }
       if (data) {
         // Return canonical keys only (no legacy compatibility fields)
-        return res.json({ stored: { questionnaire_progress: data.questionnaire_progress ?? null, workout_plan: data.workout_plan ?? null, accepted_terms: data.accepted_terms ?? null, accepted_privacy: data.accepted_privacy ?? null, chat_history: data.chat_history ?? null, streak: data.streak ?? null } });
+        return res.json({ stored: { questionnaire_progress: data.questionnaire_progress ?? null, workout_plan: data.workout_plan ?? null, accepted_terms: data.accepted_terms ?? null, accepted_privacy: data.accepted_privacy ?? null, chat_history: data.chat_history ?? null, streak: data.streak ?? null, energy: data.energy ?? null } });
       }
       return res.json({ stored: { questionnaire_progress: null, workout_plan: null } });
     } catch (e) {
@@ -92,6 +92,7 @@ router.post('/api/userdata/save', async (req, res) => {
     if (fitbuddyai_questionnaire_progress !== undefined) upsertRow.questionnaire_progress = fitbuddyai_questionnaire_progress;
     if (fitbuddyai_workout_plan !== undefined) upsertRow.workout_plan = fitbuddyai_workout_plan;
     if (req.body && Object.prototype.hasOwnProperty.call(req.body, 'streak')) upsertRow.streak = req.body.streak;
+    if (req.body && Object.prototype.hasOwnProperty.call(req.body, 'energy')) upsertRow.energy = req.body.energy;
 
     // Log the exact payload we're attempting to upsert so we can debug missing columns
     console.log('[userDataStore] upsert payload for userId', userId, upsertRow);
@@ -122,8 +123,8 @@ router.post('/api/userdata/load', async (req, res) => {
     return res.status(500).json({ error: 'Supabase not configured; user data storage disabled in local server.' });
   }
     try {
-      // Select explicit canonical columns (include `streak` so clients can see it on load).
-      const { data, error } = await supabase.from('fitbuddyai_userdata').select('questionnaire_progress, workout_plan, chat_history, accepted_terms, accepted_privacy, streak').eq('user_id', userId).limit(1).maybeSingle();
+      // Select explicit canonical columns (include `streak` and `energy` so clients can see them on load).
+      const { data, error } = await supabase.from('fitbuddyai_userdata').select('questionnaire_progress, workout_plan, chat_history, accepted_terms, accepted_privacy, streak, energy').eq('user_id', userId).limit(1).maybeSingle();
     if (error) {
       console.error('[userDataStore] Supabase fetch error for userId', userId, error);
       return res.status(500).json({ error: error.message || 'Supabase fetch failed' });
@@ -138,9 +139,9 @@ router.post('/api/userdata/load', async (req, res) => {
           fitbuddyai_questionnaire_progress: qp,
           accepted_terms: data.accepted_terms ?? null,
           accepted_privacy: data.accepted_privacy ?? null,
-          chat_history: ch
-          ,
-          streak: data.streak ?? null
+          chat_history: ch,
+          streak: data.streak ?? null,
+          energy: data.energy ?? null
         };
         return res.json({ stored });
       }

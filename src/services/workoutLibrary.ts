@@ -11,7 +11,7 @@ export type Workout = {
   difficulty?: string;
   duration?: string;
   exampleNote?: string;
-  meta?: Record<string, any>;
+  meta?: Record<string, unknown>;
   force?: string | null;
   level?: string;
   mechanic?: string | null;
@@ -29,7 +29,7 @@ export type Workout = {
   difficultyKey?: string;
 };
 
-const modules = (import.meta as any).glob('../data/exercises/*.json', { eager: true }) as Record<string, any>;
+const modules = import.meta.glob('../data/exercises/*.json', { eager: true }) as Record<string, { default: Partial<Workout> }>;
 const assets = import.meta.glob('../data/exercises/**', { eager: true, query: '?url', import: 'default' }) as Record<string, string>;
 
 const capitalizeWords = (value?: string) => {
@@ -66,7 +66,22 @@ export const mapLevel = (lvl?: string) => {
 const buildWorkoutLibrary = () => {
   const categoryMap = new Map<string, string>();
   const items = Object.entries(modules).map(([path, mod]) => {
-    const data = (mod && mod.default) ? mod.default : mod;
+    const data = mod && mod.default;
+    if (!data) {
+      let moduleSummary: string;
+      if (mod && typeof mod === 'object') {
+        let keys: string;
+        try {
+          keys = Object.keys(mod).join(', ');
+        } catch {
+          keys = 'unavailable';
+        }
+        moduleSummary = ` module keys: ${keys}`;
+      } else {
+        moduleSummary = ` module type: ${typeof mod}`;
+      }
+      throw new Error(`Invalid module structure for "${path}". Expected an object with a "default" property.${moduleSummary}`);
+    }
     const title = data.name || data.id || path.split('/').pop()?.replace('.json', '') || 'Unknown';
 
     const images: string[] = Array.isArray(data.images) ? data.images.map((img: string) => {

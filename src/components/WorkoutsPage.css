@@ -87,8 +87,9 @@
 .filters-row { 
   display: flex; 
   align-items: center; 
-  row-gap: 12px; 
-  column-gap: 0.1%; /*No idea why this puts it on a seperate line*/
+  gap: 12px; /* ensures both row and column gaps when items wrap */
+  /* Removed column-gap workaround; rely on .filters gap for spacing. 
+     If wrapping occurs, adjust child widths or flex properties as needed. */
   justify-content: flex-end; 
   flex-wrap: wrap; 
 }
@@ -506,13 +507,12 @@ body.theme-dark .btn-ghost:hover {
   transform: translateY(-3px);
   filter: brightness(1.03);
   box-shadow: 0 18px 40px rgba(30,203,123,0.16);
+  color: black;
 }
 body.theme-dark .btn-ghost.add { background: linear-gradient(135deg,#1ecb7b,#1e90cb); }
 body.theme-dark .btn-ghost.danger { background: linear-gradient(135deg,var(--accent-red),var(--accent-red-dark)); }
 
-body.theme-dark .btn-ghost:hover {
-  color: black;
-}
+
 
 .btn-link { 
   color: var(--secondary-blue); 

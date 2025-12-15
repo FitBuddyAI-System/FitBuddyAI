@@ -10,6 +10,7 @@ leoProfanity.loadDictionary();
 
 import express from 'express';
 import userDataStoreRouter from './userDataStore.js';
+import rateLimit from 'express-rate-limit';
 import cors from 'cors';
 import bodyParser from 'body-parser';
 import { v4 as uuidv4 } from 'uuid';
@@ -17,6 +18,47 @@ import jwt from 'jsonwebtoken';
 import fs from 'fs';
 import { createClient } from '@supabase/supabase-js';
 import adminRoutes from './adminRoutes.js';
+
+// Rate limiter for health endpoint - allow more requests since it's lightweight
+const healthLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: { error: 'Too many health check requests, please try again later.' },
+  standardHeaders: 'draft-7',
+  legacyHeaders: false
+});
+
+// Rate limiter for admin users endpoint - max 10 requests per minute for admin operations
+const adminUsersLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 50, // limit each user to 50 admin requests per windowMs
+  message: { error: 'Too many admin requests, please try again later.' },
+  // Use user identity instead of IP for rate limiting
+  keyGenerator: (req) => {
+    // Try JWT-based auth first
+    try {
+      const auth = String(req.headers.authorization || '');
+      const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
+      if (token) {
+        const secret = process.env.JWT_SECRET || 'dev_secret_change_me';
+        const decoded = jwt.verify(token, secret);
+        if (decoded?.id) return `user_${decoded.id}`;
+      }
+    } catch (err) {
+      // JWT verification failed, try admin token
+    }
+    
+    // Fall back to admin token or IP
+    const adminToken = process.env.ADMIN_API_TOKEN;
+    if (adminToken) {
+      const auth = String(req.headers.authorization || req.headers.Authorization || '');
+      if (auth === `Bearer ${adminToken}`) return `admin_token`;
+    }
+    
+    // Final fallback to IP
+    return req.ip || req.connection.remoteAddress || 'unknown';
+  }
+});
 
 const app = express();
 app.use(cors());
@@ -41,7 +83,7 @@ function isAdminRequest(req) {
   return auth === `Bearer ${adminToken}`;
 }
 
-app.get('/api/admin/users', async (req, res) => {
+app.get('/api/admin/users', adminUsersLimiter, async (req, res) => {
   try {
     console.log('[authServer] /api/ai/generate request headers:', {
       ct: req.headers['content-type'] || req.headers['Content-Type'] || null,
@@ -66,7 +108,7 @@ app.get('/api/admin/users', async (req, res) => {
   }
 });
 
-app.post('/api/admin/users', async (req, res) => {
+app.post('/api/admin/users', adminUsersLimiter, async (req, res) => {
   try {
   if (!isAdminRequest(req)) return res.status(403).json({ message: 'Forbidden' });
     const action = req.query.action || req.body?.action;
@@ -677,6 +719,13 @@ function processActionForUser(user, action, users, res) {
       let cur = root;
       for (let i = 0; i < segments.length; i++) {
         const seg = segments[i];
+        // Prevent prototype-polluting segments
+        if (seg === '__proto__' || seg === 'constructor' || seg === 'prototype') {
+          console.warn(
+            '[SECURITY] Prototype pollution attempt blocked in setByPath: segment', seg, 'in path', segments, 'with value:', value
+          );
+          return false;
+        }
         const isLast = i === segments.length - 1;
         const idx = String(seg).match(/^\d+$/) ? Number(seg) : null;
 
@@ -728,6 +777,15 @@ function processActionForUser(user, action, users, res) {
       let cur = root;
       for (let i = 0; i < segments.length; i++) {
         const seg = segments[i];
+        // Prevent prototype-polluting segments
+        if (seg === '__proto__' || seg === 'constructor' || seg === 'prototype') {
+          console.warn(
+            '[SECURITY] Prototype pollution attempt detected in pushByPath: segment "%s" in path [%s]',
+            seg,
+            segments.join(', ')
+          );
+          return false;
+        }
         const isLast = i === segments.length - 1;
         const idx = String(seg).match(/^\d+$/) ? Number(seg) : null;
 
@@ -969,7 +1027,7 @@ function verifyAdminFromToken(req) {
   }
 }
 
-app.get('/admin/audit', (req, res) => {
+app.get('/admin/audit', adminUsersLimiter, (req, res) => {
   try {
   const admin = verifyAdminFromToken(req);
     if (!admin) return res.status(403).json({ message: 'Forbidden' });
@@ -984,7 +1042,7 @@ app.get('/admin/audit', (req, res) => {
   }
 });
 
-app.get('/api/users', (req, res) => {
+app.get('/api/users', adminUsersLimiter, (req, res) => {
   try {
   const admin = verifyAdminFromToken(req);
     if (!admin) return res.status(403).json({ message: 'Forbidden' });
@@ -997,7 +1055,7 @@ app.get('/api/users', (req, res) => {
 });
 
 // Lightweight health endpoint for quick checks
-app.get('/api/health', (req, res) => {
+app.get('/api/health', healthLimiter, (req, res) => {
   return res.json({ ok: true, time: new Date().toISOString() });
 });
 
