@@ -722,8 +722,7 @@ function processActionForUser(user, action, users, res) {
         // Prevent prototype-polluting segments
         if (seg === '__proto__' || seg === 'constructor' || seg === 'prototype') {
           console.warn(
-            `[SECURITY] Prototype pollution attempt blocked in setByPath: segment "${seg}" in path [${segments.join(', ')}] with value:`,
-            value
+            '[SECURITY] Prototype pollution attempt blocked in setByPath: segment', seg, 'in path', segments, 'with value:', value
           );
           return false;
         }
