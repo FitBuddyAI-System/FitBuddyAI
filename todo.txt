@@ -57,3 +57,4 @@ Alex's Todo list:
         - Header.css 
         - Footer.css 
     - workout library giving two toasts every time you add/remove a workout.
+    - fix local branch issue
