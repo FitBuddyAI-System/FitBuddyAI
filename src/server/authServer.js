@@ -23,10 +23,12 @@ import adminRoutes from './adminRoutes.js';
 const healthLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // limit each IP to 100 requests per windowMs
-  message: { error: 'Too many health check requests, please try again later.' }
+  message: { error: 'Too many health check requests, please try again later.' },
+  standardHeaders: 'draft-7',
+  legacyHeaders: false
 });
 
-// Rate limiter for admin users endpoint - stricter limits for admin operations
+// Rate limiter for admin users endpoint - max 10 requests per minute for admin operations
 const adminUsersLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 50, // limit each user to 50 admin requests per windowMs
