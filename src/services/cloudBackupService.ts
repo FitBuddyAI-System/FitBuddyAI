@@ -147,7 +147,15 @@ export async function restoreUserDataFromServer(userId: string) {
     const storedUserRaw = sessionStorage.getItem('fitbuddyai_user_data') || localStorage.getItem('fitbuddyai_user_data');
     const storedUser = storedUserRaw ? JSON.parse(storedUserRaw) : null;
     const existing = storedUser?.data || storedUser || null;
-    const nextUser = { ...(existing || {}), ...(payload.username ? { username: payload.username } : {}), ...(payload.avatar ? { avatar: payload.avatar } : {}), ...(payload.energy !== undefined ? { energy: payload.energy } : {}) };
+    const usernameObj = payload.username ? { username: payload.username } : {};
+    const avatarObj = payload.avatar ? { avatar: payload.avatar } : {};
+    const energyObj = payload.energy !== undefined ? { energy: payload.energy } : {};
+    const nextUser = {
+      ...(existing || {}),
+      ...usernameObj,
+      ...avatarObj,
+      ...energyObj,
+    };
     if (Object.keys(nextUser).length > 0) {
       const wrapper = storedUser && storedUser.timestamp ? { ...storedUser, data: nextUser } : { data: nextUser, timestamp: Date.now() };
       try { sessionStorage.setItem('fitbuddyai_user_data', JSON.stringify(wrapper)); } catch {}
