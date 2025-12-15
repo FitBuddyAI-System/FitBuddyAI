@@ -60,28 +60,28 @@ const adminUsersLimiter = rateLimit({
   }
 });
 
-// Rate limiter for suggestions endpoint - stricter limits for filesystem-intensive user-generated content
+// Rate limiter for suggestions endpoint - protects /api/suggestions for user-generated workout suggestions with filesystem/database operations
 const suggestionsLimiter = rateLimit({
-  windowMs: 60 * 1000, // 1 minute
-  max: 10, // limit each IP to 10 suggestions per windowMs
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20, // limit each IP to 20 suggestions per windowMs
   message: { error: 'Too many suggestions submitted, please try again later.' }
 });
 
-// Rate limiter for user actions - moderate limits for user operations
+// Rate limiter for user actions - protects /api/user/apply-action endpoint that handles authenticated user operations like applying actions, updates, and other user-initiated changes
 const userActionLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 30, // limit each IP to 30 user actions per windowMs
   message: { error: 'Too many user actions, please try again later.' }
 });
 
-// Rate limiter for user updates - moderate limits for profile updates
+// Rate limiter for user updates - protects /api/user/update endpoint for profile changes like username, avatar, and streak updates
 const userUpdateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 10, // limit each IP to 10 user updates per windowMs
   message: { error: 'Too many user updates, please try again later.' }
 });
 
-// Rate limiter for user purchases - stricter limits for financial operations
+// Rate limiter for user purchases - protects /api/user/buy endpoint for shop item purchases and energy transactions
 const userBuyLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 5, // limit each user (or IP) to 5 purchases per windowMs
