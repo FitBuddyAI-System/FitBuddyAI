@@ -40,7 +40,9 @@ export async function backupUserDataToServer(userId: string) {
               if (typeof possibleStreak === 'number') payload.streak = possibleStreak;
               const possibleEnergy = (safe && typeof safe === 'object') ? (safe.energy ?? (safe.data && safe.data.energy)) : undefined;
               if (typeof possibleEnergy === 'number') payload.energy = possibleEnergy;
-            } catch {}
+            } catch {
+              // Ignore errors extracting streak/energy; not critical for backup
+            }
           }
         } catch {}
       }
