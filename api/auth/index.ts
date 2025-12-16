@@ -14,9 +14,9 @@ const supabase = createClient(SUPABASE_URL || '', SUPABASE_KEY || '');
 
 // Encryption helpers for refresh tokens (AES-256-GCM)
 const ENC_ALGO = 'aes-256-gcm';
-const ENC_KEY_RAW = process.env.REFRESH_TOKEN_ENC_KEY || process.env.REFRESH_TOKEN_KEY || '';
+const ENC_KEY_RAW = process.env.REFRESH_TOKEN_ENC_KEY || process.env.REFRESH_TOKEN_KEY;
 if (!ENC_KEY_RAW) {
-  console.warn('[api/auth] REFRESH_TOKEN_ENC_KEY not set — refresh tokens will be stored encrypted with a derived key. Set REFRESH_TOKEN_ENC_KEY in your environment for stronger protection.');
+  throw new Error('[api/auth] REFRESH_TOKEN_ENC_KEY is not set in the environment. Set REFRESH_TOKEN_ENC_KEY to a strong secret value to enable secure refresh token encryption.');
 }
 // Derive a 32-byte key from the provided secret using SHA-256
 const ENC_KEY = crypto.createHash('sha256').update(String(ENC_KEY_RAW)).digest();
