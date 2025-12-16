@@ -1,7 +1,7 @@
 // Buy a shop item and update user on server and localStorage
 import attachAuthHeaders from './apiAuth';
 import { supabase } from './supabaseClient';
-import { saveUserData, saveAuthToken, clearAuthToken, loadUserData, saveSupabaseSession, clearSupabaseSession } from './localStorage';
+import { saveUserData, saveAuthToken, clearAuthToken, loadUserData } from './localStorage';
 import { ensureUserId } from '../utils/userHelpers';
 
 const DEFAULT_ENERGY = 10000;
@@ -119,7 +119,19 @@ export async function signIn(email: string, password: string): Promise<User> {
         // ignore; we'll fallback to email
       }
     }
-    try { saveSupabaseSession(session); } catch {}
+    try {
+      // Send refresh token to server for server-side storage and set HttpOnly cookie.
+      try {
+        await fetch('/api/auth?action=store_refresh', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: user.id, refresh_token: session?.refresh_token })
+        });
+      } catch (e) {
+        // Non-fatal: if server-side storage fails, continue without it.
+        console.warn('[authService] failed to store refresh token server-side', e);
+      }
+    } catch {}
   const fallbackEnergy = (user.user_metadata && user.user_metadata.energy) ?? DEFAULT_ENERGY;
   const toSave = { data: { id: user.id, email: user.email, username: usernameVal || user.email, energy: fallbackEnergy } };
   // Clear any cross-tab 'no auto restore' guard set during sign-out so sign-in can persist data
@@ -177,7 +189,17 @@ export async function signUp(email: string, username: string, password: string):
   // Only persist client-side if we actually received a session/token. For email-verify flows
   // Supabase may require the user to confirm via email before signing in; do not mark them
   // as signed-in (or persist their profile) until a token exists.
-    try { saveSupabaseSession(session); } catch {}
+    try {
+      try {
+        await fetch('/api/auth?action=store_refresh', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: user?.id, refresh_token: session?.refresh_token })
+        });
+      } catch (e) {
+        console.warn('[authService] failed to store refresh token server-side', e);
+      }
+    } catch {}
   if (token && toSave) {
     try { sessionStorage.removeItem('fitbuddyai_no_auto_restore'); } catch {}
     try { localStorage.removeItem('fitbuddyai_no_auto_restore'); } catch {}
@@ -290,7 +312,10 @@ export function getCurrentUser(): User | null {
 
 export function signOut() {
   try { clearAuthToken(); } catch {}
-  try { clearSupabaseSession(); } catch {}
+  try {
+    // Clear server-side stored refresh token and cookie
+    fetch('/api/auth?action=clear_refresh', { method: 'POST' }).catch(() => {});
+  } catch {}
   try { sessionStorage.removeItem('fitbuddyai_no_auto_restore'); } catch {}
   try { localStorage.removeItem('fitbuddyai_no_auto_restore'); } catch {}
   try { const { clearUserData } = require('./localStorage'); clearUserData(); } catch {}

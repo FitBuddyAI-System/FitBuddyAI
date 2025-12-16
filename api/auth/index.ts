@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { v4 as uuidv4 } from 'uuid';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 
 const SUPABASE_URL = process.env.SUPABASE_URL as string | undefined;
 const SUPABASE_KEY = process.env.SUPABASE_KEY as string | undefined;
@@ -10,6 +11,57 @@ if (!SUPABASE_URL || !SUPABASE_KEY) {
 }
 
 const supabase = createClient(SUPABASE_URL || '', SUPABASE_KEY || '');
+
+// Encryption helpers for refresh tokens (AES-256-GCM)
+const ENC_ALGO = 'aes-256-gcm';
+const ENC_KEY_RAW = process.env.REFRESH_TOKEN_ENC_KEY || process.env.REFRESH_TOKEN_KEY || '';
+if (!ENC_KEY_RAW) {
+  console.warn('[api/auth] REFRESH_TOKEN_ENC_KEY not set — refresh tokens will be stored encrypted with a derived key. Set REFRESH_TOKEN_ENC_KEY in your environment for stronger protection.');
+}
+// Derive a 32-byte key from the provided secret using SHA-256
+const ENC_KEY = crypto.createHash('sha256').update(String(ENC_KEY_RAW)).digest();
+
+function encryptToken(plain: string): string {
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv(ENC_ALGO, ENC_KEY, iv);
+  const encrypted = Buffer.concat([cipher.update(plain, 'utf8'), cipher.final()]);
+  const tag = cipher.getAuthTag();
+  // Store as base64(iv|tag|ciphertext)
+  return Buffer.concat([iv, tag, encrypted]).toString('base64');
+}
+
+function decryptToken(blobB64: string): string {
+  const buf = Buffer.from(blobB64, 'base64');
+  const iv = buf.slice(0, 12);
+  const tag = buf.slice(12, 28);
+  const ciphertext = buf.slice(28);
+  const decipher = crypto.createDecipheriv(ENC_ALGO, ENC_KEY, iv);
+  decipher.setAuthTag(tag);
+  const decrypted = Buffer.concat([decipher.update(ciphertext), decipher.final()]);
+  return decrypted.toString('utf8');
+}
+
+// In-memory server-side refresh token store (sessionId -> { userId, refreshToken, createdAt })
+// Note: This is an in-memory store intended for dev and simple deployments.
+// For production use, persist refresh tokens in a secure server-side store (DB, vault)
+const refreshStore = new Map<string, { userId: string; refreshToken: string; createdAt: number }>();
+const COOKIE_NAME = 'fitbuddyai_sid';
+
+function parseCookies(cookieHeader: string | undefined): Record<string, string> {
+  const out: Record<string, string> = {};
+  if (!cookieHeader) return out;
+  const parts = cookieHeader.split(';');
+  for (const p of parts) {
+    const [k, ...rest] = p.split('=');
+    if (!k) continue;
+    out[k.trim()] = decodeURIComponent((rest || []).join('=').trim());
+  }
+  return out;
+}
+
+function makeSessionId() {
+  return uuidv4();
+}
 
 const normalizeEmail = (value: string | undefined | null): string => {
   if (!value) return '';
@@ -55,6 +107,154 @@ export default async function handler(req: any, res: any) {
         token = null;
       }
       return res.json({ user: safeUser, token });
+    }
+    
+    // Store a refresh token server-side (persist in DB) and issue an HttpOnly session cookie.
+    if (action === 'store_refresh') {
+      const { userId, refresh_token } = req.body as { userId?: string; refresh_token?: string };
+      if (!userId || !refresh_token) return res.status(400).json({ message: 'userId and refresh_token required.' });
+      const sid = makeSessionId();
+      const enc = encryptToken(String(refresh_token));
+      // Persist encrypted token in DB
+      const { error: insertErr } = await supabase.from('fitbuddyai_refresh_tokens').insert([{ session_id: sid, user_id: userId, refresh_token: enc, created_at: new Date().toISOString(), last_used: new Date().toISOString(), revoked: false }]);
+      if (insertErr) {
+        console.error('[api/auth/store_refresh] db insert failed', insertErr);
+        return res.status(500).json({ message: 'Failed to persist refresh token' });
+      }
+      // Set cookie (HttpOnly). In production, set Secure and SameSite appropriately.
+      const secureFlag = process.env.NODE_ENV === 'production' ? '; Secure' : '';
+      res.setHeader('Set-Cookie', `${COOKIE_NAME}=${sid}; HttpOnly; Path=/; SameSite=Lax; Max-Age=${60 * 60 * 24 * 30}${secureFlag}`);
+      return res.json({ ok: true, session_id: sid });
+    }
+
+    // Refresh access token using stored server-side refresh token (lookup by cookie)
+    if (action === 'refresh') {
+      try {
+        const cookies = parseCookies(req.headers?.cookie as string | undefined);
+        const sid = cookies[COOKIE_NAME];
+        if (!sid) return res.status(401).json({ message: 'No session cookie present' });
+        // Lookup DB row
+        const { data: rows, error: selErr } = await supabase.from('fitbuddyai_refresh_tokens').select('*').eq('session_id', sid).limit(1).maybeSingle();
+        if (selErr) {
+          console.error('[api/auth/refresh] db select error', selErr);
+          return res.status(500).json({ message: 'Failed to lookup session' });
+        }
+        const entry: any = rows as any;
+        if (!entry || entry.revoked) return res.status(401).json({ message: 'Session not found or revoked' });
+        // Optionally check expiry if expires_at present
+        if (entry.expires_at && new Date(entry.expires_at) < new Date()) {
+          return res.status(401).json({ message: 'Session expired' });
+        }
+        // Decrypt the stored refresh token and call Supabase token endpoint to exchange it for a new access token
+        let decryptedRefresh = '';
+        try {
+          decryptedRefresh = decryptToken(String(entry.refresh_token));
+        } catch (e) {
+          console.error('[api/auth/refresh] failed to decrypt refresh token', e);
+          // Mark revoked to be safe
+          try { await supabase.from('fitbuddyai_refresh_tokens').update({ revoked: true }).eq('session_id', sid); } catch (ee) {}
+          return res.status(401).json({ message: 'Invalid session' });
+        }
+        const tokenUrl = `${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`;
+        const resp = await fetch(tokenUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            apikey: SUPABASE_KEY || '',
+            Authorization: `Bearer ${SUPABASE_KEY || ''}`
+          },
+          body: JSON.stringify({ refresh_token: decryptedRefresh })
+        });
+        const body = await resp.json();
+        if (!resp.ok) {
+          console.warn('[api/auth/refresh] supabase token refresh failed', body);
+          // If refresh failed due to invalid token, mark revoked
+          try { await supabase.from('fitbuddyai_refresh_tokens').update({ revoked: true }).eq('session_id', sid); } catch (e) {}
+          return res.status(401).json({ message: 'Failed to refresh token' });
+        }
+        // Update last_used and rotate refresh_token if provided
+        try {
+          const updates: any = { last_used: new Date().toISOString() };
+          if (body.refresh_token) updates.refresh_token = encryptToken(body.refresh_token);
+          await supabase.from('fitbuddyai_refresh_tokens').update(updates).eq('session_id', sid);
+        } catch (e) {
+          console.warn('[api/auth/refresh] failed to update refresh token record', e);
+        }
+        // Do NOT return the refresh_token to the client. Return access_token and expiry only.
+        return res.json({ access_token: body.access_token, expires_at: body.expires_at ?? body.expires_in });
+      } catch (e) {
+        console.error('[api/auth/refresh] error', e);
+        return res.status(500).json({ message: 'Refresh failed' });
+      }
+    }
+
+    // Clear stored refresh token and instruct browser to clear cookie
+    if (action === 'clear_refresh') {
+      try {
+        const cookies = parseCookies(req.headers?.cookie as string | undefined);
+        const sid = cookies[COOKIE_NAME];
+        if (sid) {
+          await supabase.from('fitbuddyai_refresh_tokens').update({ revoked: true }).eq('session_id', sid);
+        }
+        // Clear cookie
+        res.setHeader('Set-Cookie', `${COOKIE_NAME}=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax`);
+        return res.json({ ok: true });
+      } catch (e) {
+        return res.status(500).json({ message: 'Failed to clear refresh session' });
+      }
+    }
+
+    // Admin endpoints for revocation and cleanup. Require ADMIN_API_KEY via header 'x-admin-key'.
+    // Admin endpoints replaced with JWT-based admin auth. Verify incoming
+    // Authorization: Bearer <token> where <token> is a JWT signed by your
+    // server's JWT secret and includes claim `role: 'service'` or `role: 'admin'.`
+    async function requireAdmin() {
+      const authHeader = String(req.headers['authorization'] || req.headers['Authorization'] || '');
+      const match = authHeader.match(/^Bearer\s+(.+)$/i);
+      if (!match) return null;
+      const token = match[1];
+      try {
+        const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'dev_secret_change_me');
+        if (decoded && (decoded.role === 'service' || decoded.role === 'admin')) return decoded;
+        return null;
+      } catch (e) {
+        return null;
+      }
+    }
+
+    if (action === 'revoke_session') {
+      const admin = await requireAdmin();
+      if (!admin) return res.status(403).json({ message: 'Forbidden' });
+      const { session_id } = req.body as { session_id?: string };
+      if (!session_id) return res.status(400).json({ message: 'session_id required' });
+      const { error: revErr } = await supabase.from('fitbuddyai_refresh_tokens').update({ revoked: true }).eq('session_id', session_id);
+      if (revErr) return res.status(500).json({ message: 'Failed to revoke session' });
+      return res.json({ ok: true });
+    }
+
+    if (action === 'revoke_user_sessions') {
+      const admin = await requireAdmin();
+      if (!admin) return res.status(403).json({ message: 'Forbidden' });
+      const { userId } = req.body as { userId?: string };
+      if (!userId) return res.status(400).json({ message: 'userId required' });
+      const { error: revErr } = await supabase.from('fitbuddyai_refresh_tokens').update({ revoked: true }).eq('user_id', userId);
+      if (revErr) return res.status(500).json({ message: 'Failed to revoke sessions for user' });
+      return res.json({ ok: true });
+    }
+
+    if (action === 'cleanup_refresh_tokens') {
+      const admin = await requireAdmin();
+      if (!admin) return res.status(403).json({ message: 'Forbidden' });
+      // Delete or mark as revoked entries older than N days (default 30)
+      const days = Number(req.body?.days || 30);
+      try {
+        const threshold = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+        const { error: delErr } = await supabase.from('fitbuddyai_refresh_tokens').delete().lt('created_at', threshold).or('revoked.eq.true');
+        if (delErr) return res.status(500).json({ message: 'Cleanup failed' });
+        return res.json({ ok: true });
+      } catch (e) {
+        return res.status(500).json({ message: 'Cleanup failed' });
+      }
     }
 
     if (action === 'signup') {

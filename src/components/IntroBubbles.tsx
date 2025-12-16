@@ -67,6 +67,49 @@ const IntroBubbles: React.FC<{ onFinish: () => void }> = ({ onFinish }) => {
   const onFinishRef = useRef(onFinish);
   useEffect(() => { onFinishRef.current = onFinish; }, [onFinish]);
 
+  // Generate per-bubble CSS rules to avoid inline styles (creates a <style> tag)
+  const dynamicStylesId = 'intro-bubbles-dynamic-styles';
+  useEffect(() => {
+    try {
+      const existing = document.getElementById(dynamicStylesId) as HTMLStyleElement | null;
+      let styleEl = existing;
+      if (!styleEl) {
+        styleEl = document.createElement('style');
+        styleEl.id = dynamicStylesId;
+        document.head.appendChild(styleEl);
+      }
+      // Build CSS rules for each bubble based on random seeds
+      const parts: string[] = [];
+      for (let i = 0; i < bubblesData.length; i++) {
+        const edge = randomSeeds.current!.edge[i];
+        const edgePos = randomSeeds.current!.edgePos[i];
+        let offX = 0, offY = 0;
+        if (edge === 0) { // top
+          offX = edgePos;
+          offY = -10;
+        } else if (edge === 1) { // right
+          offX = 110;
+          offY = edgePos;
+        } else if (edge === 2) { // bottom
+          offX = edgePos;
+          offY = 110;
+        } else { // left
+          offX = -10;
+          offY = edgePos;
+        }
+        const angle = (360 / bubblesData.length) * i;
+        const distance = 210;
+        parts.push(`.intro-bubble-pos-${i} { --offscreen-x: ${offX}px; --offscreen-y: ${offY}px; --angle: ${angle}deg; --distance: ${distance}px; }`);
+      }
+      styleEl.innerHTML = parts.join('\n');
+      return () => {
+        try { if (styleEl && styleEl.parentNode) styleEl.parentNode.removeChild(styleEl); } catch (e) {}
+      };
+    } catch (e) {
+      // ignore in non-browser environments
+    }
+  }, []);
+
   useEffect(() => {
     if (shouldShow === null) return;
     if (!shouldShow) {
@@ -157,15 +200,7 @@ const IntroBubbles: React.FC<{ onFinish: () => void }> = ({ onFinish }) => {
             return (
               <div
                 key={i}
-                className={bubbleClass}
-                style={
-                  {
-                    '--offscreen-x': `${offX}px`,
-                    '--offscreen-y': `${offY}px`,
-                    '--angle': `${angle}deg`,
-                    '--distance': `${distance}px`,
-                  } as React.CSSProperties
-                }
+                className={`${bubbleClass} intro-bubble-pos-${i}`}
               >
                 <span className="bubble-icon">{bubble.icon}</span>
                 {bubble.text}

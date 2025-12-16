@@ -259,8 +259,6 @@ export const saveAuthToken = (token: string | null) => {
   try {
     if (!token) return;
     sessionStorage.setItem(AUTH_KEYS.TOKEN, String(token));
-    // Persist token with timestamp for reload recovery (expire alongside user profile)
-    localStorage.setItem(AUTH_KEYS.TOKEN_PERSISTED, JSON.stringify({ token, timestamp: Date.now() }));
   } catch (e) {
     // ignore
   }
@@ -270,17 +268,8 @@ export const getAuthToken = (): string | null => {
   try {
     const t = sessionStorage.getItem(AUTH_KEYS.TOKEN);
     if (t) return t;
-    // Fallback to persisted token if still fresh (<= 7 days)
-    const persisted = localStorage.getItem(AUTH_KEYS.TOKEN_PERSISTED);
-    if (persisted) {
-      const parsed = safeParseStored<{ token: string; timestamp: number }>(persisted);
-      if (parsed?.token && parsed.timestamp && (Date.now() - parsed.timestamp) <= 7 * 24 * 60 * 60 * 1000) {
-        try { sessionStorage.setItem(AUTH_KEYS.TOKEN, parsed.token); } catch {}
-        return parsed.token;
-      }
-      // expired persisted token should be cleared
-      try { localStorage.removeItem(AUTH_KEYS.TOKEN_PERSISTED); } catch {}
-    }
+    // No persisted fallback: rely on sessionStorage only for tokens to avoid
+    // long-lived clear-text tokens in localStorage (mitigates XSS risk).
     return null;
   } catch (e) {
     return null;
@@ -294,7 +283,8 @@ export const clearAuthToken = () => {
 export const saveSupabaseSession = (session: any | null) => {
   try {
     if (!session) {
-      localStorage.removeItem(STORAGE_KEYS.SUPABASE_SESSION);
+      // Remove any existing session persisted in sessionStorage
+      sessionStorage.removeItem(STORAGE_KEYS.SUPABASE_SESSION);
       return;
     }
     const payload: any = {
@@ -302,7 +292,10 @@ export const saveSupabaseSession = (session: any | null) => {
       refresh_token: session.refresh_token,
       expires_at: session.expires_at ?? (session.expires_in ? Math.round(Date.now() / 1000) + Number(session.expires_in || 0) : undefined)
     };
-    localStorage.setItem(STORAGE_KEYS.SUPABASE_SESSION, JSON.stringify(payload));
+    // Store Supabase session only in sessionStorage (cleared on tab/browser
+    // close). This prevents persistent clear-text storage of refresh/access
+    // tokens in localStorage and addresses CodeQL findings.
+    sessionStorage.setItem(STORAGE_KEYS.SUPABASE_SESSION, JSON.stringify(payload));
   } catch (error) {
     console.warn('[localStorage] saveSupabaseSession failed:', error);
   }
@@ -310,7 +303,10 @@ export const saveSupabaseSession = (session: any | null) => {
 
 export const loadSupabaseSession = (): { access_token?: string; refresh_token?: string; expires_at?: number } | null => {
   try {
-    const raw = localStorage.getItem(STORAGE_KEYS.SUPABASE_SESSION);
+    // Read only from sessionStorage to avoid reading clear-text tokens from
+    // localStorage. If long-lived sessions are required, implement a
+    // server-backed refresh flow instead.
+    const raw = sessionStorage.getItem(STORAGE_KEYS.SUPABASE_SESSION);
     if (!raw) return null;
     return safeParseStored(raw);
   } catch (error) {
@@ -320,7 +316,7 @@ export const loadSupabaseSession = (): { access_token?: string; refresh_token?: 
 
 export const clearSupabaseSession = () => {
   try {
-    localStorage.removeItem(STORAGE_KEYS.SUPABASE_SESSION);
+    sessionStorage.removeItem(STORAGE_KEYS.SUPABASE_SESSION);
   } catch (error) {
     // ignore
   }
