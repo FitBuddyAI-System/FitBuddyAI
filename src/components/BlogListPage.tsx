@@ -26,7 +26,6 @@ const BlogListPage: FC = () => {
       <section
         className="blog-hero card"
       >
-      >
         <div className="hero-left">
           <p className="hero-eyebrow">FitBuddy blog</p>
           <h1>Stories, tips, and lab notes for people building their streak.</h1>
