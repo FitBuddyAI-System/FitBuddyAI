@@ -41,10 +41,6 @@ function decryptToken(blobB64: string): string {
   return decrypted.toString('utf8');
 }
 
-// In-memory server-side refresh token store (sessionId -> { userId, refreshToken, createdAt })
-// Note: This is an in-memory store intended for dev and simple deployments.
-// For production use, persist refresh tokens in a secure server-side store (DB, vault)
-const refreshStore = new Map<string, { userId: string; refreshToken: string; createdAt: number }>();
 const COOKIE_NAME = 'fitbuddyai_sid';
 
 function parseCookies(cookieHeader: string | undefined): Record<string, string> {

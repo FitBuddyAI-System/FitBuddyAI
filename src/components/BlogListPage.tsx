@@ -8,12 +8,24 @@ const BlogListPage: FC = () => {
   if (!featured) return null;
   const rest = blogPosts.slice(1);
   const surprise = rest[0] || featured;
+  const pageClass = `blog-list-vars-${featured.slug.replace(/[^a-z0-9-_]/gi, '-')}`;
+
+  const perPostRules = blogPosts
+    .map((post) => {
+      const cls = `blog-card-vars-${post.slug.replace(/[^a-z0-9-_]/gi, '-')}`;
+      const grad = post.gradient || 'var(--gradient-primary)';
+      return `.${cls} { --accent: ${post.accentColor}; --masthead-gradient: ${grad}; }`;
+    })
+    .join('\n');
+
+  const featuredRule = `.${pageClass} { --accent: ${featured.accentColor}; }`;
 
   return (
-    <div className="blog-list-root">
+    <div className={`blog-list-root ${pageClass}`}>
+      <style>{`${featuredRule}\n${perPostRules}`}</style>
       <section
         className="blog-hero card"
-        style={{ '--accent': featured.accentColor } as CSSProperties}
+      >
       >
         <div className="hero-left">
           <p className="hero-eyebrow">FitBuddy blog</p>
@@ -41,13 +53,7 @@ const BlogListPage: FC = () => {
 
         <Link
           to={`/blog/${featured.slug}`}
-          className="featured-card"
-          style={
-            {
-              '--accent': featured.accentColor,
-              '--masthead-gradient': featured.gradient || 'var(--gradient-primary)'
-            } as CSSProperties
-          }
+          className={`featured-card blog-card-vars-${featured.slug.replace(/[^a-z0-9-_]/gi, '-')}`}
         >
           <div className="featured-top">
             <span className="badge">{featured.heroBadge || 'Dispatch'}</span>
@@ -67,13 +73,7 @@ const BlogListPage: FC = () => {
           <Link
             key={post.slug}
             to={`/blog/${post.slug}`}
-            className={`blog-card${post.slug === featured.slug ? ' with-glow' : ''}`}
-            style={
-              {
-                '--accent': post.accentColor,
-                '--masthead-gradient': post.gradient || 'var(--gradient-primary)'
-              } as CSSProperties
-            }
+            className={`blog-card ${post.slug === featured.slug ? 'with-glow' : ''} blog-card-vars-${post.slug.replace(/[^a-z0-9-_]/gi, '-')}`}
           >
             <div className="card-top">
               <span className="badge">{post.heroBadge || 'Story'}</span>
