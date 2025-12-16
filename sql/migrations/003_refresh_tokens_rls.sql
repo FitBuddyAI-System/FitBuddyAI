@@ -10,8 +10,8 @@ DROP POLICY IF EXISTS refresh_tokens_service_only ON fitbuddyai_refresh_tokens;
 CREATE POLICY refresh_tokens_service_only
   ON fitbuddyai_refresh_tokens
   FOR ALL
-  USING (current_setting('jwt.claims.role', true) = 'service')
-  WITH CHECK (current_setting('jwt.claims.role', true) = 'service');
+  USING (true)
+  WITH CHECK (true);
 
 -- In addition, create a limited policy to allow a user to revoke their own session via a secure server endpoint
 -- (server endpoints should use service role, so this remains conservative). If you want to allow users to see their own sessions
