@@ -317,7 +317,7 @@ export const loadSupabaseSession = (): { access_token?: string; refresh_token?: 
 export const clearSupabaseSession = () => {
   try {
     sessionStorage.removeItem(STORAGE_KEYS.SUPABASE_SESSION);
-  } catch (error) {
+  } catch {
     // ignore
   }
 };
