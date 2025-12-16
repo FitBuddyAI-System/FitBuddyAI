@@ -143,13 +143,7 @@ const BlogPage: FC = () => {
             <Link
               key={post.slug}
               to={`/blog/${post.slug}`}
-              className="mini-card"
-              style={
-                {
-                  '--accent': post.accentColor,
-                  '--masthead-gradient': post.gradient || 'var(--gradient-primary)'
-                } as CSSProperties & Record<string, string>
-              }
+              className={`mini-card mini-vars-${post.slug.replace(/[^a-z0-9-_]/gi, '-')}`}
             >
               <div className="mini-top">
                 <span className="mini-badge">{post.heroBadge || 'Story'}</span>
