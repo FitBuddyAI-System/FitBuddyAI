@@ -205,12 +205,18 @@ export default async function handler(req: any, res: any) {
     // Authorization: Bearer <token> where <token> is a JWT signed by your
     // server's JWT secret and includes claim `role: 'service'` or `role: 'admin'.`
     async function requireAdmin() {
+      const jwtSecret = process.env.JWT_SECRET;
+      if (!jwtSecret) {
+        // Fail fast if JWT_SECRET is not set
+        console.error('[api/auth/index] Missing JWT_SECRET in environment; admin actions are disabled');
+        return null;
+      }
       const authHeader = String(req.headers['authorization'] || req.headers['Authorization'] || '');
       const match = authHeader.match(/^Bearer\s+(.+)$/i);
       if (!match) return null;
       const token = match[1];
       try {
-        const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'dev_secret_change_me');
+        const decoded: any = jwt.verify(token, jwtSecret);
         if (decoded && (decoded.role === 'service' || decoded.role === 'admin')) return decoded;
         return null;
       } catch (e) {
