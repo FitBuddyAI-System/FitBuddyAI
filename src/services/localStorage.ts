@@ -271,7 +271,7 @@ export const getAuthToken = (): string | null => {
     // No persisted fallback: rely on sessionStorage only for tokens to avoid
     // long-lived clear-text tokens in localStorage (mitigates XSS risk).
     return null;
-  } catch (e) {
+  } catch {
     return null;
   }
 };
