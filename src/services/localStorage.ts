@@ -287,7 +287,7 @@ export const saveSupabaseSession = (session: any | null) => {
       sessionStorage.removeItem(STORAGE_KEYS.SUPABASE_SESSION);
       return;
     }
-    const payload: any = {
+    const payload: { access_token: string; refresh_token: string; expires_at?: number } = {
       access_token: session.access_token,
       refresh_token: session.refresh_token,
       expires_at: session.expires_at ?? (session.expires_in ? Math.round(Date.now() / 1000) + Number(session.expires_in || 0) : undefined)
