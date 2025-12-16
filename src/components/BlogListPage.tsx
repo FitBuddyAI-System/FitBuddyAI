@@ -1,4 +1,4 @@
-import type { CSSProperties, FC } from 'react';
+import type { FC } from 'react';
 import { Link } from 'react-router-dom';
 import './BlogListPage.css';
 import { blogPosts } from '../data/blogPosts';

@@ -73,6 +73,96 @@ app.use((req, res, next) => {
 app.use(userDataStoreRouter);
 app.use(adminRoutes);
 
+// Dev-only: support the serverless-style `/api/auth?action=...` endpoints used by the frontend
+// The production serverless implementation lives in `api/auth/index.ts`. This wrapper allows
+// the dev Express server to respond to the same calls when running `npm run dev`.
+app.post('/api/auth', async (req, res) => {
+  // Only enable this wrapper in development to avoid duplicating production behavior.
+  if (process.env.NODE_ENV === 'production') return res.status(404).json({ message: 'Not found' });
+  try {
+    const action = String(req.query?.action || '').toLowerCase();
+    if (!action) return res.status(400).json({ message: 'action required' });
+
+    // Helper to parse cookies
+    function parseCookies(cookieHeader) {
+      const out = {};
+      if (!cookieHeader) return out;
+      const parts = cookieHeader.split(';');
+      for (const p of parts) {
+        const [k, ...rest] = p.split('=');
+        if (!k) continue;
+        out[k.trim()] = decodeURIComponent((rest || []).join('=').trim());
+      }
+      return out;
+    }
+
+    if (action === 'store_refresh') {
+      const { userId, refresh_token } = req.body || {};
+      if (!userId || !refresh_token) return res.status(400).json({ message: 'userId and refresh_token required.' });
+      const sid = uuidv4();
+      _devRefreshStore.set(sid, { userId, refreshToken: String(refresh_token), createdAt: Date.now(), lastUsed: Date.now(), revoked: false });
+      const secureFlag = process.env.NODE_ENV === 'production' ? '; Secure' : '';
+      res.setHeader('Set-Cookie', `fitbuddyai_sid=${sid}; HttpOnly; Path=/; SameSite=Lax; Max-Age=${60 * 60 * 24 * 30}${secureFlag}`);
+      return res.json({ ok: true, session_id: sid });
+    }
+
+    if (action === 'refresh') {
+      const cookies = parseCookies(req.headers?.cookie || '');
+      const sid = cookies['fitbuddyai_sid'];
+      if (!sid) return res.status(401).json({ message: 'No session cookie present' });
+      const entry = _devRefreshStore.get(sid);
+      if (!entry || entry.revoked) return res.status(401).json({ message: 'Session not found or revoked' });
+      // Call Supabase token endpoint using stored refresh token (requires SUPABASE_SERVICE_ROLE_KEY)
+      try {
+        const tokenUrl = `${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`;
+        const resp = await fetch(tokenUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            apikey: SUPABASE_SERVICE_ROLE_KEY || '',
+            Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY || ''}`
+          },
+          body: JSON.stringify({ refresh_token: entry.refreshToken })
+        });
+        const body = await resp.json();
+        if (!resp.ok) {
+          console.warn('[authServer dev wrapper] supabase token refresh failed', body);
+          // If refresh failed, revoke the dev session
+          _devRefreshStore.delete(sid);
+          return res.status(401).json({ message: 'Failed to refresh token' });
+        }
+        // rotate refresh token if provided
+        if (body.refresh_token) {
+          entry.refreshToken = body.refresh_token;
+          entry.lastUsed = Date.now();
+          _devRefreshStore.set(sid, entry);
+        }
+        return res.json({ access_token: body.access_token, expires_at: body.expires_at ?? body.expires_in });
+      } catch (e) {
+        console.error('[authServer dev wrapper] refresh error', e);
+        return res.status(500).json({ message: 'Refresh failed' });
+      }
+    }
+
+    if (action === 'clear_refresh') {
+      try {
+        const cookies = parseCookies(req.headers?.cookie || '');
+        const sid = cookies['fitbuddyai_sid'];
+        if (sid) _devRefreshStore.delete(sid);
+        res.setHeader('Set-Cookie', `fitbuddyai_sid=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax`);
+        return res.json({ ok: true });
+      } catch (e) {
+        return res.status(500).json({ message: 'Failed to clear refresh session' });
+      }
+    }
+
+    return res.status(404).json({ message: 'Not found' });
+  } catch (e) {
+    console.error('[authServer dev wrapper] error', e);
+    return res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // Inline admin endpoints to ensure /api/admin/users is available even if external files fail.
 // This helper returns boolean (true when request is allowed) and is kept separate
 // from `verifyAdminFromRequest` which returns the token-owner when verifying JWT.
@@ -183,6 +273,10 @@ if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
     supabase = null;
   }
 }
+
+// Dev-only in-memory refresh store to support client calls to /api/auth?action=...
+// This is intentionally ephemeral and only used when running the local auth server.
+const _devRefreshStore = new Map();
 
 const authLogFile = path.join(__dirname, 'auth_server.log');
 function logAuth(entry) {
