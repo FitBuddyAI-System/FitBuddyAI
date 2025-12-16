@@ -277,7 +277,7 @@ function App() {
               try { saveAuthToken(data.access_token); } catch {}
               // Set a short-lived session on the Supabase client so client-side
               // SDK calls work until the server refreshes again.
-              try { await supabase.auth.setSession({ access_token: data.access_token, refresh_token: '' as any }); } catch (e) {}
+              try { await supabase.auth.setSession({ access_token: data.access_token }); } catch (e) {}
             }
           }
         } catch (err) {
