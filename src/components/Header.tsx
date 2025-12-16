@@ -44,6 +44,30 @@ const Header: React.FC<HeaderProps> = ({ profileVersion, userData }) => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Hide header while the intro overlay is active
+  const [introActive, setIntroActive] = React.useState(false);
+  React.useEffect(() => {
+    const onStart = () => setIntroActive(true);
+    const onEnd = () => setIntroActive(false);
+    // Initialize from body class in case the event fired before this component mounted
+    try {
+      const already = Boolean(document && document.body && document.body.classList && document.body.classList.contains('intro-active'));
+      if (already) setIntroActive(true);
+    } catch (e) {}
+    try {
+      window.addEventListener('fitbuddyai-intro-start', onStart as EventListener);
+      window.addEventListener('fitbuddyai-intro-end', onEnd as EventListener);
+    } catch (e) {
+      // ignore (SSR / non-browser)
+    }
+    return () => {
+      try {
+        window.removeEventListener('fitbuddyai-intro-start', onStart as EventListener);
+        window.removeEventListener('fitbuddyai-intro-end', onEnd as EventListener);
+      } catch (e) {}
+    };
+  }, []);
+
   const [currentUser, setCurrentUser] = React.useState<any | null>(null);
   const [drawerState, setDrawerState] = React.useState<ExploreDrawerState>('closed');
   const exploreRef = React.useRef<HTMLDivElement | null>(null);
@@ -156,6 +180,7 @@ const Header: React.FC<HeaderProps> = ({ profileVersion, userData }) => {
       } catch {}
     };
   }, []);
+
 
   React.useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -368,6 +393,8 @@ const Header: React.FC<HeaderProps> = ({ profileVersion, userData }) => {
   };
 
   const isActive = (path: string) => location.pathname === path;
+
+  if (introActive) return null;
 
   return (
     <header className="app-header">

@@ -1,3 +1,4 @@
+import React from 'react';
 import { Link } from 'react-router-dom';
 import './Footer.css';
 import { Dumbbell } from 'lucide-react';
@@ -9,6 +10,29 @@ interface FooterProps {
 
 export default function Footer({ themeMode = 'auto', onChangeThemeMode }: FooterProps) {
   const cur = themeMode || 'auto';
+  // Hide footer while intro overlay is active
+  const [introActive, setIntroActive] = React.useState(false);
+  React.useEffect(() => {
+    const onStart = () => setIntroActive(true);
+    const onEnd = () => setIntroActive(false);
+    // Initialize from body class in case the event fired before this component mounted
+    try {
+      const already = Boolean(document && document.body && document.body.classList && document.body.classList.contains('intro-active'));
+      if (already) setIntroActive(true);
+    } catch (e) {}
+    try {
+      window.addEventListener('fitbuddyai-intro-start', onStart as EventListener);
+      window.addEventListener('fitbuddyai-intro-end', onEnd as EventListener);
+    } catch (e) {}
+    return () => {
+      try {
+        window.removeEventListener('fitbuddyai-intro-start', onStart as EventListener);
+        window.removeEventListener('fitbuddyai-intro-end', onEnd as EventListener);
+      } catch (e) {}
+    };
+  }, []);
+
+  if (introActive) return null;
   return (
     <footer className="fitbuddy-footer">
       <div className="fitbuddy-footer-inner">
