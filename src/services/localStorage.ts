@@ -309,7 +309,7 @@ export const loadSupabaseSession = (): { access_token?: string; refresh_token?: 
     const raw = sessionStorage.getItem(STORAGE_KEYS.SUPABASE_SESSION);
     if (!raw) return null;
     return safeParseStored(raw);
-  } catch (error) {
+  } catch {
     return null;
   }
 };
