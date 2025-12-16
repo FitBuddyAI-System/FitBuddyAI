@@ -1,4 +1,6 @@
 name: Refresh Token Cleanup
+permissions:
+  contents: read
 
 on:
   schedule:
