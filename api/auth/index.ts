@@ -109,13 +109,41 @@ export default async function handler(req: any, res: any) {
     if (action === 'store_refresh') {
       const { userId, refresh_token } = req.body as { userId?: string; refresh_token?: string };
       if (!userId || !refresh_token) return res.status(400).json({ message: 'userId and refresh_token required.' });
-      const sid = makeSessionId();
+      
+      // Retry insert up to 3 times in case of rare session_id collision
+      let sid: string | undefined;
+      let insertErr: any = null;
+      let attempt = 0;
       const enc = encryptToken(String(refresh_token));
-      // Persist encrypted token in DB
-      const { error: insertErr } = await supabase.from('fitbuddyai_refresh_tokens').insert([{ session_id: sid, user_id: userId, refresh_token: enc, created_at: new Date().toISOString(), last_used: new Date().toISOString(), revoked: false }]);
+      while (attempt < 3) {
+        sid = makeSessionId();
+        const { error } = await supabase.from('fitbuddyai_refresh_tokens').insert([{
+          session_id: sid,
+          user_id: userId,
+          refresh_token: enc,
+          created_at: new Date().toISOString(),
+          last_used: new Date().toISOString(),
+          revoked: false
+        }]);
+        if (!error) {
+          insertErr = null;
+          break;
+        }
+        // Check for unique violation (Supabase/Postgres error code '23505')
+        if (error.code === '23505' || (error.message && error.message.includes('duplicate key value'))) {
+          attempt++;
+          continue; // Try again with a new session_id
+        } else {
+          insertErr = error;
+          break;
+        }
+      }
       if (insertErr) {
         console.error('[api/auth/store_refresh] db insert failed', insertErr);
         return res.status(500).json({ message: 'Failed to persist refresh token' });
+      }
+      if (!sid) {
+        return res.status(500).json({ message: 'Could not generate unique session_id' });
       }
       // Set cookie (HttpOnly). In production, set Secure and SameSite appropriately.
       const secureFlag = process.env.NODE_ENV === 'production' ? '; Secure' : '';
