@@ -315,16 +315,19 @@ Generate and return the JSON now.`;
     console.warn('generateWorkoutPlan: empty AI response; using fallback plan');
     return buildFallbackPlan(userData, answers);
   }
-  try {
-    return parseAIResponse(generatedText, userData);
-  } catch (err) {
-    console.warn('generateWorkoutPlan: parse failed, falling back to deterministic plan', err);
-    return buildFallbackPlan(userData, answers);
+  // Try to parse AI response into a plan; parseAIResponse now returns a
+  // WorkoutPlan or null when parsing fails. If null is returned, fall
+  // back to the deterministic plan.
+  const parsed = parseAIResponse(generatedText, userData, answers);
+  if (parsed && typeof parsed === 'object' && parsed.dailyWorkouts && parsed.dailyWorkouts.length > 0) {
+    return parsed;
   }
+  console.warn('generateWorkoutPlan: AI parse returned no valid plan; using fallback deterministic plan');
+  return buildFallbackPlan(userData, answers);
 };
 
 // Parse AI JSON response into WorkoutPlan
-const parseAIResponse = (responseText: string, userData: UserData): WorkoutPlan => {
+const parseAIResponse = (responseText: string, userData: UserData, answers?: Record<string, any>): WorkoutPlan | null => {
   console.log('Parsing AI response:', responseText);
 
   try {
@@ -486,11 +489,10 @@ const parseAIResponse = (responseText: string, userData: UserData): WorkoutPlan 
       throw new Error('Response is not in JSON format');
     }
   } catch (error) {
-    console.error('Error parsing AI response:', error);
-    console.error('Raw AI response:', responseText);
-
-    // No fallback plan; propagate the error
-    throw error;
+    console.warn('Error parsing AI response (will fallback):', error);
+    console.warn('Raw AI response:', responseText);
+    // Return null so callers can use a deterministic fallback plan.
+    try { return buildFallbackPlan(userData, answers || {}); } catch (e) { return null; }
   }
 };
 

@@ -163,6 +163,44 @@ app.post('/api/auth', async (req, res) => {
   }
 });
 
+// Server-side proxy to forward questionnaire payloads to Google Apps Script webhook
+app.post('/api/webhook/questionnaire', async (req, res) => {
+  try {
+    // Prefer server-side config for the target webhook to avoid open proxy.
+    const configured = process.env.SHEET_WEBHOOK_URL;
+    const body = req.body || {};
+    const targetFromClient = body?.targetUrl;
+    const payload = body?.payload || body;
+
+    const target = configured || (process.env.NODE_ENV !== 'production' ? targetFromClient : undefined);
+    if (!target) {
+      console.warn('[authServer] /api/webhook/questionnaire: no target configured and none provided by client');
+      return res.status(400).json({ message: 'No webhook target configured on server.' });
+    }
+
+    // Forward the request to the target webhook
+    try {
+      const response = await fetch(target, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const text = await response.text();
+      if (!response.ok) {
+        console.warn('[authServer] webhook forward failed', response.status, text);
+        return res.status(502).json({ message: 'Failed to forward webhook', status: response.status, body: text });
+      }
+      return res.json({ ok: true, forwarded: true, response: text });
+    } catch (err) {
+      console.error('[authServer] webhook forward error', err);
+      return res.status(502).json({ message: 'Failed to forward webhook', error: String(err) });
+    }
+  } catch (err) {
+    console.error('[authServer] /api/webhook/questionnaire error', err);
+    return res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // Inline admin endpoints to ensure /api/admin/users is available even if external files fail.
 // This helper returns boolean (true when request is allowed) and is kept separate
 // from `verifyAdminFromRequest` which returns the token-owner when verifying JWT.

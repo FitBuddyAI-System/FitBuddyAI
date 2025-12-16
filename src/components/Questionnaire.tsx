@@ -17,8 +17,12 @@ import { restoreUserDataFromServer } from '../services/cloudBackupService';
 import './Questionnaire.css';
 import BackgroundDots from './BackgroundDots';
 
-// Webhook URL for Google Sheets integration
-const SHEET_WEBHOOK_URL = 'https://corsproxy.io/?key=7cf03de1&url=https://script.google.com/macros/s/AKfycbwFDdT0QVaP2jY8t4N0048PfQW_rYxB4noFaG-nExO9MZ5h3DCuNLUPNg3-qntT01tg/exec?gid=0';
+// Server-side proxy endpoint for Google Sheets integration
+// The server will forward this payload to the configured Apps Script webhook.
+const SHEET_WEBHOOK_URL = '/api/webhook/questionnaire';
+// The server is responsible for forwarding to the configured Apps Script
+// webhook using its environment variable `SHEET_WEBHOOK_URL`. The client no
+// longer provides a target URL (this avoids creating an open proxy).
 
 interface QuestionnaireProps {
   onComplete: (userData: UserData, workoutPlan: WorkoutPlan) => void;
@@ -108,7 +112,7 @@ const questions: Question[] = [
   },  {
     id: 'startDate',
     title: "When would you like to start your workout plan?",
-    subtitle: "Please enter your preferred start date (YYYY-MM-DD)",
+    subtitle: "Please enter your preferred start date (MM-DD-YYYY)",
     type: 'text',
     icon: <Calendar size={32} />
   },
@@ -527,7 +531,9 @@ const Questionnaire: React.FC<QuestionnaireProps> = ({ onComplete }) => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(payload),
+        // The client sends only the payload; the server must be configured
+        // with the forwarding target via `SHEET_WEBHOOK_URL`.
+        body: JSON.stringify({ payload }),
       });
       if (!response.ok) {
         throw new Error(`Failed with status ${response.status}`);
