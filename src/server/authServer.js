@@ -163,6 +163,27 @@ app.post('/api/auth', async (req, res) => {
   }
 });
 
+// Helper function to validate target URLs to avoid SSRF.
+function isValidAllowedTarget(urlString) {
+  // Allow-list of hostnames: add any allowed hostnames here
+  const allowedHostnames = [
+    'script.google.com',
+    'script.googleapis.com',
+    // add more as needed
+  ];
+  try {
+    const urlObj = new URL(urlString);
+    // Only allow https
+    if (urlObj.protocol !== 'https:') return false;
+    // Check if the hostname is exactly or ends with allowed hostname (subdomain OK)
+    return allowedHostnames.some((host) =>
+      urlObj.hostname === host || urlObj.hostname.endsWith('.' + host)
+    );
+  } catch {
+    return false;
+  }
+}
+
 // Server-side proxy to forward questionnaire payloads to Google Apps Script webhook
 app.post('/api/webhook/questionnaire', async (req, res) => {
   try {
@@ -171,8 +192,17 @@ app.post('/api/webhook/questionnaire', async (req, res) => {
     const body = req.body || {};
     const targetFromClient = body?.targetUrl;
     const payload = body?.payload || body;
-
-    const target = configured || (process.env.NODE_ENV !== 'production' ? targetFromClient : undefined);
+    
+    let target = configured;
+    // Only fallback to user-provided target in non-production, and only if allow-listed
+    if (!target && process.env.NODE_ENV !== 'production' && targetFromClient) {
+      if (isValidAllowedTarget(targetFromClient)) {
+        target = targetFromClient;
+      } else {
+        console.warn('[authServer] /api/webhook/questionnaire: refused non-allow-listed target', targetFromClient);
+        return res.status(400).json({ message: 'Invalid webhook target URL supplied.' });
+      }
+    }
     if (!target) {
       console.warn('[authServer] /api/webhook/questionnaire: no target configured and none provided by client');
       return res.status(400).json({ message: 'No webhook target configured on server.' });
