@@ -20,6 +20,21 @@ import crypto from 'crypto';
 import { createClient } from '@supabase/supabase-js';
 import adminRoutes from './adminRoutes.js';
 
+// Initialize Supabase client early so module-level handlers can reference
+// `supabase`, `SUPABASE_URL`, and `SUPABASE_SERVICE_ROLE_KEY` safely.
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+let supabase = null;
+if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
+  try {
+    supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+    console.log('[authServer] Supabase client initialized for token verification.');
+  } catch (e) {
+    console.warn('[authServer] Failed to initialize Supabase client:', e);
+    supabase = null;
+  }
+}
+
 // Rate limiter for health endpoint - allow more requests since it's lightweight
 const healthLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -386,19 +401,6 @@ app.post('/api/admin/users', adminUsersLimiter, async (req, res) => {
 });
 
 const usersFile = path.join(__dirname, 'users.json');
-
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-let supabase = null;
-if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
-  try {
-    supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
-    console.log('[authServer] Supabase client initialized for token verification.');
-  } catch (e) {
-    console.warn('[authServer] Failed to initialize Supabase client:', e);
-    supabase = null;
-  }
-}
 
 // Dev-only in-memory refresh store to support client calls to /api/auth?action=...
 // This is intentionally ephemeral and only used when running the local auth server.

@@ -102,6 +102,9 @@ FitBuddyAI Copilot Guidelines
 - This repository is production-grade and must be treated as such.
 - Do NOT add placeholder comments or TODOs that indicate unfinished production work.
 - Do NOT add comments that state "this is a placeholder" or similar developer-only notes.
+ - When the user requests a fix, implement the code change; do not respond by
+   only adding explanatory comments in the code instead of performing the
+   requested fix.
 - All code added should be runnable, properly tested, and follow existing project patterns.
 - If a dev-only helper is required, clearly gate it behind NODE_ENV checks and provide a corresponding test or cleanup plan.
 - Sensitive configuration must be stored in environment variables; do not hard-code secrets.
