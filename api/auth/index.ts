@@ -215,7 +215,7 @@ export default async function handler(req: any, res: any) {
         if (!resp.ok) {
           console.warn('[api/auth/refresh] supabase token refresh failed', body);
           // If refresh failed due to invalid token, mark revoked
-          try { await supabase.from('fitbuddyai_refresh_tokens').update({ revoked: true }).eq('session_id', sid); } catch (e) {}
+          try { await supabase.from('fitbuddyai_refresh_tokens').update({ revoked: true }).eq('session_id', sid); } catch {}
           return res.status(401).json({ message: 'Failed to refresh token' });
         }
         // Update last_used and rotate refresh_token if provided
