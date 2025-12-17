@@ -48,9 +48,31 @@ function parseCookies(cookieHeader: string | undefined): Record<string, string> 
   if (!cookieHeader) return out;
   const parts = cookieHeader.split(';');
   for (const p of parts) {
-    const [k, ...rest] = p.split('=');
-    if (!k) continue;
-    out[k.trim()] = decodeURIComponent((rest || []).join('=').trim());
+    const [rawKey, ...rest] = p.split('=');
+    if (!rawKey) continue;
+    const key = rawKey.trim();
+    if (!key) continue;
+
+    const rawValue = (rest || []).join('=');
+    if (rawValue === undefined) {
+      // No value provided at all; treat as empty string
+      out[key] = '';
+      continue;
+    }
+
+    const trimmedValue = rawValue.trim();
+    if (!trimmedValue) {
+      // Empty or whitespace-only value; normalize to empty string
+      out[key] = '';
+      continue;
+    }
+
+    try {
+      out[key] = decodeURIComponent(trimmedValue);
+    } catch {
+      // If decoding fails due to malformed percent-encoding, fall back to the raw trimmed value
+      out[key] = trimmedValue;
+    }
   }
   return out;
 }
