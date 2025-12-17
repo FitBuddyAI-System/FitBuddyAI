@@ -119,19 +119,17 @@ export async function signIn(email: string, password: string): Promise<User> {
         // ignore; we'll fallback to email
       }
     }
+    // Send refresh token to server for server-side storage and set HttpOnly cookie.
     try {
-      // Send refresh token to server for server-side storage and set HttpOnly cookie.
-      try {
-        await fetch('/api/auth?action=store_refresh', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId: user.id, refresh_token: session?.refresh_token })
-        });
-      } catch (e) {
-        // Non-fatal: if server-side storage fails, continue without it.
-        console.warn('[authService] failed to store refresh token server-side', e);
-      }
-    } catch {}
+      await fetch('/api/auth?action=store_refresh', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id, refresh_token: session?.refresh_token })
+      });
+    } catch (e) {
+      // Non-fatal: if server-side storage fails, continue without it.
+      console.warn('[authService] failed to store refresh token server-side', e);
+    }
   const fallbackEnergy = (user.user_metadata && user.user_metadata.energy) ?? DEFAULT_ENERGY;
   const toSave = { data: { id: user.id, email: user.email, username: usernameVal || user.email, energy: fallbackEnergy } };
   // Clear any cross-tab 'no auto restore' guard set during sign-out so sign-in can persist data
