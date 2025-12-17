@@ -226,12 +226,12 @@ export default async function handler(req: any, res: any) {
         if (!resp.ok) {
           console.warn('[api/auth/refresh] supabase token refresh failed', body);
           // If refresh failed due to invalid token, mark revoked
-          try { await supabase.from('fitbuddyai_refresh_tokens').update({ revoked: true }).eq('session_id', sid); } catch (e) {}
+          try { await supabase.from('fitbuddyai_refresh_tokens').update({ revoked: true }).eq('session_id', sid); } catch {}
           return res.status(401).json({ message: 'Failed to refresh token' });
         }
         // Update last_used and rotate refresh_token if provided
         try {
-          const updates: any = { last_used: new Date().toISOString() };
+          const updates: { last_used: string; refresh_token?: string } = { last_used: new Date().toISOString() };
           if (body.refresh_token) updates.refresh_token = encryptToken(body.refresh_token);
           await supabase.from('fitbuddyai_refresh_tokens').update(updates).eq('session_id', sid);
         } catch (e) {
@@ -256,7 +256,7 @@ export default async function handler(req: any, res: any) {
         // Clear cookie
         res.setHeader('Set-Cookie', `${COOKIE_NAME}=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax`);
         return res.json({ ok: true });
-      } catch (e) {
+      } catch {
         return res.status(500).json({ message: 'Failed to clear refresh session' });
       }
     }
@@ -271,16 +271,28 @@ export default async function handler(req: any, res: any) {
         // Fail fast if JWT_SECRET is not set
         console.error('[api/auth/index] Missing JWT_SECRET in environment; admin actions are disabled');
         return null;
-      }
+    interface AdminJwtPayload {
+      role: string;
+      [key: string]: unknown;
+    }
+    async function requireAdmin() {
       const authHeader = String(req.headers['authorization'] || req.headers['Authorization'] || '');
       const match = authHeader.match(/^Bearer\s+(.+)$/i);
       if (!match) return null;
       const token = match[1];
       try {
-        const decoded: any = jwt.verify(token, jwtSecret);
-        if (decoded && (decoded.role === 'service' || decoded.role === 'admin')) return decoded;
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'dev_secret_change_me') as string | AdminJwtPayload;
+        if (
+          typeof decoded === 'object' &&
+          decoded !== null &&
+          'role' in decoded &&
+          (decoded as AdminJwtPayload).role &&
+          ((decoded as AdminJwtPayload).role === 'service' || (decoded as AdminJwtPayload).role === 'admin')
+        ) {
+          return decoded as AdminJwtPayload;
+        }
         return null;
-      } catch (e) {
+      } catch {
         return null;
       }
     }
@@ -315,7 +327,7 @@ export default async function handler(req: any, res: any) {
         const { error: delErr } = await supabase.from('fitbuddyai_refresh_tokens').delete().lt('created_at', threshold);
         if (delErr) return res.status(500).json({ message: 'Cleanup failed' });
         return res.json({ ok: true });
-      } catch (e) {
+      } catch {
         console.error('[api/auth/index] Error during cleanup_refresh_tokens', e);
         return res.status(500).json({ message: 'Cleanup failed' });
       }
