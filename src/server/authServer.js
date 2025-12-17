@@ -203,7 +203,8 @@ app.post('/api/auth', authLimiter, async (req, res) => {
             entry.refreshToken = encryptToken(body.refresh_token);
           } catch (e) {
             console.warn('[authServer] failed to encrypt rotated refresh token', e);
-            // Best-effort: remove session to avoid keeping plaintext token
+            // Best-effort: remove session to avoid leaving an unpersisted rotated token
+            // in memory when we cannot securely store it; require dev to re-login.
             _devRefreshStore.delete(sid);
             return res.status(500).json({ message: 'Failed to persist rotated refresh token' });
           }
