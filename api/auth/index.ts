@@ -279,7 +279,7 @@ export default async function handler(req: any, res: any) {
       const days = Number(req.body?.days || 30);
       try {
         const threshold = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
-        const { error: delErr } = await supabase.from('fitbuddyai_refresh_tokens').delete().lt('created_at', threshold).or('revoked.eq.true');
+        const { error: delErr } = await supabase.from('fitbuddyai_refresh_tokens').delete().lt('created_at', threshold);
         if (delErr) return res.status(500).json({ message: 'Cleanup failed' });
         return res.json({ ok: true });
       } catch (e) {

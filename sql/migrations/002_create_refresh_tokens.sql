@@ -18,12 +18,20 @@ create table if not exists fitbuddyai_refresh_tokens (
 create index if not exists idx_fitbuddyai_refresh_tokens_user_id on fitbuddyai_refresh_tokens(user_id);
 create index if not exists idx_fitbuddyai_refresh_tokens_created_at on fitbuddyai_refresh_tokens(created_at);
 
--- Cleanup function: remove revoked or expired tokens older than given days
-create or replace function cleanup_old_refresh_tokens(days integer default 30)
+-- Cleanup function: remove revoked tokens after a short window (default 1 day), and expired tokens after given days
+create or replace function cleanup_old_refresh_tokens(days integer default 30, revoked_retention_days integer default 1)
 returns void language plpgsql as $$
 begin
+  -- Delete revoked tokens older than revoked_retention_days
   delete from fitbuddyai_refresh_tokens
-    where (revoked = true or (expires_at is not null and expires_at < now()))
+    where revoked = true
+      and created_at < now() - (revoked_retention_days || ' days')::interval;
+
+  -- Delete expired tokens older than days
+  delete from fitbuddyai_refresh_tokens
+    where revoked = false
+      and expires_at is not null
+      and expires_at < now()
       and created_at < now() - (days || ' days')::interval;
 end;
 $$;
