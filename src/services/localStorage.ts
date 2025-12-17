@@ -259,7 +259,7 @@ export const saveAuthToken = (token: string | null) => {
   try {
     if (!token) return;
     sessionStorage.setItem(AUTH_KEYS.TOKEN, String(token));
-  } catch (e) {
+  } catch {
     // ignore
   }
 };
