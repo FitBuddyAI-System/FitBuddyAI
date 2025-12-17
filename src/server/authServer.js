@@ -16,6 +16,7 @@ import bodyParser from 'body-parser';
 import { v4 as uuidv4 } from 'uuid';
 import jwt from 'jsonwebtoken';
 import fs from 'fs';
+import crypto from 'crypto';
 import { createClient } from '@supabase/supabase-js';
 import adminRoutes from './adminRoutes.js';
 
@@ -124,11 +125,23 @@ app.post('/api/auth', authLimiter, async (req, res) => {
       return out;
     }
 
+    // Store encrypted refresh token in dev in-memory store. This mirrors the
+    // production behavior (encrypted at rest) and requires the
+    // `REFRESH_TOKEN_ENC_KEY` environment variable to be set. If the key is
+    // missing the request will fail so that dev environments must opt-in to
+    // secure token handling (avoid plaintext storage).
     if (action === 'store_refresh') {
+      if (!ENC_KEY) return res.status(500).json({ message: 'Server missing REFRESH_TOKEN_ENC_KEY; cannot store refresh token.' });
       const { userId, refresh_token } = req.body || {};
       if (!userId || !refresh_token) return res.status(400).json({ message: 'userId and refresh_token required.' });
       const sid = uuidv4();
-      _devRefreshStore.set(sid, { userId, refreshToken: String(refresh_token), createdAt: Date.now(), lastUsed: Date.now(), revoked: false });
+      try {
+        const enc = encryptToken(String(refresh_token));
+        _devRefreshStore.set(sid, { userId, refreshToken: enc, createdAt: Date.now(), lastUsed: Date.now(), revoked: false });
+      } catch (e) {
+        console.error('[authServer] failed to encrypt refresh token', e);
+        return res.status(500).json({ message: 'Failed to persist refresh token' });
+      }
       const secureFlag = process.env.NODE_ENV === 'production' ? '; Secure' : '';
       res.setHeader('Set-Cookie', `fitbuddyai_sid=${sid}; HttpOnly; Path=/; SameSite=Lax; Max-Age=${60 * 60 * 24 * 30}${secureFlag}`);
       return res.json({ ok: true, session_id: sid });
@@ -140,8 +153,18 @@ app.post('/api/auth', authLimiter, async (req, res) => {
       if (!sid) return res.status(401).json({ message: 'No session cookie present' });
       const entry = _devRefreshStore.get(sid);
       if (!entry || entry.revoked) return res.status(401).json({ message: 'Session not found or revoked' });
-      // Call Supabase token endpoint using stored refresh token (requires SUPABASE_SERVICE_ROLE_KEY)
+      // Call Supabase token endpoint using stored (encrypted) refresh token
+      // (requires SUPABASE_SERVICE_ROLE_KEY). Decrypt before use.
       try {
+        if (!ENC_KEY) return res.status(500).json({ message: 'Server missing REFRESH_TOKEN_ENC_KEY; cannot use stored refresh token.' });
+        let decrypted = '';
+        try {
+          decrypted = decryptToken(entry.refreshToken);
+        } catch (e) {
+          console.error('[authServer] failed to decrypt stored refresh token', e);
+          _devRefreshStore.delete(sid);
+          return res.status(401).json({ message: 'Invalid session' });
+        }
         const tokenUrl = `${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`;
         const resp = await fetch(tokenUrl, {
           method: 'POST',
@@ -150,7 +173,7 @@ app.post('/api/auth', authLimiter, async (req, res) => {
             apikey: SUPABASE_SERVICE_ROLE_KEY || '',
             Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY || ''}`
           },
-          body: JSON.stringify({ refresh_token: entry.refreshToken })
+          body: JSON.stringify({ refresh_token: decrypted })
         });
         const body = await resp.json();
         if (!resp.ok) {
@@ -161,7 +184,14 @@ app.post('/api/auth', authLimiter, async (req, res) => {
         }
         // rotate refresh token if provided
         if (body.refresh_token) {
-          entry.refreshToken = body.refresh_token;
+          try {
+            entry.refreshToken = encryptToken(body.refresh_token);
+          } catch (e) {
+            console.warn('[authServer] failed to encrypt rotated refresh token', e);
+            // Best-effort: remove session to avoid keeping plaintext token
+            _devRefreshStore.delete(sid);
+            return res.status(500).json({ message: 'Failed to persist rotated refresh token' });
+          }
           entry.lastUsed = Date.now();
           _devRefreshStore.set(sid, entry);
         }
@@ -343,6 +373,40 @@ if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
 // Dev-only in-memory refresh store to support client calls to /api/auth?action=...
 // This is intentionally ephemeral and only used when running the local auth server.
 const _devRefreshStore = new Map();
+
+// Encryption helpers for refresh tokens (AES-256-GCM) — mirror production
+const ENC_ALGO = 'aes-256-gcm';
+const ENC_KEY_RAW = process.env.REFRESH_TOKEN_ENC_KEY || process.env.REFRESH_TOKEN_KEY;
+let ENC_KEY = null;
+if (ENC_KEY_RAW) {
+  try {
+    ENC_KEY = crypto.createHash('sha256').update(String(ENC_KEY_RAW)).digest();
+  } catch (e) {
+    console.warn('[authServer] failed to derive ENC_KEY from REFRESH_TOKEN_ENC_KEY', e);
+    ENC_KEY = null;
+  }
+}
+
+function encryptToken(plain) {
+  if (!ENC_KEY) throw new Error('REFRESH_TOKEN_ENC_KEY not configured');
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv(ENC_ALGO, ENC_KEY, iv);
+  const encrypted = Buffer.concat([cipher.update(String(plain), 'utf8'), cipher.final()]);
+  const tag = cipher.getAuthTag();
+  return Buffer.concat([iv, tag, encrypted]).toString('base64');
+}
+
+function decryptToken(blobB64) {
+  if (!ENC_KEY) throw new Error('REFRESH_TOKEN_ENC_KEY not configured');
+  const buf = Buffer.from(String(blobB64), 'base64');
+  const iv = buf.slice(0, 12);
+  const tag = buf.slice(12, 28);
+  const ciphertext = buf.slice(28);
+  const decipher = crypto.createDecipheriv(ENC_ALGO, ENC_KEY, iv);
+  decipher.setAuthTag(tag);
+  const decrypted = Buffer.concat([decipher.update(ciphertext), decipher.final()]);
+  return decrypted.toString('utf8');
+}
 
 const authLogFile = path.join(__dirname, 'auth_server.log');
 function logAuth(entry) {
