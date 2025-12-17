@@ -280,7 +280,14 @@ export const clearAuthToken = () => {
   try { sessionStorage.removeItem(AUTH_KEYS.TOKEN); } catch {}
 };
 
-export const saveSupabaseSession = (session: any | null) => {
+interface SupabaseSessionLike {
+  access_token: string;
+  refresh_token: string;
+  expires_at?: number | null;
+  expires_in?: number | string | null;
+}
+
+export const saveSupabaseSession = (session: SupabaseSessionLike | null) => {
   try {
     if (!session) {
       // Remove any existing session persisted in sessionStorage
