@@ -274,10 +274,22 @@ function App() {
           if (resp.ok) {
             const data = await resp.json();
             if (data?.access_token) {
-              try { saveAuthToken(data.access_token); } catch {}
-              // Set a short-lived session on the Supabase client so client-side
-              // SDK calls work until the server refreshes again.
-              try { await supabase.auth.setSession({ access_token: data.access_token }); } catch (e) {}
+                try { saveAuthToken(data.access_token); } catch {}
+                // Set a short-lived session on the Supabase client so client-side
+                // SDK calls work until the server refreshes again. The server
+                // refresh endpoint may only return an access token. The
+                // Supabase client TypeScript definition requires both
+                // `access_token` and `refresh_token`, so prefer passing both when
+                // available; otherwise fall back to a safe cast so dev builds
+                // type-check while runtime behavior remains guarded by try/catch.
+                try {
+                  if (data.refresh_token) {
+                    await supabase.auth.setSession({ access_token: data.access_token, refresh_token: data.refresh_token });
+                  } else {
+                    // Cast to any when refresh token is not returned by server.
+                    await supabase.auth.setSession({ access_token: data.access_token, refresh_token: '' } as any);
+                  }
+                } catch (e) {}
             }
           }
         } catch (err) {

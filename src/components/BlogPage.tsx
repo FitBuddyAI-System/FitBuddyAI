@@ -1,4 +1,4 @@
-import type { CSSProperties, FC } from 'react';
+import type { FC } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import './BlogPage.css';
 import { blogPosts, findPostBySlug, latestPost } from '../data/blogPosts';
