@@ -316,7 +316,7 @@ export function signOut() {
   } catch {}
   try { sessionStorage.removeItem('fitbuddyai_no_auto_restore'); } catch {}
   try { localStorage.removeItem('fitbuddyai_no_auto_restore'); } catch {}
-  try { const { clearUserData } = require('./localStorage'); clearUserData(); } catch {}
+  try { clearUserData(); } catch {}
   try { sessionStorage.removeItem('fitbuddyaiUsername'); } catch {}
   // If using Supabase client, call signOut to clear its internal session
   try {
