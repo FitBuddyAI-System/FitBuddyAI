@@ -147,7 +147,7 @@ export default async function handler(req: any, res: any) {
       }
       // Set cookie (HttpOnly). In production, set Secure and SameSite appropriately.
       const secureFlag = process.env.NODE_ENV === 'production' ? '; Secure' : '';
-      res.setHeader('Set-Cookie', `${COOKIE_NAME}=${sid}; HttpOnly; Path=/; SameSite=Lax; Max-Age=${60 * 60 * 24 * 30}${secureFlag}`);
+      res.setHeader('Set-Cookie', `${COOKIE_NAME}=${sid}; HttpOnly; Path=/; SameSite=Strict; Max-Age=${60 * 60 * 24 * 30}${secureFlag}`);
       return res.json({ ok: true, session_id: sid });
     }
 
