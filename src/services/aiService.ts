@@ -491,8 +491,8 @@ const parseAIResponse = (responseText: string, userData: UserData, answers?: Rec
   } catch (error) {
     console.warn('Error parsing AI response (will fallback):', error);
     console.warn('Raw AI response:', responseText);
-    // Return null so callers can use a deterministic fallback plan.
-    try { return buildFallbackPlan(userData, answers || {}); } catch (e) { return null; }
+    // Return fallback plan; let errors propagate if buildFallbackPlan fails.
+    return buildFallbackPlan(userData, answers || {});
   }
 };
 
