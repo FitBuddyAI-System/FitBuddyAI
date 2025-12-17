@@ -43,6 +43,17 @@ function decryptToken(blobB64: string): string {
 
 const COOKIE_NAME = 'fitbuddyai_sid';
 
+// Typed shape for rows in `fitbuddyai_refresh_tokens` table
+type RefreshTokenRow = {
+  session_id: string;
+  user_id: string;
+  refresh_token: string;
+  created_at: string;
+  last_used?: string | null;
+  revoked?: boolean | null;
+  expires_at?: string | null;
+};
+
 function parseCookies(cookieHeader: string | undefined): Record<string, string> {
   const out: Record<string, string> = {};
   if (!cookieHeader) return out;
@@ -185,7 +196,7 @@ export default async function handler(req: any, res: any) {
           console.error('[api/auth/refresh] db select error', selErr);
           return res.status(500).json({ message: 'Failed to lookup session' });
         }
-        const entry: any = rows as any;
+        const entry = (rows as RefreshTokenRow | null);
         if (!entry || entry.revoked) return res.status(401).json({ message: 'Session not found or revoked' });
         // Optionally check expiry if expires_at present
         if (entry.expires_at && new Date(entry.expires_at) < new Date()) {

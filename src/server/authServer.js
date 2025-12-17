@@ -180,13 +180,15 @@ app.post('/api/auth', authLimiter, async (req, res) => {
           _devRefreshStore.delete(sid);
           return res.status(401).json({ message: 'Invalid session' });
         }
-        const tokenUrl = `${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`;
+        // Use environment lookups here to avoid potential module-initialization
+        // ordering issues where the module-level constants might not yet be set.
+        const tokenUrl = `${process.env.SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`;
         const resp = await fetch(tokenUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            apikey: SUPABASE_SERVICE_ROLE_KEY || '',
-            Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY || ''}`
+            apikey: process.env.SUPABASE_SERVICE_ROLE_KEY || '',
+            Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY || ''}`
           },
           body: JSON.stringify({ refresh_token: decrypted })
         });
