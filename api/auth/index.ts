@@ -220,7 +220,7 @@ export default async function handler(req: any, res: any) {
         }
         // Update last_used and rotate refresh_token if provided
         try {
-          const updates: any = { last_used: new Date().toISOString() };
+          const updates: { last_used: string; refresh_token?: string } = { last_used: new Date().toISOString() };
           if (body.refresh_token) updates.refresh_token = encryptToken(body.refresh_token);
           await supabase.from('fitbuddyai_refresh_tokens').update(updates).eq('session_id', sid);
         } catch (e) {
