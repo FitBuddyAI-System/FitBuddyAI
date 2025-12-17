@@ -198,7 +198,7 @@ export default async function handler(req: any, res: any) {
         } catch (e) {
           console.error('[api/auth/refresh] failed to decrypt refresh token', e);
           // Mark revoked to be safe
-          try { await supabase.from('fitbuddyai_refresh_tokens').update({ revoked: true }).eq('session_id', sid); } catch (ee) {}
+          try { await supabase.from('fitbuddyai_refresh_tokens').update({ revoked: true }).eq('session_id', sid); } catch {}
           return res.status(401).json({ message: 'Invalid session' });
         }
         const tokenUrl = `${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`;
