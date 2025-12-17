@@ -260,14 +260,26 @@ export default async function handler(req: any, res: any) {
         // Fail fast if JWT_SECRET is not set
         console.error('[api/auth/index] Missing JWT_SECRET in environment; admin actions are disabled');
         return null;
-      }
+    interface AdminJwtPayload {
+      role: string;
+      [key: string]: unknown;
+    }
+    async function requireAdmin() {
       const authHeader = String(req.headers['authorization'] || req.headers['Authorization'] || '');
       const match = authHeader.match(/^Bearer\s+(.+)$/i);
       if (!match) return null;
       const token = match[1];
       try {
-        const decoded: any = jwt.verify(token, jwtSecret);
-        if (decoded && (decoded.role === 'service' || decoded.role === 'admin')) return decoded;
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'dev_secret_change_me') as string | AdminJwtPayload;
+        if (
+          typeof decoded === 'object' &&
+          decoded !== null &&
+          'role' in decoded &&
+          (decoded as AdminJwtPayload).role &&
+          ((decoded as AdminJwtPayload).role === 'service' || (decoded as AdminJwtPayload).role === 'admin')
+        ) {
+          return decoded as AdminJwtPayload;
+        }
         return null;
       } catch (e) {
         return null;
