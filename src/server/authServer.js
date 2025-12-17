@@ -60,6 +60,34 @@ const adminUsersLimiter = rateLimit({
   }
 });
 
+// Rate limiter for auth endpoints (dev wrapper). This limiter is cookie/user-aware
+// so that requests from the same dev session id (`fitbuddyai_sid`) are throttled
+// separately from other clients. Falls back to IP-based keying.
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 30, // limit each key (sid or IP) to 30 requests per windowMs
+  message: { error: 'Too many auth requests, please try again later.' },
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  keyGenerator: (req) => {
+    try {
+      // Prefer session cookie value when present to rate-limit per user session
+      const cookieHeader = String(req.headers.cookie || '');
+      const parts = cookieHeader.split(';').map(p => p.trim());
+      for (const p of parts) {
+        if (!p) continue;
+        const [k, ...rest] = p.split('=');
+        if (k && k.trim() === 'fitbuddyai_sid') return `sid_${(rest || []).join('=').trim()}`;
+      }
+      // If the client provided a userId in the body (store_refresh), use that
+      if (req.body && req.body.userId) return `user_${String(req.body.userId)}`;
+    } catch (e) {
+      // ignore and fall back to IP
+    }
+    return ipKeyGenerator(req);
+  }
+});
+
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
@@ -76,7 +104,7 @@ app.use(adminRoutes);
 // Dev-only: support the serverless-style `/api/auth?action=...` endpoints used by the frontend
 // The production serverless implementation lives in `api/auth/index.ts`. This wrapper allows
 // the dev Express server to respond to the same calls when running `npm run dev`.
-app.post('/api/auth', async (req, res) => {
+app.post('/api/auth', authLimiter, async (req, res) => {
   // Only enable this wrapper in development to avoid duplicating production behavior.
   if (process.env.NODE_ENV === 'production') return res.status(404).json({ message: 'Not found' });
   try {
