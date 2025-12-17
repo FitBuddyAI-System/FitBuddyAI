@@ -327,7 +327,7 @@ Generate and return the JSON now.`;
 };
 
 // Parse AI JSON response into WorkoutPlan
-const parseAIResponse = (responseText: string, userData: UserData, answers?: Record<string, any>): WorkoutPlan | null => {
+const parseAIResponse = (responseText: string, userData: UserData, answers?: Record<string, unknown>): WorkoutPlan | null => {
   console.log('Parsing AI response:', responseText);
 
   try {
