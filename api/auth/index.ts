@@ -245,7 +245,7 @@ export default async function handler(req: any, res: any) {
         // Clear cookie
         res.setHeader('Set-Cookie', `${COOKIE_NAME}=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax`);
         return res.json({ ok: true });
-      } catch (e) {
+      } catch {
         return res.status(500).json({ message: 'Failed to clear refresh session' });
       }
     }
