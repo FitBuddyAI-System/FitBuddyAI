@@ -283,6 +283,7 @@ export default async function handler(req: any, res: any) {
         if (delErr) return res.status(500).json({ message: 'Cleanup failed' });
         return res.json({ ok: true });
       } catch (e) {
+        console.error('[api/auth/index] Error during cleanup_refresh_tokens', e);
         return res.status(500).json({ message: 'Cleanup failed' });
       }
     }
