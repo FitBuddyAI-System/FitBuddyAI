@@ -281,7 +281,7 @@ export default async function handler(req: any, res: any) {
           return decoded as AdminJwtPayload;
         }
         return null;
-      } catch (e) {
+      } catch {
         return null;
       }
     }
