@@ -48,9 +48,31 @@ function parseCookies(cookieHeader: string | undefined): Record<string, string> 
   if (!cookieHeader) return out;
   const parts = cookieHeader.split(';');
   for (const p of parts) {
-    const [k, ...rest] = p.split('=');
-    if (!k) continue;
-    out[k.trim()] = decodeURIComponent((rest || []).join('=').trim());
+    const [rawKey, ...rest] = p.split('=');
+    if (!rawKey) continue;
+    const key = rawKey.trim();
+    if (!key) continue;
+
+    const rawValue = (rest || []).join('=');
+    if (rawValue === undefined) {
+      // No value provided at all; treat as empty string
+      out[key] = '';
+      continue;
+    }
+
+    const trimmedValue = rawValue.trim();
+    if (!trimmedValue) {
+      // Empty or whitespace-only value; normalize to empty string
+      out[key] = '';
+      continue;
+    }
+
+    try {
+      out[key] = decodeURIComponent(trimmedValue);
+    } catch {
+      // If decoding fails due to malformed percent-encoding, fall back to the raw trimmed value
+      out[key] = trimmedValue;
+    }
   }
   return out;
 }
@@ -147,7 +169,7 @@ export default async function handler(req: any, res: any) {
       }
       // Set cookie (HttpOnly). In production, set Secure and SameSite appropriately.
       const secureFlag = process.env.NODE_ENV === 'production' ? '; Secure' : '';
-      res.setHeader('Set-Cookie', `${COOKIE_NAME}=${sid}; HttpOnly; Path=/; SameSite=Lax; Max-Age=${60 * 60 * 24 * 30}${secureFlag}`);
+      res.setHeader('Set-Cookie', `${COOKIE_NAME}=${sid}; HttpOnly; Path=/; SameSite=Strict; Max-Age=${60 * 60 * 24 * 30}${secureFlag}`);
       return res.json({ ok: true, session_id: sid });
     }
 
@@ -283,6 +305,7 @@ export default async function handler(req: any, res: any) {
         if (delErr) return res.status(500).json({ message: 'Cleanup failed' });
         return res.json({ ok: true });
       } catch (e) {
+        console.error('[api/auth/index] Error during cleanup_refresh_tokens', e);
         return res.status(500).json({ message: 'Cleanup failed' });
       }
     }

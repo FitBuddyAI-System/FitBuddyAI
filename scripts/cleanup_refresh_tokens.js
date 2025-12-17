@@ -22,7 +22,7 @@ async function run() {
       console.error('RPC cleanup error', error);
       // Fallback: delete via SQL using supabase.from
       const threshold = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
-      const { error: delErr } = await supabase.from('fitbuddyai_refresh_tokens').delete().lt('created_at', threshold).or('revoked.eq.true');
+      const { error: delErr } = await supabase.from('fitbuddyai_refresh_tokens').delete().lt('created_at', threshold);
       if (delErr) {
         console.error('Fallback delete failed', delErr);
         process.exit(2);
