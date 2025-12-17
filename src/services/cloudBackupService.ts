@@ -2,6 +2,24 @@
 // Handles backup/restore of questionnaire progress and workout plan to server
 
 
+type BackupPayload = {
+  userId: string;
+  fitbuddyai_questionnaire_progress?: string;
+  fitbuddyai_workout_plan?: string;
+  fitbuddyai_assessment_data?: string;
+  chat_history?: string | unknown;
+  fitbuddyai_chat?: string | unknown;
+  fitbuddyai_chat_history?: string | unknown;
+  fitbuddyai_user_data?: Record<string, unknown> | string;
+  accepted_terms?: boolean;
+  accepted_privacy?: boolean;
+  streak?: number;
+  energy?: number;
+  username?: string;
+  avatar?: string;
+  fitbuddyai_tos_accepted_v1?: unknown;
+};
+
 export async function backupUserDataToServer(userId: string) {
   const fitbuddyai_questionnaire_progress = localStorage.getItem('fitbuddyai_questionnaire_progress');
   const fitbuddyai_workout_plan = localStorage.getItem('fitbuddyai_workout_plan');
@@ -11,7 +29,7 @@ export async function backupUserDataToServer(userId: string) {
   if (!userId) return;
   try {
     // Only include keys that actually exist to avoid overwriting server data with nulls
-  const payload: any = { userId };
+  const payload: BackupPayload = { userId };
   if (fitbuddyai_questionnaire_progress != null) payload.fitbuddyai_questionnaire_progress = fitbuddyai_questionnaire_progress;
   if (fitbuddyai_workout_plan != null) payload.fitbuddyai_workout_plan = fitbuddyai_workout_plan;
   if (fitbuddyai_assessment_data != null) payload.fitbuddyai_assessment_data = fitbuddyai_assessment_data;
@@ -63,7 +81,7 @@ export function beaconBackupUserData(userId: string) {
     const fitbuddyai_questionnaire_progress = localStorage.getItem('fitbuddyai_questionnaire_progress');
     const fitbuddyai_workout_plan = localStorage.getItem('fitbuddyai_workout_plan');
     const fitbuddyai_assessment_data = localStorage.getItem('fitbuddyai_assessment_data');
-    const payload: any = { userId };
+    const payload: BackupPayload = { userId };
     if (fitbuddyai_questionnaire_progress != null) payload.fitbuddyai_questionnaire_progress = fitbuddyai_questionnaire_progress;
     if (fitbuddyai_workout_plan != null) payload.fitbuddyai_workout_plan = fitbuddyai_workout_plan;
     if (fitbuddyai_assessment_data != null) payload.fitbuddyai_assessment_data = fitbuddyai_assessment_data;
@@ -109,7 +127,7 @@ export async function restoreUserDataFromServer(userId: string) {
     console.log('[cloudBackupService] restoreUserDataFromServer -> response status:', postRes.status, 'ok:', postRes.ok);
     if (text && text.length > 0) console.log('[cloudBackupService] restoreUserDataFromServer -> response snippet:', text.slice(0, 1000));
     if (!postRes.ok) return;
-    let raw: any = null;
+    let raw: unknown = null;
     try {
       raw = text ? JSON.parse(text) : null;
     } catch (e) {
@@ -117,23 +135,19 @@ export async function restoreUserDataFromServer(userId: string) {
       return;
     }
     // Accept either { stored: { ... } } or { payload: { ... } } or direct payload
-    const payload = raw?.stored ?? raw?.payload ?? raw;
+    const maybeRaw = raw as Record<string, unknown> | null;
+    const payload = (maybeRaw?.stored ?? maybeRaw?.payload ?? raw) as BackupPayload | null;
     if (!payload) return;
 
-    const writeIfPresent = (key: string) => {
+    const writeIfPresent = (key: 'fitbuddyai_questionnaire_progress' | 'fitbuddyai_workout_plan' | 'fitbuddyai_assessment_data') => {
       try {
-        const v = payload[key];
+        const p = payload as BackupPayload;
+        const v = p[key];
         if (v === null || v === undefined) return;
         // Ensure we write a string to localStorage. Server may return parsed objects.
         const toStore = typeof v === 'string' ? v : JSON.stringify(v);
-        // Persist restored keys into sessionStorage only for sensitive or user-scoped data.
-        // We intentionally avoid writing restored user payload or chat to localStorage to prevent tokens/exposure.
-        if (key === 'fitbuddyai_user_data') {
-          try { sessionStorage.setItem(key, toStore); } catch {}
-        } else {
-          // Non-user long-term keys (questionnaire/workout/assessment) may remain in localStorage
-          try { localStorage.setItem(key, toStore); } catch {}
-        }
+        // These keys are non-sensitive and belong in localStorage
+        try { localStorage.setItem(key, toStore); } catch {}
       } catch (e) {
         // ignore per-call errors
       }
@@ -208,7 +222,7 @@ export async function backupAndDeleteSensitive(userId: string) {
     const fitbuddyai_tos = localStorage.getItem('fitbuddyai_tos_accepted_v1');
 
     // Build minimal payload with these keys only to avoid shipping unrelated user data
-    const payload: any = { userId };
+    const payload: Partial<BackupPayload> = { userId };
     if (fitbuddyai_chat != null) {
       try { payload.chat_history = JSON.parse(fitbuddyai_chat); } catch { payload.chat_history = fitbuddyai_chat; }
     }
