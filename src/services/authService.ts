@@ -124,6 +124,7 @@ export async function signIn(email: string, password: string): Promise<User> {
       await fetch('/api/auth?action=store_refresh', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ userId: user.id, refresh_token: session?.refresh_token })
       });
     } catch (e) {
