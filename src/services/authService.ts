@@ -188,16 +188,14 @@ export async function signUp(email: string, username: string, password: string):
   // Supabase may require the user to confirm via email before signing in; do not mark them
   // as signed-in (or persist their profile) until a token exists.
     try {
-      try {
-        await fetch('/api/auth?action=store_refresh', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId: user?.id, refresh_token: session?.refresh_token })
-        });
-      } catch (e) {
-        console.warn('[authService] failed to store refresh token server-side', e);
-      }
-    } catch {}
+      await fetch('/api/auth?action=store_refresh', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user?.id, refresh_token: session?.refresh_token })
+      });
+    } catch (e) {
+      console.warn('[authService] failed to store refresh token server-side', e);
+    }
   if (token && toSave) {
     try { sessionStorage.removeItem('fitbuddyai_no_auto_restore'); } catch {}
     try { localStorage.removeItem('fitbuddyai_no_auto_restore'); } catch {}
