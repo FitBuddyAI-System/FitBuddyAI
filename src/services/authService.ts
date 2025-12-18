@@ -322,9 +322,9 @@ export async function signOutAndRevoke(timeoutMs = 2000): Promise<void> {
     try {
       if (typeof navigator !== 'undefined' && typeof navigator.sendBeacon === 'function') {
         const blob = new Blob([JSON.stringify({})], { type: 'application/json' });
-        try { revoked = navigator.sendBeacon(revokeUrl, blob); } catch (e) { revoked = false; }
+        try { revoked = navigator.sendBeacon(revokeUrl, blob); } catch { revoked = false; }
       }
-    } catch (e) {
+    } catch {
       revoked = false;
     }
 
