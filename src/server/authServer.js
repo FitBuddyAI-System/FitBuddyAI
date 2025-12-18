@@ -238,7 +238,9 @@ app.use(bodyParser.json());
 app.use((req, res, next) => {
   try {
     console.log(`[authServer] ${req.method} ${req.originalUrl || req.url}`);
-  } catch {}
+  } catch (err) {
+    console.error('[authServer] Failed to log request', err);
+  }
   next();
 });
 app.use(userDataStoreRouter);
