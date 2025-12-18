@@ -36,4 +36,7 @@ async function run() {
     process.exit(2);
   }
 }
-run();
+run().catch((err) => {
+  console.error('Unexpected error in cleanup script', err);
+  process.exit(2);
+});
