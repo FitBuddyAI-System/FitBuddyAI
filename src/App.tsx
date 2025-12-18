@@ -270,7 +270,10 @@ function App() {
       if (useSupabase) {
         try {
           // Attempt to refresh the access token via server-side stored refresh token.
-          const resp = await fetch('/api/auth?action=refresh', { method: 'POST' });
+          const resp = await fetch('/api/auth?action=refresh', {
+            method: 'POST',
+            credentials: 'include',
+          });
           if (resp.ok) {
             const data = await resp.json();
             if (data?.access_token) {
