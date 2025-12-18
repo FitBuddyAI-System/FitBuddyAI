@@ -29,9 +29,9 @@ export async function isAdminRequest(req: any): Promise<{ ok: boolean; userId?: 
           if (pubRow && pubRow.role === 'admin') return { ok: true, userId: uid };
         } catch {}
       }
-    } catch (e) {
-      // continue to other checks
-    }
+      } catch {
+        // continue to other checks
+      }
   }
 
   // 3) JWT signed with JWT_SECRET (local dev fallback)
@@ -68,7 +68,7 @@ export async function isAdminRequest(req: any): Promise<{ ok: boolean; userId?: 
         // ignore
       }
     }
-  } catch (e) {}
+  } catch {}
 
   return { ok: false, reason: 'not_authorized' };
 }

@@ -196,7 +196,7 @@ export const saveUserData = (userData: any, opts?: { skipBackup?: boolean }): vo
       const bc = new BroadcastChannel('fitbuddyai');
       bc.postMessage({ type: 'user-update', timestamp: Date.now() });
       bc.close();
-    } catch (e) {}
+    } catch {}
     // When user signs in / user data changes, trigger backup of any existing keys
     if (!opts || !opts.skipBackup) scheduleBackup();
     // Clear the "no auto restore" guard when a user explicitly signs in (cross-tab)

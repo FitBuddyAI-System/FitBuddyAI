@@ -275,10 +275,11 @@ function App() {
             const data = await resp.json();
             if (data?.access_token) {
                 try { saveAuthToken(data.access_token); } catch {}
-                // Set a session on the Supabase client so client-side
-                // SDK calls work until the server refreshes again. Only do this
-                // when both access and refresh tokens are available, per Supabase
-                // API requirements.
+                // Set a session on the Supabase client so client-side SDK calls
+                // work until the server refreshes again. Include `refresh_token`
+                // only when the server returned one; the Supabase client also
+                // accepts being seeded with just an `access_token` when a
+                // refresh token isn't available.
                 if (data.refresh_token) {
                   try {
                     await supabase.auth.setSession({

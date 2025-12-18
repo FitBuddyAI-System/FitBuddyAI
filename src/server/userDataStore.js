@@ -53,7 +53,7 @@ router.post('/api/userdata/save', async (req, res) => {
       const entry = tosObj[Object.keys(tosObj)[0]] || {};
       if (entry && entry.tos) tosAcceptedFlag = true;
       if (entry && entry.privacy) privacyAcceptedFlag = true;
-    } catch (e) {}
+    } catch {}
   }
 
   if (isFetch) {

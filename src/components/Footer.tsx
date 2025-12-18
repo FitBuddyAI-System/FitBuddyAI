@@ -19,16 +19,16 @@ export default function Footer({ themeMode = 'auto', onChangeThemeMode }: Footer
     try {
       const already = Boolean(document && document.body && document.body.classList && document.body.classList.contains('intro-active'));
       if (already) setIntroActive(true);
-    } catch (e) {}
+    } catch {}
     try {
       window.addEventListener('fitbuddyai-intro-start', onStart as EventListener);
       window.addEventListener('fitbuddyai-intro-end', onEnd as EventListener);
-    } catch (e) {}
+    } catch {}
     return () => {
       try {
         window.removeEventListener('fitbuddyai-intro-start', onStart as EventListener);
         window.removeEventListener('fitbuddyai-intro-end', onEnd as EventListener);
-      } catch (e) {}
+      } catch {}
     };
   }, []);
 

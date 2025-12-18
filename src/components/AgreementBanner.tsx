@@ -10,7 +10,7 @@ export default function AgreementBanner({ userData }: Props) {
 
   useEffect(() => {
     // If the user just signed in, migrate any anonymous acceptances into their record
-    if (userData?.id) { try { migrateAnonToUser(userData.id); } catch (e) {} }
+    if (userData?.id) { try { migrateAnonToUser(userData.id); } catch {} }
     const checkLocalThenServer = async () => {
       try {
         // local quick check

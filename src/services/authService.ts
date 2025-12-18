@@ -1,7 +1,7 @@
 // Buy a shop item and update user on server and localStorage
 import attachAuthHeaders from './apiAuth';
 import { supabase } from './supabaseClient';
-import { saveUserData, saveAuthToken, clearAuthToken, loadUserData } from './localStorage';
+import { saveUserData, saveAuthToken, clearAuthToken, loadUserData, clearUserData } from './localStorage';
 import { ensureUserId } from '../utils/userHelpers';
 
 const DEFAULT_ENERGY = 10000;
@@ -308,20 +308,60 @@ export function getCurrentUser(): User | null {
   }
 }
 
-export function signOut() {
-  try { clearAuthToken(); } catch {}
+// Sign out helpers
+// `signOutAndRevoke` is async and will attempt to revoke the server-side
+// refresh token before clearing local state. It waits briefly (default 2s)
+// for the revoke to complete but will continue if the server is slow.
+export async function signOutAndRevoke(timeoutMs = 2000): Promise<void> {
+  // Attempt to clear server-side stored refresh token. Prefer `sendBeacon`
+  // during unloads; fall back to a short-await fetch to ensure revocation.
   try {
-    // Clear server-side stored refresh token and cookie
-    fetch('/api/auth?action=clear_refresh', { method: 'POST' }).catch(() => {});
-  } catch {}
+    const revokeUrl = '/api/auth?action=clear_refresh';
+    let revoked = false;
+    // try navigator.sendBeacon first (non-blocking, reliable during unload)
+    try {
+      if (typeof navigator !== 'undefined' && typeof navigator.sendBeacon === 'function') {
+        const blob = new Blob([JSON.stringify({})], { type: 'application/json' });
+        try { revoked = navigator.sendBeacon(revokeUrl, blob); } catch (e) { revoked = false; }
+      }
+    } catch (e) {
+      revoked = false;
+    }
+
+    if (!revoked) {
+      // Fall back to fetch with a timeout to avoid blocking too long.
+      try {
+        await Promise.race([
+          fetch(revokeUrl, { method: 'POST', credentials: 'include' }),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('revoke_timeout')), timeoutMs))
+        ]);
+      } catch (e) {
+        console.warn('[authService] signOut: clear_refresh request failed or timed out', e);
+      }
+    }
+  } catch (e) {
+    console.warn('[authService] signOut: revoke attempt failed', e);
+  }
+
+  // Clear client-side state (tokens, persisted user data, guards)
+  try { clearAuthToken(); } catch {}
   try { sessionStorage.removeItem('fitbuddyai_no_auto_restore'); } catch {}
   try { localStorage.removeItem('fitbuddyai_no_auto_restore'); } catch {}
   try { clearUserData(); } catch {}
   try { sessionStorage.removeItem('fitbuddyaiUsername'); } catch {}
+
   // If using Supabase client, call signOut to clear its internal session
   try {
     if (supabase && typeof supabase.auth?.signOut === 'function') {
-      supabase.auth.signOut().catch(() => {});
+      await supabase.auth.signOut().catch(() => {});
     }
-  } catch (e) {}
+  } catch (e) {
+    // ignore
+  }
+}
+
+// Backwards-compatible synchronous wrapper: fire-and-forget sign-out.
+export function signOut(): void {
+  // Do not await here to preserve existing call sites that expect a void return.
+  void signOutAndRevoke().catch((e) => console.warn('[authService] signOut error', e));
 }

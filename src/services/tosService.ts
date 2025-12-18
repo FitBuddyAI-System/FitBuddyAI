@@ -95,9 +95,9 @@ export function migrateAnonToUser(userId?: string | number | undefined) {
       data[key] = rec;
       delete data['__anon__'];
       writeStore(data);
-      if (rec.tos) try { window.dispatchEvent(new CustomEvent('fitbuddyai-tos-accepted', { detail: { userId: key } })); } catch (e) {}
-      if (rec.privacy) try { window.dispatchEvent(new CustomEvent('fitbuddyai-privacy-accepted', { detail: { userId: key } })); } catch (e) {}
+      if (rec.tos) try { window.dispatchEvent(new CustomEvent('fitbuddyai-tos-accepted', { detail: { userId: key } })); } catch {}
+      if (rec.privacy) try { window.dispatchEvent(new CustomEvent('fitbuddyai-privacy-accepted', { detail: { userId: key } })); } catch {}
     }
     return changed;
-  } catch (e) { return false; }
+  } catch { return false; }
 }

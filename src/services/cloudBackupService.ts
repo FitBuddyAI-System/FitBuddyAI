@@ -185,11 +185,11 @@ export async function restoreUserDataFromServer(userId: string) {
       try {
         const toStore = typeof chat === 'string' ? chat : JSON.stringify(chat);
         try { sessionStorage.setItem(`fitbuddyai_chat_${userId}`, toStore); } catch { try { localStorage.setItem(`fitbuddyai_chat_${userId}`, toStore); } catch {} }
-      } catch (e) {
+      } catch {
         // ignore
       }
     }
-  } catch (e) {}
+  } catch {}
     // If server returned a streak field, merge it into stored user payload and notify the app
     try {
       if (typeof payload.streak !== 'undefined') {
@@ -202,9 +202,9 @@ export async function restoreUserDataFromServer(userId: string) {
           try { sessionStorage.setItem('fitbuddyai_user_data', JSON.stringify(wrapper)); } catch {}
           try { localStorage.setItem('fitbuddyai_user_data', JSON.stringify(wrapper)); } catch {}
           try { window.dispatchEvent(new CustomEvent('fitbuddyai-user-updated', { detail: merged })); } catch {}
-        } catch (e) {}
+        } catch {}
       }
-    } catch (e) {}
+    } catch {}
     console.log('[cloudBackupService] restoreUserDataFromServer -> wrote keys from payload:', Object.keys(payload));
   } catch (err) {
     // Optionally log or handle error

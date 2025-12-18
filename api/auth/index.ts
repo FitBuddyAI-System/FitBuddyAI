@@ -14,12 +14,14 @@ const supabase = createClient(SUPABASE_URL || '', SUPABASE_KEY || '');
 
 // Encryption helpers for refresh tokens (AES-256-GCM)
 const ENC_ALGO = 'aes-256-gcm';
-const ENC_KEY_RAW = process.env.REFRESH_TOKEN_ENC_KEY || process.env.REFRESH_TOKEN_KEY;
+// Read and normalize encryption key from environment. Trim to avoid
+// accepting whitespace-only values that would otherwise be falsy checks.
+const ENC_KEY_RAW = (process.env.REFRESH_TOKEN_ENC_KEY || process.env.REFRESH_TOKEN_KEY || '').toString().trim();
 if (!ENC_KEY_RAW) {
   throw new Error('[api/auth] REFRESH_TOKEN_ENC_KEY is not set in the environment. Set REFRESH_TOKEN_ENC_KEY to a strong secret value to enable secure refresh token encryption.');
 }
 // Derive a 32-byte key from the provided secret using SHA-256
-const ENC_KEY = crypto.createHash('sha256').update(String(ENC_KEY_RAW)).digest();
+const ENC_KEY = crypto.createHash('sha256').update(ENC_KEY_RAW).digest();
 
 function encryptToken(plain: string): string {
   const iv = crypto.randomBytes(12);
@@ -42,6 +44,9 @@ function decryptToken(blobB64: string): string {
 }
 
 const COOKIE_NAME = 'fitbuddyai_sid';
+// Cookie lifetime for the HttpOnly session cookie (in seconds). Centralized
+// here for maintainability and to keep behavior consistent across handlers.
+const COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 30; // 30 days
 
 // Typed shape for rows in `fitbuddyai_refresh_tokens` table
 type RefreshTokenRow = {
@@ -180,7 +185,7 @@ export default async function handler(req: any, res: any) {
       }
       // Set cookie (HttpOnly). In production, set Secure and SameSite appropriately.
       const secureFlag = process.env.NODE_ENV === 'production' ? '; Secure' : '';
-      res.setHeader('Set-Cookie', `${COOKIE_NAME}=${sid}; HttpOnly; Path=/; SameSite=Strict; Max-Age=${60 * 60 * 24 * 30}${secureFlag}`);
+      res.setHeader('Set-Cookie', `${COOKIE_NAME}=${sid}; HttpOnly; Path=/; SameSite=Strict; Max-Age=${COOKIE_MAX_AGE_SECONDS}${secureFlag}`);
       return res.json({ ok: true, session_id: sid });
     }
 
@@ -265,23 +270,25 @@ export default async function handler(req: any, res: any) {
     // Admin endpoints replaced with JWT-based admin auth. Verify incoming
     // Authorization: Bearer <token> where <token> is a JWT signed by your
     // server's JWT secret and includes claim `role: 'service'` or `role: 'admin'.`
+
+    interface AdminJwtPayload {
+      role: string;
+      [key: string]: unknown;
+    }
+
     async function requireAdmin() {
       const jwtSecret = process.env.JWT_SECRET;
       if (!jwtSecret) {
         // Fail fast if JWT_SECRET is not set
         console.error('[api/auth/index] Missing JWT_SECRET in environment; admin actions are disabled');
         return null;
-    interface AdminJwtPayload {
-      role: string;
-      [key: string]: unknown;
-    }
-    async function requireAdmin() {
+      }
       const authHeader = String(req.headers['authorization'] || req.headers['Authorization'] || '');
       const match = authHeader.match(/^Bearer\s+(.+)$/i);
       if (!match) return null;
       const token = match[1];
       try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'dev_secret_change_me') as string | AdminJwtPayload;
+        const decoded = jwt.verify(token, jwtSecret) as string | AdminJwtPayload;
         if (
           typeof decoded === 'object' &&
           decoded !== null &&
@@ -327,7 +334,7 @@ export default async function handler(req: any, res: any) {
         const { error: delErr } = await supabase.from('fitbuddyai_refresh_tokens').delete().lt('created_at', threshold);
         if (delErr) return res.status(500).json({ message: 'Cleanup failed' });
         return res.json({ ok: true });
-      } catch {
+      } catch (e) {
         console.error('[api/auth/index] Error during cleanup_refresh_tokens', e);
         return res.status(500).json({ message: 'Cleanup failed' });
       }

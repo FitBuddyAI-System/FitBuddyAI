@@ -53,18 +53,18 @@ const Header: React.FC<HeaderProps> = ({ profileVersion, userData }) => {
     try {
       const already = Boolean(document && document.body && document.body.classList && document.body.classList.contains('intro-active'));
       if (already) setIntroActive(true);
-    } catch (e) {}
+    } catch {}
     try {
       window.addEventListener('fitbuddyai-intro-start', onStart as EventListener);
       window.addEventListener('fitbuddyai-intro-end', onEnd as EventListener);
-    } catch (e) {
+    } catch {
       // ignore (SSR / non-browser)
     }
     return () => {
       try {
         window.removeEventListener('fitbuddyai-intro-start', onStart as EventListener);
         window.removeEventListener('fitbuddyai-intro-end', onEnd as EventListener);
-      } catch (e) {}
+      } catch {}
     };
   }, []);
 
