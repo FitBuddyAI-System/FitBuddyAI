@@ -370,23 +370,52 @@ app.post('/api/auth', authLimiter, async (req, res) => {
 });
 
 // Helper function to validate target URLs to avoid SSRF.
-function isValidAllowedTarget(urlString) {
-  // Allow-list of hostnames: add any allowed hostnames here
+// Helper functions to validate and sanitize target URLs to avoid SSRF.
+// The approach below strictly restricts allowed hostnames and rejects IP
+// literals, credentials, non-HTTPS schemes, and explicit non-default ports.
+function isIpLiteral(hostname) {
+  // IPv4
+  const ipv4 = /^\d{1,3}(?:\.\d{1,3}){3}$/;
+  // IPv6 (simple check for : or bracketed form)
+  const ipv6 = /:[0-9a-fA-F:]+|^\[[0-9a-fA-F:]+\]$/;
+  return ipv4.test(hostname) || ipv6.test(hostname);
+}
+
+function sanitizeAllowedTarget(urlString) {
   const allowedHostnames = [
     'script.google.com',
     'script.googleapis.com',
     // add more as needed
   ];
+
   try {
     const urlObj = new URL(urlString);
+
+    // Reject credentials embedded in URL
+    if (urlObj.username || urlObj.password) return null;
+
     // Only allow https
-    if (urlObj.protocol !== 'https:') return false;
-    // Check if the hostname is exactly or ends with allowed hostname (subdomain OK)
-    return allowedHostnames.some((host) =>
+    if (urlObj.protocol !== 'https:') return null;
+
+    // Reject IP literals to avoid SSRF to internal networks
+    if (isIpLiteral(urlObj.hostname)) return null;
+
+    // Only allow default port (443) or no port specified
+    if (urlObj.port && urlObj.port !== '443') return null;
+
+    // Hostname must exactly match or be a subdomain of an allowed hostname
+    const ok = allowedHostnames.some((host) =>
       urlObj.hostname === host || urlObj.hostname.endsWith('.' + host)
     );
-  } catch {
-    return false;
+    if (!ok) return null;
+
+    // Prevent fragment usage
+    urlObj.hash = '';
+
+    // Normalize: build a safe URL with only allowed components
+    return `${urlObj.protocol}//${urlObj.hostname}${urlObj.pathname}${urlObj.search}`;
+  } catch (err) {
+    return null;
   }
 }
 
@@ -402,10 +431,11 @@ app.post('/api/webhook/questionnaire', async (req, res) => {
     let target = configured;
     // Only fallback to user-provided target in non-production, and only if allow-listed
     if (!target && process.env.NODE_ENV !== 'production' && targetFromClient) {
-      if (isValidAllowedTarget(targetFromClient)) {
-        target = targetFromClient;
+      const sanitized = sanitizeAllowedTarget(targetFromClient);
+      if (sanitized) {
+        target = sanitized;
       } else {
-        console.warn('[authServer] /api/webhook/questionnaire: refused non-allow-listed target', targetFromClient);
+        console.warn('[authServer] /api/webhook/questionnaire: refused non-allow-listed or unsafe target', targetFromClient);
         return res.status(400).json({ message: 'Invalid webhook target URL supplied.' });
       }
     }
