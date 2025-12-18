@@ -183,9 +183,9 @@ export default async function handler(req: any, res: any) {
       if (!sid) {
         return res.status(500).json({ message: 'Could not generate unique session_id' });
       }
-      // Set cookie (HttpOnly). In production, set Secure and SameSite appropriately.
+      // Set cookie (HttpOnly). In production, set Secure flag; use SameSite=Lax for compatibility with OAuth/email links.
       const secureFlag = process.env.NODE_ENV === 'production' ? '; Secure' : '';
-      res.setHeader('Set-Cookie', `${COOKIE_NAME}=${sid}; HttpOnly; Path=/; SameSite=Strict; Max-Age=${COOKIE_MAX_AGE_SECONDS}${secureFlag}`);
+      res.setHeader('Set-Cookie', `${COOKIE_NAME}=${sid}; HttpOnly; Path=/; SameSite=Lax; Max-Age=${COOKIE_MAX_AGE_SECONDS}${secureFlag}`);
       return res.json({ ok: true, session_id: sid });
     }
 
