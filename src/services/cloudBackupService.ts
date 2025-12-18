@@ -148,7 +148,7 @@ export async function restoreUserDataFromServer(userId: string) {
         const toStore = typeof v === 'string' ? v : JSON.stringify(v);
         // These keys are non-sensitive and belong in localStorage
         try { localStorage.setItem(key, toStore); } catch {}
-      } catch (e) {
+      } catch {
         // ignore per-call errors
       }
     };
