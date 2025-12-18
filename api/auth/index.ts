@@ -266,7 +266,6 @@ export default async function handler(req: any, res: any) {
       }
     }
 
-    // Admin endpoints for revocation and cleanup. Require ADMIN_API_KEY via header 'x-admin-key'.
     // Admin endpoints replaced with JWT-based admin auth. Verify incoming
     // Authorization: Bearer <token> where <token> is a JWT signed by your
     // server's JWT secret and includes claim `role: 'service'` or `role: 'admin'.`
