@@ -266,7 +266,14 @@ app.post('/api/auth', authLimiter, async (req, res) => {
       for (const p of parts) {
         const [k, ...rest] = p.split('=');
         if (!k) continue;
-        out[k.trim()] = decodeURIComponent((rest || []).join('=').trim());
+        const key = k.trim();
+        const rawValue = (rest || []).join('=').trim();
+        try {
+          out[key] = decodeURIComponent(rawValue);
+        } catch {
+          // Fall back to raw value if decoding fails to avoid dropping the cookie
+          out[key] = rawValue;
+        }
       }
       return out;
     }
