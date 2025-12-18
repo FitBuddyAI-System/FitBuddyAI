@@ -367,6 +367,7 @@ app.post('/api/auth', authLimiter, async (req, res) => {
         res.setHeader('Set-Cookie', `fitbuddyai_sid=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax`);
         return res.json({ ok: true });
       } catch (e) {
+        console.error('[authServer dev wrapper] clear_refresh error', e);
         return res.status(500).json({ message: 'Failed to clear refresh session' });
       }
     }
