@@ -355,7 +355,7 @@ export async function signOutAndRevoke(timeoutMs = 2000): Promise<void> {
     if (supabase && typeof supabase.auth?.signOut === 'function') {
       await supabase.auth.signOut().catch(() => {});
     }
-  } catch (e) {
+  } catch {
     // ignore
   }
 }
