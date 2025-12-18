@@ -97,7 +97,7 @@ const authLimiter = rateLimit({
       }
       // If the client provided a userId in the body (store_refresh), use that
       if (req.body && req.body.userId) return `user_${String(req.body.userId)}`;
-    } catch (e) {
+    } catch {
       // ignore and fall back to IP
     }
     return ipKeyGenerator(req);
