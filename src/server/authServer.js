@@ -710,7 +710,12 @@ app.post('/api/user/update', userUpdateLimiter, async (req, res) => {
         } else if (supabase && typeof (supabase.auth?.updateUser) === 'function') {
           try {
             await (supabase.auth).updateUser({ data: { display_name: safe.username, username: safe.username } });
-          } catch {}
+          } catch (metadataErr) {
+            console.warn(
+              '[authServer] non-admin supabase auth metadata update failed',
+              metadataErr && metadataErr.message ? metadataErr.message : String(metadataErr)
+            );
+          }
         } else {
           console.warn('[authServer] supabase auth admin update not available');
         }
