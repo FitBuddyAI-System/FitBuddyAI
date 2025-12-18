@@ -207,7 +207,7 @@ export async function restoreUserDataFromServer(userId: string) {
     } catch {}
     console.log('[cloudBackupService] restoreUserDataFromServer -> wrote keys from payload:', Object.keys(payload));
   } catch (err) {
-    // Optionally log or handle error
+    console.error('[cloudBackupService] restoreUserDataFromServer: unexpected error while restoring user data', err);
   }
 }
 
