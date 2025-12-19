@@ -375,9 +375,10 @@ app.post('/api/auth', authLimiter, async (req, res) => {
         if (sid) _devRefreshStore.delete(sid);
         res.setHeader('Set-Cookie', `fitbuddyai_sid=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax`);
         return res.json({ ok: true });
-      } catch {
-          return res.status(500).json({ message: 'Failed to clear refresh session' });
-        }
+      } catch (e) {
+        console.error('[authServer dev wrapper] clear_refresh error', e);
+        return res.status(500).json({ message: 'Failed to clear refresh session' });
+      }
     }
 
     return res.status(404).json({ message: 'Not found' });
@@ -721,7 +722,12 @@ app.post('/api/user/update', userUpdateLimiter, async (req, res) => {
         } else if (supabase && typeof (supabase.auth?.updateUser) === 'function') {
           try {
             await (supabase.auth).updateUser({ data: { display_name: safe.username, username: safe.username } });
-          } catch {}
+          } catch (metadataErr) {
+            console.warn(
+              '[authServer] non-admin supabase auth metadata update failed',
+              metadataErr && metadataErr.message ? metadataErr.message : String(metadataErr)
+            );
+          }
         } else {
           console.warn('[authServer] supabase auth admin update not available');
         }

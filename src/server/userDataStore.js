@@ -53,7 +53,9 @@ router.post('/api/userdata/save', async (req, res) => {
       const entry = tosObj[Object.keys(tosObj)[0]] || {};
       if (entry && entry.tos) tosAcceptedFlag = true;
       if (entry && entry.privacy) privacyAcceptedFlag = true;
-    } catch {}
+    } catch (err) {
+      console.warn('[userDataStore] Failed to parse fitbuddyai_tos_accepted_v1; proceeding with default flags.', err);
+    }
   }
 
   if (isFetch) {
