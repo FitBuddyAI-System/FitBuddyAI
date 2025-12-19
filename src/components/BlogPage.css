@@ -1,49 +1,353 @@
 .fb-news-root {
-  max-width: 980px;
-  margin: 36px auto;
-  padding: 0 12px;
+  max-width: 1100px;
+  margin: 40px auto;
+  padding: 0 16px 72px;
   color: var(--text-dark);
 }
-.fb-masthead{
-  display:flex;
-  gap:16px;
-  align-items:center;
-  padding:18px 20px;
-  border-radius: 12px 12px 0 0;
-  background: var(--gradient-primary);
+
+.blog-nav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.pill-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border-light);
+  text-decoration: none;
+  color: var(--text-dark);
+  background: var(--background-white);
+  font-weight: 600;
+  box-shadow: 0 4px 14px var(--shadow-light);
+}
+
+.pill-link:hover {
+  border-color: var(--accent, var(--primary-green));
+}
+
+.pill-link.soft {
+  background: rgba(30, 144, 203, 0.08);
+  color: var(--text-medium);
+  border-style: dashed;
+}
+
+.fb-masthead {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+  padding: 20px;
+  border-radius: 16px 16px 0 0;
+  background: var(--masthead-gradient, var(--gradient-primary));
   color: #fff;
   box-shadow: 0 6px 20px var(--shadow-light);
 }
-.masthead-left{display:flex;align-items:center;justify-content:center;width:72px;height:72px;background:rgba(255,255,255,0.08);border-radius:12px}
-.newspaper-logo{font-size:36px;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.25))}
-.paper-title{
-  font-family: 'Georgia', 'Times New Roman', serif;
-  margin:0;
-  font-size:34px;
-  line-height:1.05;
-  font-weight:700;
+
+.masthead-left {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 82px;
+  height: 82px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
 }
-.paper-sub{color:rgba(255,255,255,0.9);font-size:13px}
-.fb-paper{padding:22px;background:var(--background-white);border-radius:0 0 12px 12px;margin-top:-6px}
-.lead{border-bottom:1px dashed var(--border-light);padding-bottom:12px;margin-bottom:14px}
-.lead .hero{display:flex;gap:16px;align-items:center}
-.mascot{width:88px;height:88px;flex:0 0 88px;border-radius:12px}
-.lead-title{font-family:'Georgia',serif;margin:0 0 8px 0;font-size:20px}
-.lead-dek{color:var(--text-medium);margin:0}
-.lead-text{max-width:760px}
-.story{column-count:2;column-gap:32px;font-size:15px;line-height:1.7;color:var(--text-dark)}
-.story p{margin:0 0 14px}
-.encouragement{break-inside:avoid-column;margin-top:14px;padding:14px;background:linear-gradient(90deg, rgba(30,203,123,0.06), rgba(30,144,203,0.03));border-radius:10px;border:1px solid var(--border-light)}
-.encouragement p{margin:8px 0 0}
-.story-foot{column-span:all;margin-top:18px;display:flex;align-items:center;justify-content:space-between;gap:12px}
-.byline{font-size:13px;color:var(--text-medium);margin:0}
-.story-actions{display:flex;gap:12px;align-items:center}
-.cta{display:inline-block;padding:10px 18px;border-radius:12px;background:var(--color-primary);color:#fff;text-decoration:none;font-weight:600}
+
+.newspaper-logo {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.paper-eyebrow {
+  font-size: 12px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.85);
+  margin-bottom: 6px;
+}
+
+.paper-title {
+  font-family: 'Georgia', 'Times New Roman', serif;
+  margin: 0 0 6px 0;
+  font-size: 32px;
+  line-height: 1.15;
+  font-weight: 700;
+  color: #fff;
+}
+
+.paper-sub {
+  margin: 0 0 12px 0;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.paper-meta {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 14px;
+}
+
+.tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.story-tag {
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  font-size: 12px;
+}
+
+.fb-paper {
+  padding: 24px;
+  background: var(--background-white);
+  border-radius: 0 0 16px 16px;
+  margin-top: -6px;
+}
+
+.lead {
+  border-bottom: 1px dashed var(--border-light);
+  padding-bottom: 16px;
+  margin-bottom: 16px;
+}
+
+.lead .hero {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.mascot {
+  width: 92px;
+  height: 92px;
+  flex: 0 0 92px;
+  border-radius: 12px;
+}
+
+.lead-text {
+  flex: 1;
+}
+
+.lead-dek {
+  color: var(--text-medium);
+  margin: 0;
+  font-size: 16px;
+}
+
+.lead-kickers {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.kicker {
+  background: rgba(30, 144, 203, 0.08);
+  color: var(--text-dark);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 12px;
+  border: 1px solid var(--border-light);
+}
+
+.story {
+  column-count: 2;
+  column-gap: 32px;
+  font-size: 16px;
+  line-height: 1.7;
+  color: var(--text-dark);
+}
+
+.story p {
+  margin: 0 0 16px 0;
+}
+
+.story-list {
+  break-inside: avoid-column;
+  margin: 4px 0 16px 0;
+  padding: 12px;
+  background: linear-gradient(135deg, rgba(30, 144, 203, 0.06), rgba(30, 203, 123, 0.04));
+  border-radius: 12px;
+  border: 1px solid var(--border-light);
+}
+
+.list-title {
+  margin: 0 0 8px 0;
+  font-weight: 700;
+  color: var(--text-dark);
+}
+
+.story-list ul {
+  padding-left: 18px;
+  margin: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.story-list li {
+  color: var(--text-dark);
+}
+
+.encouragement {
+  break-inside: avoid-column;
+  margin: 10px 0 18px 0;
+  padding: 14px;
+  background: linear-gradient(135deg, rgba(30, 144, 203, 0.08), rgba(88, 204, 2, 0.06));
+  border-radius: 12px;
+  border: 1px solid var(--border-light);
+}
+
+.encouragement p {
+  margin: 8px 0 0 0;
+}
+
+.story-foot {
+  column-span: all;
+  margin-top: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--border-light);
+}
+
+.byline {
+  font-size: 14px;
+  color: var(--text-medium);
+  margin: 0;
+}
+
+.story-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.cta {
+  display: inline-block;
+  padding: 10px 16px;
+  border-radius: 12px;
+  background: var(--accent, var(--primary-green));
+  color: #fff;
+  text-decoration: none;
+  font-weight: 700;
+  box-shadow: 0 6px 18px var(--shadow-light);
+}
+
+.more-reading {
+  margin-top: 18px;
+}
+
+.more-reading-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.more-title {
+  margin: 2px 0 0 0;
+  font-size: 20px;
+}
+
+.more-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px;
+}
+
+.mini-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border: 1px solid var(--border-light);
+  padding: 16px;
+  border-radius: 14px;
+  text-decoration: none;
+  color: var(--text-dark);
+  background: var(--background-white);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.mini-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 28px var(--shadow-light);
+  border-color: var(--accent, var(--primary-green));
+}
+
+.mini-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.mini-badge {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: var(--masthead-gradient, var(--gradient-primary));
+  color: #fff;
+}
+
+.mini-date {
+  font-size: 12px;
+  color: var(--text-medium);
+}
+
+.mini-card h4 {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.4;
+}
+
+.mini-card p {
+  margin: 0;
+  color: var(--text-medium);
+}
+
+.mini-tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: var(--text-medium);
+}
 
 @media (max-width: 900px) {
-  .story{column-count:1}
-  .paper-title{font-size:28px}
-  .fb-paper{padding:18px}
-  .lead .hero{flex-direction:row}
-  .mascot{width:72px;height:72px;flex:0 0 72px}
+  .fb-news-root {
+    margin: 28px auto 64px;
+  }
+
+  .fb-masthead {
+    flex-direction: column;
+    border-radius: 16px;
+  }
+
+  .story {
+    column-count: 1;
+  }
+
+  .mascot {
+    width: 72px;
+    height: 72px;
+    flex: 0 0 72px;
+  }
 }

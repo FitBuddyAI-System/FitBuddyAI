@@ -43,7 +43,7 @@ const SignOutButton: React.FC = () => {
       try { sessionStorage.removeItem('fitbuddyai_no_auto_restore'); } catch {}
       try { localStorage.removeItem('fitbuddyai_no_auto_restore'); } catch {}
     }, 3000);
-  } catch (e) {}
+  } catch {}
   };
   return (
     <button className="btn signout-btn" onClick={handleSignOut}>

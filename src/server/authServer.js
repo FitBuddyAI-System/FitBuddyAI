@@ -10,14 +10,30 @@ leoProfanity.loadDictionary();
 
 import express from 'express';
 import userDataStoreRouter from './userDataStore.js';
-import rateLimit from 'express-rate-limit';
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import cors from 'cors';
 import bodyParser from 'body-parser';
 import { v4 as uuidv4 } from 'uuid';
 import jwt from 'jsonwebtoken';
 import fs from 'fs';
+import crypto from 'crypto';
 import { createClient } from '@supabase/supabase-js';
 import adminRoutes from './adminRoutes.js';
+
+// Initialize Supabase client early so module-level handlers can reference
+// `supabase`, `SUPABASE_URL`, and `SUPABASE_SERVICE_ROLE_KEY` safely.
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+let supabase = null;
+if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
+  try {
+    supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+    console.log('[authServer] Supabase client initialized for token verification.');
+  } catch (e) {
+    console.warn('[authServer] Failed to initialize Supabase client:', e);
+    supabase = null;
+  }
+}
 
 // Rate limiter for health endpoint - allow more requests since it's lightweight
 const healthLimiter = rateLimit({
@@ -44,7 +60,7 @@ const adminUsersLimiter = rateLimit({
         const decoded = jwt.verify(token, secret);
         if (decoded?.id) return `user_${decoded.id}`;
       }
-    } catch (err) {
+    } catch {
       // JWT verification failed, try admin token
     }
     
@@ -56,7 +72,35 @@ const adminUsersLimiter = rateLimit({
     }
     
     // Final fallback to IP
-    return req.ip || req.connection.remoteAddress || 'unknown';
+    return ipKeyGenerator(req);
+  }
+});
+
+// Rate limiter for auth endpoints (dev wrapper). This limiter is cookie/user-aware
+// so that requests from the same dev session id (`fitbuddyai_sid`) are throttled
+// separately from other clients. Falls back to IP-based keying.
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 30, // limit each key (sid or IP) to 30 requests per windowMs
+  message: { error: 'Too many auth requests, please try again later.' },
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  keyGenerator: (req) => {
+    try {
+      // Prefer session cookie value when present to rate-limit per user session
+      const cookieHeader = String(req.headers.cookie || '');
+      const parts = cookieHeader.split(';').map(p => p.trim());
+      for (const p of parts) {
+        if (!p) continue;
+        const [k, ...rest] = p.split('=');
+        if (k && k.trim() === 'fitbuddyai_sid') return `sid_${(rest || []).join('=').trim()}`;
+      }
+      // If the client provided a userId in the body (store_refresh), use that
+      if (req.body && req.body.userId) return `user_${String(req.body.userId)}`;
+    } catch {
+      // ignore and fall back to IP
+    }
+    return ipKeyGenerator(req);
   }
 });
 
@@ -179,11 +223,16 @@ const userBuyLimiter = rateLimit({
         const decoded = jwt.verify(token, secret);
         if (decoded?.id) return `user_${decoded.id}`;
       }
-    } catch (err) {
+    } catch {
       // JWT verification failed, fall back to IP
     }
-    // Fallback to IP address
-    return req.ip || req.connection.remoteAddress || 'unknown';
+    // Fallback to IP address - use ipKeyGenerator helper to handle IPv6
+    try {
+      return ipKeyGenerator(req);
+    } catch {
+      // As a last resort, return a stable string
+      return 'unknown';
+    }
   }
 });
 
@@ -194,11 +243,192 @@ app.use(bodyParser.json());
 app.use((req, res, next) => {
   try {
     console.log(`[authServer] ${req.method} ${req.originalUrl || req.url}`);
-  } catch (e) {}
+  } catch (err) {
+    console.error('[authServer] Failed to log request', err);
+  }
   next();
 });
 app.use(userDataStoreRouter);
 app.use(adminRoutes);
+
+// (moved earlier) dev-only in-memory refresh store is declared above near route setup
+
+// Dev-only: support the serverless-style `/api/auth?action=...` endpoints used by the frontend
+// The production serverless implementation lives in `api/auth/index.ts`. This wrapper allows
+// the dev Express server to respond to the same calls when running `npm run dev`.
+app.post('/api/auth', authLimiter, async (req, res) => {
+  // Only enable this wrapper in development to avoid duplicating production behavior.
+  if (process.env.NODE_ENV === 'production') return res.status(404).json({ message: 'Not found' });
+  try {
+    const action = String(req.query?.action || '').toLowerCase();
+    if (!action) return res.status(400).json({ message: 'action required' });
+
+    // Helper to parse cookies
+    function parseCookies(cookieHeader) {
+      const out = {};
+      if (!cookieHeader) return out;
+      const parts = cookieHeader.split(';');
+      for (const p of parts) {
+        const [k, ...rest] = p.split('=');
+        if (!k) continue;
+        const key = k.trim();
+        const rawValue = (rest || []).join('=').trim();
+        try {
+          out[key] = decodeURIComponent(rawValue);
+        } catch {
+          // Fall back to raw value if decoding fails to avoid dropping the cookie
+          out[key] = rawValue;
+        }
+      }
+      return out;
+    }
+
+    // Store encrypted refresh token in dev in-memory store. This mirrors the
+    // production behavior (encrypted at rest) and requires the
+    // `REFRESH_TOKEN_ENC_KEY` environment variable to be set. If the key is
+    // missing the request will fail so that dev environments must opt-in to
+    // secure token handling (avoid plaintext storage).
+    if (action === 'store_refresh') {
+      if (!ENC_KEY) return res.status(500).json({ message: 'Server missing REFRESH_TOKEN_ENC_KEY; cannot store refresh token.' });
+      const { userId, refresh_token } = req.body || {};
+      if (!userId || !refresh_token) return res.status(400).json({ message: 'userId and refresh_token required.' });
+      const sid = uuidv4();
+      try {
+        const enc = encryptToken(String(refresh_token));
+        _devRefreshStore.set(sid, { userId, refreshToken: enc, createdAt: Date.now(), lastUsed: Date.now(), revoked: false });
+      } catch (e) {
+        console.error('[authServer] failed to encrypt refresh token', e);
+        return res.status(500).json({ message: 'Failed to persist refresh token' });
+      }
+      const COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 30; // 30 days
+      const secureFlag = process.env.NODE_ENV === 'production' ? '; Secure' : '';
+      res.setHeader('Set-Cookie', `fitbuddyai_sid=${sid}; HttpOnly; Path=/; SameSite=Lax; Max-Age=${COOKIE_MAX_AGE_SECONDS}${secureFlag}`);
+      return res.json({ ok: true, session_id: sid });
+    }
+
+    if (action === 'refresh') {
+      const cookies = parseCookies(req.headers?.cookie || '');
+      const sid = cookies['fitbuddyai_sid'];
+      if (!sid) return res.status(401).json({ message: 'No session cookie present' });
+      const entry = _devRefreshStore.get(sid);
+      if (!entry || entry.revoked) return res.status(401).json({ message: 'Session not found or revoked' });
+      // Call Supabase token endpoint using stored (encrypted) refresh token
+      // (requires SUPABASE_SERVICE_ROLE_KEY). Decrypt before use.
+      try {
+        if (!ENC_KEY) return res.status(500).json({ message: 'Server missing REFRESH_TOKEN_ENC_KEY; cannot use stored refresh token.' });
+        let decrypted = '';
+        try {
+          decrypted = decryptToken(entry.refreshToken);
+        } catch (e) {
+          console.error('[authServer] failed to decrypt stored refresh token', e);
+          _devRefreshStore.delete(sid);
+          return res.status(401).json({ message: 'Invalid session' });
+        }
+        // Use environment lookups here to avoid potential module-initialization
+        // ordering issues where the module-level constants might not yet be set.
+        const tokenUrl = `${process.env.SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`;
+        const resp = await fetch(tokenUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            apikey: process.env.SUPABASE_SERVICE_ROLE_KEY || '',
+            Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY || ''}`
+          },
+          body: JSON.stringify({ refresh_token: decrypted })
+        });
+        const body = await resp.json();
+        if (!resp.ok) {
+          console.warn('[authServer dev wrapper] supabase token refresh failed', body);
+          // If refresh failed, revoke the dev session
+          _devRefreshStore.delete(sid);
+          return res.status(401).json({ message: 'Failed to refresh token' });
+        }
+        // rotate refresh token if provided
+        if (body.refresh_token) {
+          try {
+            // Build a new object with the rotated token and updated lastUsed
+            // instead of mutating `entry` in-place. This makes the update
+            // atomic and avoids losing changes if an error occurs after
+            // partial mutation.
+            const newEnc = encryptToken(body.refresh_token);
+            const updatedEntry = Object.assign({}, entry, { refreshToken: newEnc, lastUsed: Date.now() });
+            _devRefreshStore.set(sid, updatedEntry);
+          } catch (e) {
+            console.warn('[authServer] failed to encrypt rotated refresh token', e);
+            // Best-effort: remove session to avoid leaving an unpersisted rotated token
+            // in memory when we cannot securely store it; require dev to re-login.
+            _devRefreshStore.delete(sid);
+            return res.status(500).json({ message: 'Failed to persist rotated refresh token' });
+          }
+        }
+        return res.json({ access_token: body.access_token, expires_at: body.expires_at ?? body.expires_in });
+      } catch {
+        console.error('[authServer dev wrapper] refresh error');
+        return res.status(500).json({ message: 'Refresh failed' });
+      }
+    }
+
+    if (action === 'clear_refresh') {
+      try {
+        const cookies = parseCookies(req.headers?.cookie || '');
+        const sid = cookies['fitbuddyai_sid'];
+        if (sid) _devRefreshStore.delete(sid);
+        res.setHeader('Set-Cookie', `fitbuddyai_sid=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax`);
+        return res.json({ ok: true });
+      } catch (e) {
+        console.error('[authServer dev wrapper] clear_refresh error', e);
+        return res.status(500).json({ message: 'Failed to clear refresh session' });
+      }
+    }
+
+    return res.status(404).json({ message: 'Not found' });
+  } catch (e) {
+    console.error('[authServer dev wrapper] error', e);
+    return res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Helper function to validate target URLs to avoid SSRF.
+// Only server-configured webhook targets are allowed. Client-supplied
+// targets are intentionally not supported to avoid open proxy/SSRF risks.
+
+// Server-side proxy to forward questionnaire payloads to Google Apps Script webhook
+app.post('/api/webhook/questionnaire', async (req, res) => {
+  try {
+    // Prefer server-side config for the target webhook to avoid open proxy.
+    const configured = process.env.SHEET_WEBHOOK_URL;
+    const body = req.body || {};
+    const payload = body?.payload || body;
+
+    const target = configured;
+    // Do NOT accept client-provided targets. Require server configuration.
+    if (!target) {
+      console.warn('[authServer] /api/webhook/questionnaire: no target configured on server');
+      return res.status(400).json({ message: 'No webhook target configured on server.' });
+    }
+
+    // Forward the request to the target webhook
+    try {
+      const response = await fetch(target, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const text = await response.text();
+      if (!response.ok) {
+        console.warn('[authServer] webhook forward failed', response.status, text);
+        return res.status(502).json({ message: 'Failed to forward webhook', status: response.status, body: text });
+      }
+      return res.json({ ok: true, forwarded: true, response: text });
+    } catch (err) {
+      console.error('[authServer] webhook forward error', err);
+      return res.status(502).json({ message: 'Failed to forward webhook', error: String(err) });
+    }
+  } catch (err) {
+    console.error('[authServer] /api/webhook/questionnaire error', err);
+    return res.status(500).json({ message: 'Server error' });
+  }
+});
 
 // Inline admin endpoints to ensure /api/admin/users is available even if external files fail.
 // This helper returns boolean (true when request is allowed) and is kept separate
@@ -298,17 +528,49 @@ app.post('/api/admin/users', adminUsersLimiter, async (req, res) => {
 
 const usersFile = path.join(__dirname, 'users.json');
 
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-let supabase = null;
-if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
-  try {
-    supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
-    console.log('[authServer] Supabase client initialized for token verification.');
-  } catch (e) {
-    console.warn('[authServer] Failed to initialize Supabase client:', e);
-    supabase = null;
-  }
+// Dev-only in-memory refresh store to support client calls to /api/auth?action=...
+// This is intentionally ephemeral and only used when running the local auth server.
+// Mark as intentionally used to satisfy linters/static analyzers even when
+// some analysis paths don't detect the usage inside route handlers.
+// eslint-disable-next-line no-unused-vars
+const _devRefreshStore = new Map();
+
+// Encryption helpers for refresh tokens (AES-256-GCM) — mirror production
+const ENC_ALGO = 'aes-256-gcm';
+// Normalize the env var and trim whitespace to avoid using empty/whitespace-only keys.
+const ENC_KEY_RAW = (process.env.REFRESH_TOKEN_ENC_KEY || process.env.REFRESH_TOKEN_KEY || '').toString().trim();
+if (!ENC_KEY_RAW) {
+  // Fail fast in dev to avoid confusing runtime errors when refresh endpoints are used.
+  throw new Error('[authServer] REFRESH_TOKEN_ENC_KEY is not set. Set REFRESH_TOKEN_ENC_KEY to enable secure refresh token handling in the dev server.');
+}
+let ENC_KEY = null;
+try {
+  ENC_KEY = crypto.createHash('sha256').update(ENC_KEY_RAW).digest();
+  console.log('[authServer] Derived ENC_KEY from REFRESH_TOKEN_ENC_KEY');
+} catch (e) {
+  console.error('[authServer] failed to derive ENC_KEY from REFRESH_TOKEN_ENC_KEY', e);
+  throw e;
+}
+
+function encryptToken(plain) {
+  if (!ENC_KEY) throw new Error('REFRESH_TOKEN_ENC_KEY not configured');
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv(ENC_ALGO, ENC_KEY, iv);
+  const encrypted = Buffer.concat([cipher.update(String(plain), 'utf8'), cipher.final()]);
+  const tag = cipher.getAuthTag();
+  return Buffer.concat([iv, tag, encrypted]).toString('base64');
+}
+
+function decryptToken(blobB64) {
+  if (!ENC_KEY) throw new Error('REFRESH_TOKEN_ENC_KEY not configured');
+  const buf = Buffer.from(String(blobB64), 'base64');
+  const iv = buf.slice(0, 12);
+  const tag = buf.slice(12, 28);
+  const ciphertext = buf.slice(28);
+  const decipher = crypto.createDecipheriv(ENC_ALGO, ENC_KEY, iv);
+  decipher.setAuthTag(tag);
+  const decrypted = Buffer.concat([decipher.update(ciphertext), decipher.final()]);
+  return decrypted.toString('utf8');
 }
 
 const authLogFile = path.join(__dirname, 'auth_server.log');
@@ -420,9 +682,9 @@ app.post('/api/user/buy', userBuyLimiter, (req, res) => {
     if (!Array.isArray(user.inventory)) user.inventory = [];
     user.inventory.push(item);
     writeUsers(users);
-    const { password, ...userSafe } = user;
+    const { password: _password, ...userSafe } = user;
     res.json({ user: userSafe });
-  } catch (err) {
+  } catch {
     res.status(500).json({ message: 'Server error.' });
   }
 });
@@ -460,7 +722,12 @@ app.post('/api/user/update', userUpdateLimiter, async (req, res) => {
         } else if (supabase && typeof (supabase.auth?.updateUser) === 'function') {
           try {
             await (supabase.auth).updateUser({ data: { display_name: safe.username, username: safe.username } });
-          } catch (e) {}
+          } catch (metadataErr) {
+            console.warn(
+              '[authServer] non-admin supabase auth metadata update failed',
+              metadataErr && metadataErr.message ? metadataErr.message : String(metadataErr)
+            );
+          }
         } else {
           console.warn('[authServer] supabase auth admin update not available');
         }
@@ -518,7 +785,7 @@ app.post('/api/suggestions', suggestionsLimiter, async (req, res) => {
     try {
       const suggestionsFile = path.join(__dirname, 'suggestions.json');
       let arr = [];
-      try { arr = JSON.parse(fs.readFileSync(suggestionsFile, 'utf8') || '[]'); } catch (e) { arr = []; }
+      try { arr = JSON.parse(fs.readFileSync(suggestionsFile, 'utf8') || '[]'); } catch { arr = []; }
       arr.push(entry);
       fs.writeFileSync(suggestionsFile, JSON.stringify(arr, null, 2), 'utf8');
       return res.json({ ok: true, suggestion: entry });
@@ -686,7 +953,7 @@ app.post('/api/ai/generate', async (req, res) => {
     // Be forgiving about incoming body shapes (prompt, contents, inputs, messages)
     let body = req.body || {};
     if (typeof body === 'string') {
-      try { body = JSON.parse(body); } catch (e) { /* leave as string */ }
+      try { body = JSON.parse(body); } catch { /* leave as string */ }
     }
 
     const joinPartsText = (parts) => {
@@ -697,7 +964,7 @@ app.post('/api/ai/generate', async (req, res) => {
           if (typeof p === 'string') return p;
           return p.text || p.content || '';
         }).filter(Boolean).join('\n');
-      } catch (e) { return ''; }
+      } catch { return ''; }
     };
 
     let prompt = undefined;

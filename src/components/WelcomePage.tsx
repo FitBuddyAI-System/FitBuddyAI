@@ -44,6 +44,62 @@ const WelcomePage: React.FC = () => {
     };
   }, []);
 
+  // Notify other components that the intro is active so they can hide UI like header/footer
+  // Also lock page scrolling while the intro overlay is active to avoid scroll bleed.
+  const introScrollRef = useRef<number | null>(null);
+  useEffect(() => {
+    try {
+      if (showIntro) {
+        // Dispatch start event for other components
+        window.dispatchEvent(new CustomEvent('fitbuddyai-intro-start'));
+        try { document.body.classList.add('intro-active'); } catch (e) {}
+        // Lock scrolling: save scroll pos and fix body
+        try {
+          introScrollRef.current = window.scrollY || window.pageYOffset || 0;
+          document.body.style.position = 'fixed';
+          document.body.style.top = `-${introScrollRef.current}px`;
+          document.body.style.left = '0';
+          document.body.style.right = '0';
+          document.body.style.overflow = 'hidden';
+          // also disable html overflow for some browsers
+          try { document.documentElement.style.overflow = 'hidden'; } catch (e) {}
+        } catch (e) {}
+      } else {
+        // Dispatch end event and restore scrolling
+        window.dispatchEvent(new CustomEvent('fitbuddyai-intro-end'));
+        try {
+          const y = introScrollRef.current || 0;
+          document.body.style.position = '';
+          document.body.style.top = '';
+          document.body.style.left = '';
+          document.body.style.right = '';
+          document.body.style.overflow = '';
+          try { document.documentElement.style.overflow = ''; } catch (e) {}
+          window.scrollTo(0, y);
+          introScrollRef.current = null;
+        } catch (e) {}
+      }
+    } catch (e) {
+      // ignore in non-browser environments
+    }
+    return () => {
+      // Ensure cleanup if component unmounts while intro active
+      try {
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.left = '';
+        document.body.style.right = '';
+        document.body.style.overflow = '';
+        try { document.documentElement.style.overflow = ''; } catch (e) {}
+        try { document.body.classList.remove('intro-active'); } catch (e) {}
+        if (introScrollRef.current !== null) {
+          try { window.scrollTo(0, introScrollRef.current); } catch (e) {}
+          introScrollRef.current = null;
+        }
+      } catch (e) {}
+    };
+  }, [showIntro]);
+
   // Keep user state in sync with storage (cross-tab or sign-in changes)
   useEffect(() => {
     const handleStorage = () => setCurrentUser(loadUserData());
@@ -54,6 +110,7 @@ const WelcomePage: React.FC = () => {
   // When intro finishes, remove ?intro from URL
   const handleIntroFinish = () => {
     setMainVisible(true);
+    try { window.dispatchEvent(new CustomEvent('fitbuddyai-intro-end')); } catch (e) {}
     hideIntroTimer.current = window.setTimeout(() => setShowIntro(false), 900);
     if (location.search.includes('intro')) {
       navigate('/', { replace: true });

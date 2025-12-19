@@ -1,7 +1,7 @@
 // Buy a shop item and update user on server and localStorage
 import attachAuthHeaders from './apiAuth';
 import { supabase } from './supabaseClient';
-import { saveUserData, saveAuthToken, clearAuthToken, loadUserData, saveSupabaseSession, clearSupabaseSession } from './localStorage';
+import { saveUserData, saveAuthToken, clearAuthToken, loadUserData, clearUserData } from './localStorage';
 import { ensureUserId } from '../utils/userHelpers';
 
 const DEFAULT_ENERGY = 10000;
@@ -115,11 +115,22 @@ export async function signIn(email: string, password: string): Promise<User> {
     try {
         const { data: profile } = await supabase.from('fitbuddyai_userdata').select('username').eq('user_id', user.id).limit(1).maybeSingle();
         if (profile && profile.username) usernameVal = profile.username;
-      } catch (e) {
+      } catch {
         // ignore; we'll fallback to email
       }
     }
-    try { saveSupabaseSession(session); } catch {}
+    // Send refresh token to server for server-side storage and set HttpOnly cookie.
+    try {
+      await fetch('/api/auth?action=store_refresh', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ userId: user.id, refresh_token: session?.refresh_token })
+      });
+    } catch (e) {
+      // Non-fatal: if server-side storage fails, continue without it.
+      console.warn('[authService] failed to store refresh token server-side', e);
+    }
   const fallbackEnergy = (user.user_metadata && user.user_metadata.energy) ?? DEFAULT_ENERGY;
   const toSave = { data: { id: user.id, email: user.email, username: usernameVal || user.email, energy: fallbackEnergy } };
   // Clear any cross-tab 'no auto restore' guard set during sign-out so sign-in can persist data
@@ -177,7 +188,15 @@ export async function signUp(email: string, username: string, password: string):
   // Only persist client-side if we actually received a session/token. For email-verify flows
   // Supabase may require the user to confirm via email before signing in; do not mark them
   // as signed-in (or persist their profile) until a token exists.
-    try { saveSupabaseSession(session); } catch {}
+    try {
+      await fetch('/api/auth?action=store_refresh', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user?.id, refresh_token: session?.refresh_token })
+      });
+    } catch (e) {
+      console.warn('[authService] failed to store refresh token server-side', e);
+    }
   if (token && toSave) {
     try { sessionStorage.removeItem('fitbuddyai_no_auto_restore'); } catch {}
     try { localStorage.removeItem('fitbuddyai_no_auto_restore'); } catch {}
@@ -288,17 +307,60 @@ export function getCurrentUser(): User | null {
   }
 }
 
-export function signOut() {
+// Sign out helpers
+// `signOutAndRevoke` is async and will attempt to revoke the server-side
+// refresh token before clearing local state. It waits briefly (default 2s)
+// for the revoke to complete but will continue if the server is slow.
+export async function signOutAndRevoke(timeoutMs = 2000): Promise<void> {
+  // Attempt to clear server-side stored refresh token. Prefer `sendBeacon`
+  // during unloads; fall back to a short-await fetch to ensure revocation.
+  try {
+    const revokeUrl = '/api/auth?action=clear_refresh';
+    let revoked = false;
+    // try navigator.sendBeacon first (non-blocking, reliable during unload)
+    try {
+      if (typeof navigator !== 'undefined' && typeof navigator.sendBeacon === 'function') {
+        const blob = new Blob([JSON.stringify({})], { type: 'application/json' });
+        try { revoked = navigator.sendBeacon(revokeUrl, blob); } catch { revoked = false; }
+      }
+    } catch {
+      revoked = false;
+    }
+
+    if (!revoked) {
+      // Fall back to fetch with a timeout to avoid blocking too long.
+      try {
+        await Promise.race([
+          fetch(revokeUrl, { method: 'POST', credentials: 'include' }),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('revoke_timeout')), timeoutMs))
+        ]);
+      } catch (e) {
+        console.warn('[authService] signOut: clear_refresh request failed or timed out', e);
+      }
+    }
+  } catch (e) {
+    console.warn('[authService] signOut: revoke attempt failed', e);
+  }
+
+  // Clear client-side state (tokens, persisted user data, guards)
   try { clearAuthToken(); } catch {}
-  try { clearSupabaseSession(); } catch {}
   try { sessionStorage.removeItem('fitbuddyai_no_auto_restore'); } catch {}
   try { localStorage.removeItem('fitbuddyai_no_auto_restore'); } catch {}
-  try { const { clearUserData } = require('./localStorage'); clearUserData(); } catch {}
+  try { clearUserData(); } catch {}
   try { sessionStorage.removeItem('fitbuddyaiUsername'); } catch {}
+
   // If using Supabase client, call signOut to clear its internal session
   try {
     if (supabase && typeof supabase.auth?.signOut === 'function') {
-      supabase.auth.signOut().catch(() => {});
+      await supabase.auth.signOut().catch(() => {});
     }
-  } catch (e) {}
+  } catch {
+    // ignore
+  }
+}
+
+// Backwards-compatible synchronous wrapper: fire-and-forget sign-out.
+export function signOut(): void {
+  // Do not await here to preserve existing call sites that expect a void return.
+  void signOutAndRevoke().catch((e) => console.warn('[authService] signOut error', e));
 }

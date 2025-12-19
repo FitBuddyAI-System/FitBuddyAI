@@ -19,7 +19,7 @@ import EmailVerifyPage from './components/EmailVerifyPage';
 
 
 import { WorkoutPlan, DayWorkout, Exercise } from './types';
-import { loadUserData, loadWorkoutPlan, saveUserData, saveWorkoutPlan, clearUserData, getAuthToken, loadSupabaseSession, saveSupabaseSession, clearSupabaseSession, saveAuthToken } from './services/localStorage';
+import { loadUserData, loadWorkoutPlan, saveUserData, saveWorkoutPlan, clearUserData, getAuthToken, saveAuthToken } from './services/localStorage';
 import { fetchUserById } from './services/authService';
 import { format } from 'date-fns';
 import { getPrimaryType, isWorkoutCompleteForStreak, resolveWorkoutTypes } from './utils/streakUtils';
@@ -33,6 +33,7 @@ import AdminPage from './components/AdminAuditPage';
 import { useCloudBackup } from './hooks/useCloudBackup';
 import RickrollPage from './components/RickrollPage';
 import BlogPage from './components/BlogPage';
+import BlogListPage from './components/BlogListPage';
 import AgreementBanner from './components/AgreementBanner';
 import TermsPage from './components/TermsPage';
 import PrivacyPage from './components/PrivacyPage';
@@ -71,12 +72,21 @@ function App() {
     if (!useSupabase) return;
     const { data: authListener } = supabase.auth.onAuthStateChange((_, session) => {
       if (session) {
-        try { saveSupabaseSession(session); } catch {}
+        // When Supabase client receives a session, send the refresh token
+        // to the server for safe server-side storage and set an HttpOnly cookie.
+          try {
+          fetch('/api/auth?action=store_refresh', {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: session.user?.id, refresh_token: session.refresh_token })
+          }).catch(() => {});
+        } catch (e) {}
         if (session.access_token) {
           try { saveAuthToken(session.access_token); } catch {}
         }
       } else {
-        try { clearSupabaseSession(); } catch {}
+        try { fetch('/api/auth?action=clear_refresh', { method: 'POST', credentials: 'include' }).catch(() => {}); } catch {}
       }
     });
     return () => {
@@ -260,19 +270,35 @@ function App() {
     (async () => {
       if (useSupabase) {
         try {
-          const storedSession = loadSupabaseSession();
-          if (storedSession?.access_token && storedSession?.refresh_token) {
-            await supabase.auth.setSession({
-              access_token: storedSession.access_token,
-              refresh_token: storedSession.refresh_token
-            });
-            if (storedSession.access_token) {
-              try { saveAuthToken(storedSession.access_token); } catch {}
+          // Attempt to refresh the access token via server-side stored refresh token.
+          const resp = await fetch('/api/auth?action=refresh', {
+            method: 'POST',
+            credentials: 'include',
+          });
+          if (resp.ok) {
+            const data = await resp.json();
+            if (data?.access_token) {
+                try { saveAuthToken(data.access_token); } catch {}
+                // Set a session on the Supabase client so client-side SDK calls
+                // work until the server refreshes again. Include `refresh_token`
+                // only when the server returned one; the Supabase client also
+                // accepts being seeded with just an `access_token` when a
+                // refresh token isn't available.
+                if (data.refresh_token) {
+                  try {
+                    await supabase.auth.setSession({
+                      access_token: data.access_token,
+                      refresh_token: data.refresh_token,
+                    });
+                  } catch (e) {
+                    // Swallow Supabase client errors here; app can still rely on
+                    // the stored access token for server-side operations.
+                  }
+                }
             }
           }
         } catch (err) {
-          console.warn('[App] Supabase session restore failed', err);
-          try { clearSupabaseSession(); } catch {}
+          console.warn('[App] Supabase server-side refresh failed', err);
         }
       }
       const savedUserData = loadUserData();
@@ -557,7 +583,8 @@ function App() {
           } 
         />
         <Route path="/my-plan" element={<MyPlanPage />} />
-  <Route path="/blog" element={<BlogPage />} />
+        <Route path="/blog" element={<BlogListPage />} />
+        <Route path="/blog/:slug" element={<BlogPage />} />
   <Route path="/chat" element={<AgreementGuard userData={userData}><GeminiChatPage userData={userData} /></AgreementGuard>} />
   <Route path="/admin" element={<AdminPage />} />
   <Route path="/help" element={<HelpCenter />} />

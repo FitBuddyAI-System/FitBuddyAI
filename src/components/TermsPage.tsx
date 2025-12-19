@@ -36,9 +36,9 @@ export default function TermsPage() {
           if (userId) {
             import('../services/apiAuth').then(m2 => m2.attachAuthHeaders({ method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId, accepted_terms: true }) })).then(init => fetch('/api/userdata/save', init)).catch(()=>{});
           }
-        } catch (e) {}
+        } catch {}
       }).catch(()=>{});
-    } catch (e) {}
+    } catch {}
   };
 
   return (

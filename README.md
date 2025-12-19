@@ -150,7 +150,18 @@ If automation is failing or you prefer manual control, change the preview link y
    SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
    JWT_SECRET=your-secure-jwt-secret-here
    ADMIN_API_TOKEN=your-admin-api-token
+  
+   # Encryption keys for server-side refresh-token storage (required for dev)
+   # Preferred: provide multiple keys for rotation in order (newest first):
+   # REFRESH_TOKEN_ENC_KEYS=<keyId1>=<secret1>,<keyId2>=<secret2>
+   # Example:
+   # REFRESH_TOKEN_ENC_KEYS=k2=NEW_SECRET,k1=OLD_SECRET
+   # Legacy single-key option (not recommended for rotation):
+   # REFRESH_TOKEN_ENC_KEY=your-secret
+   # REFRESH_TOKEN_ENC_KEY_ID=k1
    ```
+
+    Note: The dev auth server requires `REFRESH_TOKEN_ENC_KEY` (or `REFRESH_TOKEN_ENC_KEYS`) to be set and will fail to start without it. In production, set the same variables in your deployment environment. Use the multi-key `REFRESH_TOKEN_ENC_KEYS` format to rotate keys safely: add the new key first, leave old keys present until tokens have migrated, then remove old keys.
 
 4. **Generate Secure JWT Secret**
    ```bash

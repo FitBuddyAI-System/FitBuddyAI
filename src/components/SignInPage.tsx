@@ -40,7 +40,7 @@ const SignInPage: React.FC = () => {
               const { getAuthToken, loadUserData } = await import('../services/localStorage');
               const token = getAuthToken() || (loadUserData()?.token) || (loadUserData()?.data?.token) || null;
               if (token) return token;
-            } catch (e) {}
+            } catch {}
             await new Promise(r => setTimeout(r, 150));
           }
           return null;
