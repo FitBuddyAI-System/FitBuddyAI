@@ -682,7 +682,7 @@ app.post('/api/user/buy', userBuyLimiter, (req, res) => {
     if (!Array.isArray(user.inventory)) user.inventory = [];
     user.inventory.push(item);
     writeUsers(users);
-    const { password, ...userSafe } = user;
+    const { password: _password, ...userSafe } = user;
     res.json({ user: userSafe });
   } catch {
     res.status(500).json({ message: 'Server error.' });
