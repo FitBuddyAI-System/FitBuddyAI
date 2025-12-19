@@ -69,7 +69,8 @@ export async function backupUserDataToServer(userId: string) {
   // Use the non-admin save endpoint for client-side backups
   await fetch('/api/userdata/save', init);
   } catch (err) {
-    // Optionally log or handle error
+    // Log a warning to aid debugging without throwing in the UI
+    try { console.warn('[cloudBackupService] backupUserDataToServer failed', err); } catch {}
   }
 }
 
@@ -108,7 +109,7 @@ export function beaconBackupUserData(userId: string) {
     const url = '/api/userdata/save';
     const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
     return navigator.sendBeacon(url, blob);
-  } catch (e) {
+  } catch {
     return false;
   }
 }
@@ -241,7 +242,7 @@ export async function backupAndDeleteSensitive(userId: string) {
     try { localStorage.removeItem(chatKey); } catch {}
     try { localStorage.removeItem('fitbuddyai_tos_accepted_v1'); } catch {}
     return true;
-  } catch (e) {
+  } catch {
     return false;
   }
 }

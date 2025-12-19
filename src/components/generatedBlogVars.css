@@ -1,0 +1,24 @@
+/*
+  Auto-generated CSS variables for blog posts.
+  These values are derived from local `blogPosts` data (trusted source),
+  and provide per-post CSS custom properties without using inline styles.
+*/
+.blog-list-vars-fitbuddy-times-dispatch { --accent: #1e90cb; --masthead-gradient: linear-gradient(135deg, #1ecb7b, #1e90cb); }
+.blog-card-vars-fitbuddy-times-dispatch { --accent: #1e90cb; --masthead-gradient: linear-gradient(135deg, #1ecb7b, #1e90cb); }
+.blog-vars-fitbuddy-times-dispatch { --accent: #1e90cb; --masthead-gradient: linear-gradient(135deg, #1ecb7b, #1e90cb); }
+.mini-vars-fitbuddy-times-dispatch { --accent: #1e90cb; --masthead-gradient: linear-gradient(135deg, #1ecb7b, #1e90cb); }
+
+.blog-list-vars-micro-habits-for-streaks { --accent: #58cc02; --masthead-gradient: linear-gradient(135deg, #58cc02, #1cb0f6); }
+.blog-card-vars-micro-habits-for-streaks { --accent: #58cc02; --masthead-gradient: linear-gradient(135deg, #58cc02, #1cb0f6); }
+.blog-vars-micro-habits-for-streaks { --accent: #58cc02; --masthead-gradient: linear-gradient(135deg, #58cc02, #1cb0f6); }
+.mini-vars-micro-habits-for-streaks { --accent: #58cc02; --masthead-gradient: linear-gradient(135deg, #58cc02, #1cb0f6); }
+
+.blog-list-vars-teaching-the-ai-coach { --accent: #ff9600; --masthead-gradient: linear-gradient(135deg, #ffb347, #ff6464); }
+.blog-card-vars-teaching-the-ai-coach { --accent: #ff9600; --masthead-gradient: linear-gradient(135deg, #ffb347, #ff6464); }
+.blog-vars-teaching-the-ai-coach { --accent: #ff9600; --masthead-gradient: linear-gradient(135deg, #ffb347, #ff6464); }
+.mini-vars-teaching-the-ai-coach { --accent: #ff9600; --masthead-gradient: linear-gradient(135deg, #ffb347, #ff6464); }
+
+.blog-list-vars-december-release-radar { --accent: #8a5cf6; --masthead-gradient: linear-gradient(135deg, #8a5cf6, #1cb0f6); }
+.blog-card-vars-december-release-radar { --accent: #8a5cf6; --masthead-gradient: linear-gradient(135deg, #8a5cf6, #1cb0f6); }
+.blog-vars-december-release-radar { --accent: #8a5cf6; --masthead-gradient: linear-gradient(135deg, #8a5cf6, #1cb0f6); }
+.mini-vars-december-release-radar { --accent: #8a5cf6; --masthead-gradient: linear-gradient(135deg, #8a5cf6, #1cb0f6); }

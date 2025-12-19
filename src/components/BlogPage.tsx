@@ -1,6 +1,7 @@
-import type { FC } from 'react';
+import { FC } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import './BlogPage.css';
+import './generatedBlogVars.css';
 import { blogPosts, findPostBySlug, latestPost } from '../data/blogPosts';
 
 const BlogPage: FC = () => {
@@ -10,20 +11,25 @@ const BlogPage: FC = () => {
   const gradientId = `blog-hero-${article.slug}`;
   const scopedClass = `blog-vars-${article.slug.replace(/[^a-z0-9-_]/gi, '-')}`;
 
-  // Build CSS rules for the page and suggested posts to avoid inline `style` attributes
-  const suggestedRules = suggested
-    .map((post) => {
-      const cls = `mini-vars-${post.slug.replace(/[^a-z0-9-_]/gi, '-')}`;
-      const grad = post.gradient || 'var(--gradient-primary)';
-      return `.${cls} { --accent: ${post.accentColor}; --masthead-gradient: ${grad}; }`;
-    })
-    .join('\n');
+  // Validation helpers for colors/gradients to mitigate CSS/XSS risks.
+  // Only allow common safe color formats (hex, rgb(a), hsl(a)) or CSS var() tokens.
+  const isSafeCssColor = (v: unknown): v is string => {
+    if (!v || typeof v !== 'string') return false;
+    const s = v.trim();
+    if (!s) return false;
+    if (/^var\(--[a-z0-9-_]+\)$/i.test(s)) return true;
+    if (/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(s)) return true;
+    if (/^rgba?\(\s*\d+\s*,\s*\d+\s*,\s*\d+(?:\s*,\s*(?:0|1|0?\.\d+))?\s*\)$/i.test(s)) return true;
+    if (/^hsla?\(\s*\d+(?:deg|rad|grad|turn)?\s*,\s*\d+%\s*,\s*\d+%?(?:\s*,\s*(?:0|1|0?\.\d+))?\s*\)$/i.test(s)) return true;
+    return false;
+  };
 
-  const pageRule = `.${scopedClass} { --accent: ${article.accentColor}; --masthead-gradient: ${article.gradient || 'var(--gradient-primary)'}; }`;
+  
+
+  const safeAccentColor = isSafeCssColor(article.accentColor) ? article.accentColor : '#1ecb7b';
 
   return (
     <div className={`fb-news-root ${scopedClass}`}>
-      <style>{`${pageRule}\n${suggestedRules}`}</style>
       <div className="blog-nav">
         <Link className="pill-link" to="/blog" aria-label="Return to blog home">
           Back to all posts
@@ -68,7 +74,7 @@ const BlogPage: FC = () => {
             >
               <defs>
                 <linearGradient id={gradientId} x1="0" x2="1" y1="0" y2="1">
-                  <stop offset="0" stopColor={article.accentColor} />
+                  <stop offset="0" stopColor={safeAccentColor} />
                   <stop offset="1" stopColor="#1e90cb" />
                 </linearGradient>
               </defs>
@@ -139,12 +145,9 @@ const BlogPage: FC = () => {
           </Link>
         </div>
         <div className="more-grid">
-          {suggested.map((post) => (
-            <Link
-              key={post.slug}
-              to={`/blog/${post.slug}`}
-              className={`mini-card mini-vars-${post.slug.replace(/[^a-z0-9-_]/gi, '-')}`}
-            >
+            {suggested.map((post) => {
+            return (
+              <Link key={post.slug} to={`/blog/${post.slug}`} className={`mini-card mini-vars-${post.slug.replace(/[^a-z0-9-_]/gi, '-')}`}>
               <div className="mini-top">
                 <span className="mini-badge">{post.heroBadge || 'Story'}</span>
                 <span className="mini-date">
@@ -158,8 +161,9 @@ const BlogPage: FC = () => {
                   <span key={tag}>{tag}</span>
                 ))}
               </div>
-            </Link>
-          ))}
+              </Link>
+            );
+          })}
         </div>
       </section>
     </div>

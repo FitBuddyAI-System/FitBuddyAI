@@ -14,33 +14,99 @@ const supabase = createClient(SUPABASE_URL || '', SUPABASE_KEY || '');
 
 // Encryption helpers for refresh tokens (AES-256-GCM)
 const ENC_ALGO = 'aes-256-gcm';
-// Read and normalize encryption key from environment. Trim to avoid
-// accepting whitespace-only values that would otherwise be falsy checks.
-const ENC_KEY_RAW = (process.env.REFRESH_TOKEN_ENC_KEY || process.env.REFRESH_TOKEN_KEY || '').toString().trim();
-if (!ENC_KEY_RAW) {
-  throw new Error('[api/auth] REFRESH_TOKEN_ENC_KEY is not set in the environment. Set REFRESH_TOKEN_ENC_KEY to a strong secret value to enable secure refresh token encryption.');
+
+// Key rotation support
+// Accept multiple keys from environment in two ways (priority order):
+// - REFRESH_TOKEN_ENC_KEYS as a comma-separated list of keyId=secret
+//   e.g. "k1=oldsecret,k2=newsecret" (first entry is considered current)
+// - REFRESH_TOKEN_ENC_KEY (single legacy secret)
+// Optionally specify REFRESH_TOKEN_ENC_KEY_ID for the single-key id.
+const parseEncKeys = () => {
+  const out: { id: string; raw: string; key: Buffer }[] = [];
+  const multi = (process.env.REFRESH_TOKEN_ENC_KEYS || '').toString().trim();
+  if (multi) {
+    const parts = multi.split(',').map((p) => p.trim()).filter(Boolean);
+    for (const p of parts) {
+      const [id, ...rest] = p.split('=');
+      if (!id || rest.length === 0) continue;
+      const raw = rest.join('=').trim();
+      if (!raw) continue;
+      out.push({ id: id.trim(), raw, key: crypto.createHash('sha256').update(raw).digest() });
+    }
+  } else {
+    const legacy = (process.env.REFRESH_TOKEN_ENC_KEY || process.env.REFRESH_TOKEN_KEY || '').toString().trim();
+    if (legacy) {
+      const id = (process.env.REFRESH_TOKEN_ENC_KEY_ID || 'k1').toString().trim() || 'k1';
+      out.push({ id, raw: legacy, key: crypto.createHash('sha256').update(legacy).digest() });
+    }
+  }
+  return out;
+};
+
+const ENC_KEYS = parseEncKeys();
+if (!ENC_KEYS || ENC_KEYS.length === 0) {
+  throw new Error('[api/auth] REFRESH_TOKEN_ENC_KEY(S) is not set. Set REFRESH_TOKEN_ENC_KEYS or REFRESH_TOKEN_ENC_KEY to enable secure refresh token encryption.');
 }
-// Derive a 32-byte key from the provided secret using SHA-256
-const ENC_KEY = crypto.createHash('sha256').update(ENC_KEY_RAW).digest();
+// First entry is the current key
+const CURRENT_KEY_ID = ENC_KEYS[0].id;
+const CURRENT_KEY = ENC_KEYS[0].key;
 
 function encryptToken(plain: string): string {
   const iv = crypto.randomBytes(12);
-  const cipher = crypto.createCipheriv(ENC_ALGO, ENC_KEY, iv);
+  const cipher = crypto.createCipheriv(ENC_ALGO, CURRENT_KEY, iv);
   const encrypted = Buffer.concat([cipher.update(plain, 'utf8'), cipher.final()]);
   const tag = cipher.getAuthTag();
-  // Store as base64(iv|tag|ciphertext)
-  return Buffer.concat([iv, tag, encrypted]).toString('base64');
+  // Store as keyId:base64(iv|tag|ciphertext)
+  const blob = Buffer.concat([iv, tag, encrypted]).toString('base64');
+  return `${CURRENT_KEY_ID}:${blob}`;
 }
 
-function decryptToken(blobB64: string): string {
+// Attempt to decrypt; supports legacy blobs (no prefix) by trying all known keys
+function decryptToken(blobWithOptionalPrefix: string): { value: string; keyId: string } {
+  // If prefixed with keyId:, split
+  let keyId: string | null = null;
+  let blobB64 = blobWithOptionalPrefix;
+  const m = blobWithOptionalPrefix.match(/^([A-Za-z0-9_-]+):(.+)$/);
+  if (m) {
+    keyId = m[1];
+    blobB64 = m[2];
+  }
+
   const buf = Buffer.from(blobB64, 'base64');
+  if (buf.length < 28) throw new Error('Invalid encrypted blob');
+
   const iv = buf.slice(0, 12);
   const tag = buf.slice(12, 28);
   const ciphertext = buf.slice(28);
-  const decipher = crypto.createDecipheriv(ENC_ALGO, ENC_KEY, iv);
-  decipher.setAuthTag(tag);
-  const decrypted = Buffer.concat([decipher.update(ciphertext), decipher.final()]);
-  return decrypted.toString('utf8');
+
+  const tryKeys = (keys: { id: string; key: Buffer }[]) => {
+    for (const k of keys) {
+      try {
+        const decipher = crypto.createDecipheriv(ENC_ALGO, k.key, iv);
+        decipher.setAuthTag(tag);
+        const decrypted = Buffer.concat([decipher.update(ciphertext), decipher.final()]);
+        return { value: decrypted.toString('utf8'), keyId: k.id };
+      } catch {
+        // try next
+      }
+    }
+    return null;
+  };
+
+  // If we had an explicit keyId, try that first
+  if (keyId) {
+    const found = ENC_KEYS.find((k) => k.id === keyId);
+    if (found) {
+      const out = tryKeys([found]);
+      if (out) return out;
+      throw new Error('Failed to decrypt with specified key id');
+    }
+    // unknown key id; fall back to trying all keys
+  }
+
+  const out = tryKeys(ENC_KEYS.map((k) => ({ id: k.id, key: k.key })));
+  if (!out) throw new Error('Failed to decrypt refresh token with any known key');
+  return out;
 }
 
 const COOKIE_NAME = 'fitbuddyai_sid';
@@ -102,6 +168,41 @@ const normalizeEmail = (value: string | undefined | null): string => {
   return String(value).trim().toLowerCase();
 };
 
+// Admin JWT payload shape and helper moved to module-level to avoid recreating
+// the function on every request. Call `requireAdmin(req)` from route handlers.
+interface AdminJwtPayload {
+  role: string;
+  [key: string]: unknown;
+}
+
+export async function requireAdmin(req: any): Promise<AdminJwtPayload | null> {
+  const jwtSecret = process.env.JWT_SECRET;
+  if (!jwtSecret) {
+    // Fail fast if JWT_SECRET is not set
+    console.error('[api/auth/index] Missing JWT_SECRET in environment; admin actions are disabled');
+    return null;
+  }
+  const authHeader = String(req.headers['authorization'] || req.headers['Authorization'] || '');
+  const match = authHeader.match(/^Bearer\s+(.+)$/i);
+  if (!match) return null;
+  const token = match[1];
+  try {
+    const decoded = jwt.verify(token, jwtSecret) as string | AdminJwtPayload;
+    if (
+      typeof decoded === 'object' &&
+      decoded !== null &&
+      'role' in decoded &&
+      (decoded as AdminJwtPayload).role &&
+      ((decoded as AdminJwtPayload).role === 'service' || (decoded as AdminJwtPayload).role === 'admin')
+    ) {
+      return decoded as AdminJwtPayload;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 export default async function handler(req: any, res: any) {
   // Set CORS headers for Vercel / browser requests
   res.setHeader('Access-Control-Allow-Origin', process.env.ALLOW_ORIGIN || '*');
@@ -147,11 +248,24 @@ export default async function handler(req: any, res: any) {
     if (action === 'store_refresh') {
       const { userId, refresh_token } = req.body as { userId?: string; refresh_token?: string };
       if (!userId || !refresh_token) return res.status(400).json({ message: 'userId and refresh_token required.' });
-      
+
+      // Best-effort: revoke existing sessions for this user to avoid unbounded
+      // growth of the refresh token table. This keeps only the new session
+      // active. Do not fail the request if revocation cannot be performed.
+      try {
+        const { error: revokeErr } = await supabase.from('fitbuddyai_refresh_tokens').update({ revoked: true }).eq('user_id', userId).neq('revoked', true);
+        if (revokeErr) {
+          console.warn('[api/auth/store_refresh] failed to revoke existing sessions for user', userId, revokeErr);
+        }
+      } catch (e) {
+        console.warn('[api/auth/store_refresh] error revoking existing sessions', e);
+      }
+
       // Retry insert up to 3 times in case of rare session_id collision
       let sid: string | undefined;
-      let insertErr: any = null;
+      let insertErr: unknown = null;
       let attempt = 0;
+      let inserted = false;
       const enc = encryptToken(String(refresh_token));
       while (attempt < 3) {
         sid = makeSessionId();
@@ -165,6 +279,7 @@ export default async function handler(req: any, res: any) {
         }]);
         if (!error) {
           insertErr = null;
+          inserted = true;
           break;
         }
         // Check for unique violation (Supabase/Postgres error code '23505')
@@ -178,6 +293,10 @@ export default async function handler(req: any, res: any) {
       }
       if (insertErr) {
         console.error('[api/auth/store_refresh] db insert failed', insertErr);
+        return res.status(500).json({ message: 'Failed to persist refresh token' });
+      }
+      if (!inserted) {
+        console.error('[api/auth/store_refresh] failed to insert refresh token after retries');
         return res.status(500).json({ message: 'Failed to persist refresh token' });
       }
       if (!sid) {
@@ -210,7 +329,17 @@ export default async function handler(req: any, res: any) {
         // Decrypt the stored refresh token and call Supabase token endpoint to exchange it for a new access token
         let decryptedRefresh = '';
         try {
-          decryptedRefresh = decryptToken(String(entry.refresh_token));
+          const dec = decryptToken(String(entry.refresh_token));
+          decryptedRefresh = dec.value;
+          // If token was encrypted with an old key, rotate by re-encrypting
+          if (dec.keyId !== CURRENT_KEY_ID) {
+            try {
+              const newEnc = encryptToken(decryptedRefresh);
+              await supabase.from('fitbuddyai_refresh_tokens').update({ refresh_token: newEnc, last_used: new Date().toISOString() }).eq('session_id', sid);
+            } catch (e) {
+              console.warn('[api/auth/refresh] failed to rotate refresh token to new key', e);
+            }
+          }
         } catch (e) {
           console.error('[api/auth/refresh] failed to decrypt refresh token', e);
           // Mark revoked to be safe
@@ -270,41 +399,10 @@ export default async function handler(req: any, res: any) {
     // Authorization: Bearer <token> where <token> is a JWT signed by your
     // server's JWT secret and includes claim `role: 'service'` or `role: 'admin'.`
 
-    interface AdminJwtPayload {
-      role: string;
-      [key: string]: unknown;
-    }
-
-    async function requireAdmin() {
-      const jwtSecret = process.env.JWT_SECRET;
-      if (!jwtSecret) {
-        // Fail fast if JWT_SECRET is not set
-        console.error('[api/auth/index] Missing JWT_SECRET in environment; admin actions are disabled');
-        return null;
-      }
-      const authHeader = String(req.headers['authorization'] || req.headers['Authorization'] || '');
-      const match = authHeader.match(/^Bearer\s+(.+)$/i);
-      if (!match) return null;
-      const token = match[1];
-      try {
-        const decoded = jwt.verify(token, jwtSecret) as string | AdminJwtPayload;
-        if (
-          typeof decoded === 'object' &&
-          decoded !== null &&
-          'role' in decoded &&
-          (decoded as AdminJwtPayload).role &&
-          ((decoded as AdminJwtPayload).role === 'service' || (decoded as AdminJwtPayload).role === 'admin')
-        ) {
-          return decoded as AdminJwtPayload;
-        }
-        return null;
-      } catch {
-        return null;
-      }
-    }
+    
 
     if (action === 'revoke_session') {
-      const admin = await requireAdmin();
+      const admin = await requireAdmin(req);
       if (!admin) return res.status(403).json({ message: 'Forbidden' });
       const { session_id } = req.body as { session_id?: string };
       if (!session_id) return res.status(400).json({ message: 'session_id required' });
@@ -314,7 +412,7 @@ export default async function handler(req: any, res: any) {
     }
 
     if (action === 'revoke_user_sessions') {
-      const admin = await requireAdmin();
+      const admin = await requireAdmin(req);
       if (!admin) return res.status(403).json({ message: 'Forbidden' });
       const { userId } = req.body as { userId?: string };
       if (!userId) return res.status(400).json({ message: 'userId required' });
@@ -324,7 +422,7 @@ export default async function handler(req: any, res: any) {
     }
 
     if (action === 'cleanup_refresh_tokens') {
-      const admin = await requireAdmin();
+      const admin = await requireAdmin(req);
       if (!admin) return res.status(403).json({ message: 'Forbidden' });
       // Delete or mark as revoked entries older than N days (default 30)
       const days = Number(req.body?.days || 30);

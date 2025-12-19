@@ -60,7 +60,7 @@ const adminUsersLimiter = rateLimit({
         const decoded = jwt.verify(token, secret);
         if (decoded?.id) return `user_${decoded.id}`;
       }
-    } catch (err) {
+    } catch {
       // JWT verification failed, try admin token
     }
     
@@ -226,8 +226,13 @@ const userBuyLimiter = rateLimit({
     } catch (err) {
       // JWT verification failed, fall back to IP
     }
-    // Fallback to IP address
-    return req.ip || req.connection.remoteAddress || 'unknown';
+    // Fallback to IP address - use ipKeyGenerator helper to handle IPv6
+    try {
+      return ipKeyGenerator(req);
+    } catch {
+      // As a last resort, return a stable string
+      return 'unknown';
+    }
   }
 });
 
@@ -341,7 +346,13 @@ app.post('/api/auth', authLimiter, async (req, res) => {
         // rotate refresh token if provided
         if (body.refresh_token) {
           try {
-            entry.refreshToken = encryptToken(body.refresh_token);
+            // Build a new object with the rotated token and updated lastUsed
+            // instead of mutating `entry` in-place. This makes the update
+            // atomic and avoids losing changes if an error occurs after
+            // partial mutation.
+            const newEnc = encryptToken(body.refresh_token);
+            const updatedEntry = Object.assign({}, entry, { refreshToken: newEnc, lastUsed: Date.now() });
+            _devRefreshStore.set(sid, updatedEntry);
           } catch (e) {
             console.warn('[authServer] failed to encrypt rotated refresh token', e);
             // Best-effort: remove session to avoid leaving an unpersisted rotated token
@@ -349,12 +360,10 @@ app.post('/api/auth', authLimiter, async (req, res) => {
             _devRefreshStore.delete(sid);
             return res.status(500).json({ message: 'Failed to persist rotated refresh token' });
           }
-          entry.lastUsed = Date.now();
-          _devRefreshStore.set(sid, entry);
         }
         return res.json({ access_token: body.access_token, expires_at: body.expires_at ?? body.expires_in });
-      } catch (e) {
-        console.error('[authServer dev wrapper] refresh error', e);
+      } catch {
+        console.error('[authServer dev wrapper] refresh error');
         return res.status(500).json({ message: 'Refresh failed' });
       }
     }
@@ -366,9 +375,9 @@ app.post('/api/auth', authLimiter, async (req, res) => {
         if (sid) _devRefreshStore.delete(sid);
         res.setHeader('Set-Cookie', `fitbuddyai_sid=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax`);
         return res.json({ ok: true });
-      } catch (e) {
-        return res.status(500).json({ message: 'Failed to clear refresh session' });
-      }
+      } catch {
+          return res.status(500).json({ message: 'Failed to clear refresh session' });
+        }
     }
 
     return res.status(404).json({ message: 'Not found' });
@@ -529,14 +538,17 @@ const _devRefreshStore = new Map();
 const ENC_ALGO = 'aes-256-gcm';
 // Normalize the env var and trim whitespace to avoid using empty/whitespace-only keys.
 const ENC_KEY_RAW = (process.env.REFRESH_TOKEN_ENC_KEY || process.env.REFRESH_TOKEN_KEY || '').toString().trim();
+if (!ENC_KEY_RAW) {
+  // Fail fast in dev to avoid confusing runtime errors when refresh endpoints are used.
+  throw new Error('[authServer] REFRESH_TOKEN_ENC_KEY is not set. Set REFRESH_TOKEN_ENC_KEY to enable secure refresh token handling in the dev server.');
+}
 let ENC_KEY = null;
-if (ENC_KEY_RAW && ENC_KEY_RAW.length > 0) {
-  try {
-    ENC_KEY = crypto.createHash('sha256').update(ENC_KEY_RAW).digest();
-  } catch (e) {
-    console.warn('[authServer] failed to derive ENC_KEY from REFRESH_TOKEN_ENC_KEY', e);
-    ENC_KEY = null;
-  }
+try {
+  ENC_KEY = crypto.createHash('sha256').update(ENC_KEY_RAW).digest();
+  console.log('[authServer] Derived ENC_KEY from REFRESH_TOKEN_ENC_KEY');
+} catch (e) {
+  console.error('[authServer] failed to derive ENC_KEY from REFRESH_TOKEN_ENC_KEY', e);
+  throw e;
 }
 
 function encryptToken(plain) {
@@ -671,7 +683,7 @@ app.post('/api/user/buy', userBuyLimiter, (req, res) => {
     writeUsers(users);
     const { password, ...userSafe } = user;
     res.json({ user: userSafe });
-  } catch (err) {
+  } catch {
     res.status(500).json({ message: 'Server error.' });
   }
 });
@@ -767,7 +779,7 @@ app.post('/api/suggestions', suggestionsLimiter, async (req, res) => {
     try {
       const suggestionsFile = path.join(__dirname, 'suggestions.json');
       let arr = [];
-      try { arr = JSON.parse(fs.readFileSync(suggestionsFile, 'utf8') || '[]'); } catch (e) { arr = []; }
+      try { arr = JSON.parse(fs.readFileSync(suggestionsFile, 'utf8') || '[]'); } catch { arr = []; }
       arr.push(entry);
       fs.writeFileSync(suggestionsFile, JSON.stringify(arr, null, 2), 'utf8');
       return res.json({ ok: true, suggestion: entry });
@@ -935,7 +947,7 @@ app.post('/api/ai/generate', async (req, res) => {
     // Be forgiving about incoming body shapes (prompt, contents, inputs, messages)
     let body = req.body || {};
     if (typeof body === 'string') {
-      try { body = JSON.parse(body); } catch (e) { /* leave as string */ }
+      try { body = JSON.parse(body); } catch { /* leave as string */ }
     }
 
     const joinPartsText = (parts) => {
@@ -946,7 +958,7 @@ app.post('/api/ai/generate', async (req, res) => {
           if (typeof p === 'string') return p;
           return p.text || p.content || '';
         }).filter(Boolean).join('\n');
-      } catch (e) { return ''; }
+      } catch { return ''; }
     };
 
     let prompt = undefined;

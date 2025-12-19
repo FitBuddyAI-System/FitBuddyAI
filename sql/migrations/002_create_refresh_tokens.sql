@@ -27,12 +27,19 @@ begin
     where revoked = true
       and created_at < now() - (revoked_retention_days || ' days')::interval;
 
-  -- Delete expired tokens older than days
+  -- Delete expired tokens immediately when they expire (regardless of creation time)
+  delete from fitbuddyai_refresh_tokens
+    where expires_at is not null
+      and expires_at < now();
+
+  -- Delete non-revoked tokens older than the configured retention `days`.
+  -- This keeps recently-expired tokens (handled above) from being double-checked
+  -- and ensures the `days` parameter applies as a retention window for still-valid
+  -- or non-expiring tokens rather than gating deletion of already-expired tokens.
   delete from fitbuddyai_refresh_tokens
     where revoked = false
-      and expires_at is not null
-      and expires_at < now()
-      and created_at < now() - (days || ' days')::interval;
+      and created_at < now() - (days || ' days')::interval
+      and (expires_at is null or expires_at >= now());
 end;
 $$;
 

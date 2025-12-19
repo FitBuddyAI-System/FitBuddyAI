@@ -1,6 +1,7 @@
-import type { FC } from 'react';
+import { FC } from 'react';
 import { Link } from 'react-router-dom';
 import './BlogListPage.css';
+import './generatedBlogVars.css';
 import { blogPosts } from '../data/blogPosts';
 
 const BlogListPage: FC = () => {
@@ -10,19 +11,8 @@ const BlogListPage: FC = () => {
   const surprise = rest[0] || featured;
   const pageClass = `blog-list-vars-${featured.slug.replace(/[^a-z0-9-_]/gi, '-')}`;
 
-  const perPostRules = blogPosts
-    .map((post) => {
-      const cls = `blog-card-vars-${post.slug.replace(/[^a-z0-9-_]/gi, '-')}`;
-      const grad = post.gradient || 'var(--gradient-primary)';
-      return `.${cls} { --accent: ${post.accentColor}; --masthead-gradient: ${grad}; }`;
-    })
-    .join('\n');
-
-  const featuredRule = `.${pageClass} { --accent: ${featured.accentColor}; }`;
-
   return (
     <div className={`blog-list-root ${pageClass}`}>
-      <style>{`${featuredRule}\n${perPostRules}`}</style>
       <section
         className="blog-hero card"
       >

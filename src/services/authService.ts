@@ -115,7 +115,7 @@ export async function signIn(email: string, password: string): Promise<User> {
     try {
         const { data: profile } = await supabase.from('fitbuddyai_userdata').select('username').eq('user_id', user.id).limit(1).maybeSingle();
         if (profile && profile.username) usernameVal = profile.username;
-      } catch (e) {
+      } catch {
         // ignore; we'll fallback to email
       }
     }

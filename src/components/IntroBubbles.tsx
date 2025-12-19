@@ -71,6 +71,12 @@ const IntroBubbles: React.FC<{ onFinish: () => void }> = ({ onFinish }) => {
   const dynamicStylesId = 'intro-bubbles-dynamic-styles';
   useEffect(() => {
     try {
+      // Guard: ensure we're in a browser and randomSeeds is populated
+      if (typeof document === 'undefined') return;
+      if (!randomSeeds.current || !Array.isArray(randomSeeds.current.edge) || randomSeeds.current.edge.length < bubblesData.length) {
+        console.warn('[IntroBubbles] randomSeeds not initialized; skipping dynamic styles');
+        return;
+      }
       const existing = document.getElementById(dynamicStylesId) as HTMLStyleElement | null;
       let styleEl = existing;
       if (!styleEl) {
@@ -81,8 +87,8 @@ const IntroBubbles: React.FC<{ onFinish: () => void }> = ({ onFinish }) => {
       // Build CSS rules for each bubble based on random seeds
       const parts: string[] = [];
       for (let i = 0; i < bubblesData.length; i++) {
-        const edge = randomSeeds.current!.edge[i];
-        const edgePos = randomSeeds.current!.edgePos[i];
+        const edge = randomSeeds.current.edge[i];
+        const edgePos = randomSeeds.current.edgePos[i];
         let offX = 0, offY = 0;
         if (edge === 0) { // top
           offX = edgePos;
@@ -99,14 +105,15 @@ const IntroBubbles: React.FC<{ onFinish: () => void }> = ({ onFinish }) => {
         }
         const angle = (360 / bubblesData.length) * i;
         const distance = 210;
-        parts.push(`.intro-bubble-pos-${i} { --offscreen-x: ${offX}px; --offscreen-y: ${offY}px; --angle: ${angle}deg; --distance: ${distance}px; }`);
+        parts.push(`.intro-bubble-pos-${i} { --offscreen-x: ${Number(offX).toFixed(2)}px; --offscreen-y: ${Number(offY).toFixed(2)}px; --angle: ${Number(angle).toFixed(2)}deg; --distance: ${Number(distance).toFixed(2)}px; }`);
       }
       styleEl.innerHTML = parts.join('\n');
       return () => {
-        try { if (styleEl && styleEl.parentNode) styleEl.parentNode.removeChild(styleEl); } catch (e) {}
+        try { if (styleEl && styleEl.parentNode) styleEl.parentNode.removeChild(styleEl); } catch {}
       };
     } catch (e) {
-      // ignore in non-browser environments
+      // ignore in non-browser environments or log unexpected errors
+      try { console.warn('[IntroBubbles] dynamic style generation failed', e); } catch {}
     }
   }, []);
 
@@ -169,8 +176,8 @@ const IntroBubbles: React.FC<{ onFinish: () => void }> = ({ onFinish }) => {
             // Only show visible bubbles
             if (i >= visibleBubbles) return null;
             // Calculate offscreen position for each bubble
-            const edge = randomSeeds.current!.edge[i];
-            const edgePos = randomSeeds.current!.edgePos[i];
+            const edge = randomSeeds.current?.edge?.[i] ?? 0;
+            const edgePos = randomSeeds.current?.edgePos?.[i] ?? 50;
             let offX = 0, offY = 0;
             if (edge === 0) { // top
               offX = edgePos;

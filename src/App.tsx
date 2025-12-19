@@ -74,9 +74,10 @@ function App() {
       if (session) {
         // When Supabase client receives a session, send the refresh token
         // to the server for safe server-side storage and set an HttpOnly cookie.
-        try {
+          try {
           fetch('/api/auth?action=store_refresh', {
             method: 'POST',
+            credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ userId: session.user?.id, refresh_token: session.refresh_token })
           }).catch(() => {});
@@ -85,7 +86,7 @@ function App() {
           try { saveAuthToken(session.access_token); } catch {}
         }
       } else {
-        try { fetch('/api/auth?action=clear_refresh', { method: 'POST' }).catch(() => {}); } catch {}
+        try { fetch('/api/auth?action=clear_refresh', { method: 'POST', credentials: 'include' }).catch(() => {}); } catch {}
       }
     });
     return () => {
