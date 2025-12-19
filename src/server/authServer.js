@@ -223,7 +223,7 @@ const userBuyLimiter = rateLimit({
         const decoded = jwt.verify(token, secret);
         if (decoded?.id) return `user_${decoded.id}`;
       }
-    } catch (err) {
+    } catch {
       // JWT verification failed, fall back to IP
     }
     // Fallback to IP address - use ipKeyGenerator helper to handle IPv6
