@@ -238,6 +238,10 @@ body.theme-dark .gemini-header{
   border-bottom: 1px solid rgba(255,255,255,0.06);
 }
 body.theme-dark .gemini-sub{ color: var(--text-medium); }
+body.theme-dark .gemini-disclaimer strong {
+  color: #ffffff;
+  font-weight: 700;
+}
 body.theme-dark .gemini-chat{
   scrollbar-color: rgba(255,255,255,0.18) transparent;
   background:

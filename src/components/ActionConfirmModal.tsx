@@ -18,24 +18,14 @@ interface Props {
 }
 
 const ActionConfirmModal: React.FC<Props> = ({ open, summary, details, onConfirm, onCancel }) => {
-  const [selected, setSelected] = React.useState<Record<number, boolean>>({});
-
-  React.useEffect(() => {
-    if (open) setSelected({});
-  }, [open]);
-
   if (!open) return null;
 
   const updateList = details?.updates;
   const updates: Update[] = Array.isArray(updateList) ? updateList : [];
-  const autoSelectSingle = updates.length === 1;
-
-  const toggleSelection = (idx: number) => setSelected(s => ({ ...s, [idx]: !s[idx] }));
   const formatValue = (value: unknown) => (value === undefined ? '' : JSON.stringify(value));
   const handleConfirm = () => {
-    const selectedUpdates = autoSelectSingle ? updates : updates.filter((_, i) => selected[i]);
-    if (selectedUpdates.length === 0) return;
-    onConfirm(selectedUpdates);
+    if (updates.length === 0) return;
+    onConfirm(updates);
   };
 
   return (
@@ -46,15 +36,14 @@ const ActionConfirmModal: React.FC<Props> = ({ open, summary, details, onConfirm
         <div className="acm-details-list">
           {updates.length === 0 && <div className="acm-no-updates">No explicit updates found.</div>}
           {updates.map((u, idx) => (
-            <label key={idx} className="acm-update-row">
-              <input type="checkbox" checked={autoSelectSingle || !!selected[idx]} onChange={() => toggleSelection(idx)} />
+            <div key={idx} className="acm-update-row">
               <span className="acm-update-desc">{u.op} {u.path} {formatValue(u.value)}</span>
-            </label>
+            </div>
           ))}
         </div>
         <div className="acm-actions">
           <button className="acm-btn acm-cancel" onClick={onCancel}>Cancel</button>
-          <button className="acm-btn acm-confirm" onClick={handleConfirm}>Apply selected changes</button>
+          <button className="acm-btn acm-confirm" onClick={handleConfirm} disabled={updates.length === 0}>Apply changes</button>
         </div>
       </div>
     </div>

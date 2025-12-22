@@ -34,6 +34,7 @@ interface Question {
     min?: number;
     max?: number;
     step?: number;
+    unitLabel?: string;
     aiGenerated?: boolean;
     icon?: React.ReactNode;
     iconType?: string;
@@ -104,6 +105,7 @@ const questions: Question[] = [
     min: 15,
     max: 120,
     step: 15,
+    unitLabel: 'minutes per day',
     icon: <Clock size={32} />
   },  {
     id: 'startDate',
@@ -136,8 +138,11 @@ const questions: Question[] = [
     id: 'daysPerWeek',
     title: "How many days per week do you want to work out?",
     subtitle: "We'll plan rest days to help you recover",
-    type: 'single',
-    options: ['3 days', '4 days', '5 days', '6 days', '7 days', 'Other'],
+    type: 'slider',
+    min: 3,
+    max: 7,
+    step: 1,
+    unitLabel: 'days per week',
     icon: <Calendar size={32} />
   },  {
     id: 'preferredTime',
@@ -151,9 +156,11 @@ const questions: Question[] = [
     id: 'energyLevels',
     title: "How would you rate your current energy levels?",
     subtitle: "This helps us design workouts that match your vitality",
-    type: 'rating',
+    type: 'slider',
     min: 1,
     max: 10,
+    step: 1,
+    unitLabel: 'energy rating',
     icon: <Heart size={32} />
   },  {
     id: 'preferences',
@@ -328,6 +335,7 @@ const DEFAULT_FOLLOW_UP_QUESTIONS: Question[] = [
     min: 0,
     max: 10,
     step: 1,
+    unitLabel: 'support level',
     iconType: 'Clock',
     aiGenerated: true
   },
@@ -351,6 +359,36 @@ const DEFAULT_FOLLOW_UP_QUESTIONS: Question[] = [
     aiGenerated: true
   }
 ];
+
+const energyLevelsQuestion = questions.find(q => q.id === 'energyLevels');
+const energyLevelsRange = {
+  min: energyLevelsQuestion?.min ?? 1,
+  max: energyLevelsQuestion?.max ?? 10
+};
+const energyLevelsMidpoint = Math.round((energyLevelsRange.min + energyLevelsRange.max) / 2);
+
+const mapEnergyLevelsValue = (value: any): number | null => {
+  if (typeof value === 'number' && !Number.isNaN(value)) return value;
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (normalized.includes('poor')) return energyLevelsRange.min;
+    if (normalized.includes('average')) return energyLevelsMidpoint;
+    if (normalized.includes('high')) return energyLevelsRange.max;
+    const parsed = Number(normalized);
+    if (!Number.isNaN(parsed)) return parsed;
+  }
+  return null;
+};
+
+const normalizeAnswers = (incoming?: Record<string, any>): Record<string, any> => {
+  if (!incoming) return {};
+  const normalized = { ...incoming };
+  const mappedEnergy = mapEnergyLevelsValue(normalized.energyLevels);
+  if (mappedEnergy !== null) {
+    normalized.energyLevels = mappedEnergy;
+  }
+  return normalized;
+};
 
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -606,12 +644,16 @@ const Questionnaire: React.FC<QuestionnaireProps> = ({ onComplete }) => {
         const assessment = loadAssessmentData();
         if (assessment) {
           // Merge assessment answers into current answers state
-          setAnswers(prev => ({ ...(prev || {}), ...(assessment || {}) }));
+          setAnswers(prev => ({ ...(prev || {}), ...normalizeAnswers(assessment) }));
         }
         const restoredProgress = loadQuestionnaireProgress();
         if (restoredProgress) {
-          setAllQuestions(restoredProgress.questionsList || allQuestions);
-          setAnswers(restoredProgress.answers || {});
+          const rehydrated = hydrateQuestionList(restoredProgress.questionsList);
+          setAllQuestions(rehydrated.length ? rehydrated : allQuestions);
+          if (rehydrated.length > questions.length) {
+            setFollowUpGenerated(true);
+          }
+          setAnswers(normalizeAnswers(restoredProgress.answers));
           setCustomInputs(restoredProgress.customInputs || {});
           setCurrentQuestion(restoredProgress.currentQuestion || 0);
           setHasRestoredProgress(true);
@@ -642,12 +684,10 @@ const Questionnaire: React.FC<QuestionnaireProps> = ({ onComplete }) => {
   useEffect(() => {
     const savedProgress = loadQuestionnaireProgress();
     if (!savedProgress) return;
+    const normalizedProgressAnswers = normalizeAnswers(savedProgress.answers);
     // Restore AI-generated questions (without React icons) then attach icons
-    if (savedProgress.questionsList) {
-      const restoredQs = savedProgress.questionsList.map((q: any) => ({
-        ...q,
-        icon: getIconFromType(q.iconType || ''),
-      }));
+    const restoredQs = hydrateQuestionList(savedProgress.questionsList);
+    if (restoredQs.length) {
       setAllQuestions(restoredQs);
       if (restoredQs.length > questions.length) {
         setFollowUpGenerated(true);
@@ -656,12 +696,12 @@ const Questionnaire: React.FC<QuestionnaireProps> = ({ onComplete }) => {
     if (savedProgress.completed) {
       setIsCompleted(true);
       setShowCompletionOptions(true);
-      setAnswers(savedProgress.answers);
+      setAnswers(normalizedProgressAnswers);
       return;
     }
-  setCurrentQuestion(savedProgress.currentQuestion);
-  setAnswers(savedProgress.answers);
-  setCustomInputs(savedProgress.customInputs || {});
+    setCurrentQuestion(savedProgress.currentQuestion);
+    setAnswers(normalizedProgressAnswers);
+    setCustomInputs(savedProgress.customInputs || {});
     setHasRestoredProgress(true);
   }, []);
   // Save progress whenever answers or current question changes
@@ -742,6 +782,18 @@ const Questionnaire: React.FC<QuestionnaireProps> = ({ onComplete }) => {
       default:
         return <Target size={32} />;
     }
+  };
+
+  const hydrateQuestionList = (list?: any[]): Question[] => {
+    if (!list || list.length === 0) return [];
+    return list.map((q: any) => {
+      const base = questions.find(baseQ => baseQ.id === q.id);
+      const merged = base ? { ...q, ...base } : { ...q };
+      return {
+        ...merged,
+        icon: base?.icon ?? q.icon ?? getIconFromType(q.iconType || ''),
+      };
+    });
   };
 
   // Async follow-up questions handler
@@ -1187,7 +1239,9 @@ const Questionnaire: React.FC<QuestionnaireProps> = ({ onComplete }) => {
           </div>
         );
 
-      case 'slider':
+      case 'slider': {
+        const sliderValue = answer ?? question.min ?? 0;
+        const unitLabel = question.unitLabel ?? 'minutes';
         return (
           <div className="slider-container">
             <input
@@ -1196,15 +1250,17 @@ const Questionnaire: React.FC<QuestionnaireProps> = ({ onComplete }) => {
               min={question.min}
               max={question.max}
               step={question.step}
-              value={answer || question.min}
-              onChange={(e) => handleAnswer(parseInt(e.target.value))}
+              value={sliderValue}
+              onChange={(e) => handleAnswer(parseInt(e.target.value, 10))}
               aria-label={question.title}
             />
             <div className="slider-value">
-              {answer || question.min} minutes
+              {sliderValue} {unitLabel}
             </div>
           </div>
-        );      case 'single':
+        );
+      }
+      case 'single':
         return (
           <div className="options-container">
             <div className="options-grid">
@@ -1299,8 +1355,9 @@ const Questionnaire: React.FC<QuestionnaireProps> = ({ onComplete }) => {
 
     const savedProgress = loadQuestionnaireProgress();
     if (savedProgress?.answers) {
-      setAnswers(savedProgress.answers); // Auto-populate previous answers
-      console.log('Previous answers loaded into state:', savedProgress.answers);
+      const normalized = normalizeAnswers(savedProgress.answers);
+      setAnswers(normalized); // Auto-populate previous answers
+      console.log('Previous answers loaded into state:', normalized);
     } else {
       console.warn('No previous answers found to populate.');
     }
@@ -1328,8 +1385,9 @@ const Questionnaire: React.FC<QuestionnaireProps> = ({ onComplete }) => {
       }
       // Restore answers
       if (savedProgress.answers) {
-        setAnswers(savedProgress.answers);
-        console.log('Restored answers:', savedProgress.answers);
+        const normalized = normalizeAnswers(savedProgress.answers);
+        setAnswers(normalized);
+        console.log('Restored answers:', normalized);
       }
       // Restore custom inputs
       if (savedProgress.customInputs) {
@@ -1338,10 +1396,7 @@ const Questionnaire: React.FC<QuestionnaireProps> = ({ onComplete }) => {
       }
       // Restore full question list including AI-generated
       if (savedProgress.questionsList) {
-        const restoredQs = savedProgress.questionsList.map((q: any) => ({
-          ...q,
-          icon: getIconFromType(q.iconType || ''),
-        }));
+        const restoredQs = hydrateQuestionList(savedProgress.questionsList);
         setAllQuestions(restoredQs);
         console.log('Restored questionsList:', restoredQs);
       }
@@ -1364,16 +1419,14 @@ const Questionnaire: React.FC<QuestionnaireProps> = ({ onComplete }) => {
       if (saved?.userData) {
         console.log('Found saved.userData:', saved.userData);
         currentUser = saved.userData;
-        currentAnswers = saved.answers;
-        setAnswers(currentAnswers);
-        console.log('State after restoring answers:', currentAnswers);
+        const normalized = normalizeAnswers(saved.answers);
+        currentAnswers = normalized;
+        setAnswers(normalized);
+        console.log('State after restoring answers:', normalized);
         if (saved.customInputs) setCustomInputs(saved.customInputs);
         if (saved.questionsList) {
           console.log('Restoring questionsList of length:', saved.questionsList.length);
-          const restored = saved.questionsList.map((q: any) => ({
-            ...q,
-            icon: getIconFromType(q.iconType || ''),
-          }));
+          const restored = hydrateQuestionList(saved.questionsList);
           setAllQuestions(restored);
           console.log('State after restoring allQuestions length:', restored.length);
           currentQs = restored;
