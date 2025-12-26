@@ -16,6 +16,73 @@ const normalizeEmail = (value: string | undefined | null): string => {
   return String(value).trim().toLowerCase();
 };
 
+const GOOGLE_OAUTH_CLIENT_ID = process.env.GOOGLE_OAUTH_CLIENT_ID || process.env.VITE_GOOGLE_CLIENT_ID || '';
+const MAX_USERNAME_LENGTH = 20;
+
+async function verifyGoogleIdToken(idToken: string) {
+  const url = new URL('https://oauth2.googleapis.com/tokeninfo');
+  url.searchParams.append('id_token', idToken);
+  const res = await fetch(url.toString());
+  if (!res.ok) {
+    throw new Error(`Google ID token verification failed (${res.status})`);
+  }
+  const payload = await res.json();
+  if (GOOGLE_OAUTH_CLIENT_ID && payload?.aud && payload.aud !== GOOGLE_OAUTH_CLIENT_ID) {
+    throw new Error('Google ID token audience mismatch');
+  }
+  return payload;
+}
+
+function sanitizeUsernameCandidate(value?: string | null): string | null {
+  if (!value) return null;
+  let normalized = String(value).trim();
+  normalized = normalized.replace(/[^A-Za-z0-9_ ]+/g, ' ');
+  normalized = normalized.replace(/\s+/g, ' ').trim();
+  if (!normalized) return null;
+  if (normalized.length > MAX_USERNAME_LENGTH) {
+    normalized = normalized.slice(0, MAX_USERNAME_LENGTH).trim();
+    if (!normalized) return null;
+  }
+  return normalized || null;
+}
+
+function deriveUsernameFromGooglePayload(payload: any): string {
+  const candidates = [
+    payload?.name,
+    payload?.given_name,
+    payload?.family_name,
+    payload?.email ? payload.email.split('@')[0] : null
+  ];
+  for (const candidate of candidates) {
+    const sanitized = sanitizeUsernameCandidate(candidate);
+    if (sanitized) return sanitized;
+  }
+  const fallbackId = payload?.sub ? String(payload.sub).slice(0, 6) : uuidv4().slice(0, 6);
+  return `fitbuddy-${fallbackId}`;
+}
+
+function buildSafeUser(row: any) {
+  return {
+    id: row?.user_id || row?.id,
+    email: row?.email || '',
+    username: row?.username || '',
+    avatar: row?.avatar_url || '',
+    energy: typeof row?.energy === 'number' ? row.energy : 100,
+    streak: typeof row?.streak === 'number' ? row.streak : 0,
+    role: row?.role || 'basic_member'
+  };
+}
+
+function signJwtForRow(row: any) {
+  const secret = process.env.JWT_SECRET || 'dev_secret_change_me';
+  try {
+    return jwt.sign({ id: row.user_id, role: row.role || 'basic_member' }, secret, { expiresIn: '7d' });
+  } catch (err) {
+    console.warn('[api/auth/google_id_token] failed to sign jwt', err);
+    return null;
+  }
+}
+
 export default async function handler(req: any, res: any) {
   // Set CORS headers for Vercel / browser requests
   res.setHeader('Access-Control-Allow-Origin', process.env.ALLOW_ORIGIN || '*');
@@ -141,6 +208,101 @@ export default async function handler(req: any, res: any) {
         console.error('[api/auth/create_profile] error', e);
         return res.status(500).json({ message: 'Failed to create profile.' });
       }
+    }
+
+    if (action === 'google_id_token') {
+      const { id_token } = req.body as { id_token?: string };
+      if (!id_token) return res.status(400).json({ message: 'ID token required.' });
+      let googlePayload: any;
+      try {
+        googlePayload = await verifyGoogleIdToken(id_token);
+      } catch (err: any) {
+        console.warn('[api/auth/google_id_token] token verification failed', err);
+        return res.status(401).json({ message: err?.message || 'Invalid Google ID token.' });
+      }
+      const googleAccountId = String(googlePayload?.sub || '').trim();
+      if (!googleAccountId) return res.status(400).json({ message: 'Google account ID missing.' });
+      const normalizedEmail = normalizeEmail(googlePayload?.email);
+      if (!normalizedEmail) return res.status(400).json({ message: 'Google account email is required.' });
+      const usernameCandidate = deriveUsernameFromGooglePayload(googlePayload);
+      let userRow: any = null;
+      try {
+        const { data } = await supabase
+          .from('fitbuddyai_userdata')
+          .select('*')
+          .filter('payload->>google_account_id', 'eq', googleAccountId)
+          .maybeSingle();
+        if (data) userRow = data;
+      } catch (err) {
+        console.warn('[api/auth/google_id_token] lookup by google id failed', err);
+      }
+      if (!userRow) {
+        try {
+          const { data } = await supabase
+            .from('fitbuddyai_userdata')
+            .select('*')
+            .ilike('email', normalizedEmail)
+            .limit(1)
+            .maybeSingle();
+          if (data) userRow = data;
+        } catch (err) {
+          console.warn('[api/auth/google_id_token] lookup by email failed', err);
+        }
+      }
+      if (userRow) {
+        const mergedPayload = { ...(userRow.payload || {}), google_account_id: googleAccountId };
+        const updates: any = {};
+        if (JSON.stringify(mergedPayload) !== JSON.stringify(userRow.payload || {})) {
+          updates.payload = mergedPayload;
+        }
+        if (normalizedEmail && normalizedEmail !== userRow.email) updates.email = normalizedEmail;
+        if (usernameCandidate && !userRow.username) updates.username = usernameCandidate;
+        if (googlePayload?.picture && googlePayload.picture !== userRow.avatar_url) updates.avatar_url = googlePayload.picture;
+        if (Object.keys(updates).length) {
+          const { error: updateError } = await supabase.from('fitbuddyai_userdata').update(updates).eq('user_id', userRow.user_id);
+          if (updateError) {
+            console.warn('[api/auth/google_id_token] failed to update profile', updateError);
+          }
+        }
+      } else {
+        const newUserId = uuidv4();
+        const fallbackUsername = usernameCandidate || normalizedEmail.split('@')[0] || `fitbuddy-${newUserId.slice(0, 6)}`;
+        const newRow = {
+          user_id: newUserId,
+          email: normalizedEmail,
+          username: fallbackUsername,
+          avatar_url: googlePayload?.picture || '',
+          energy: 100,
+          streak: 0,
+          inventory: [],
+          role: 'basic_member',
+          accepted_terms: false,
+          accepted_privacy: false,
+          chat_history: [],
+          workout_plan: null,
+          questionnaire_progress: null,
+          banned: false,
+          payload: { google_account_id: googleAccountId }
+        };
+        const { data: inserted, error: insertError } = await supabase
+          .from('fitbuddyai_userdata')
+          .insert(newRow)
+          .select('*')
+          .maybeSingle();
+        if (insertError) {
+          console.error('[api/auth/google_id_token] failed to create profile', insertError);
+          return res.status(500).json({ message: 'Failed to create user profile.' });
+        }
+        userRow = inserted || newRow;
+      }
+      if (!userRow) {
+        return res.status(500).json({ message: 'Failed to resolve user profile.' });
+      }
+      const { data: finalRow } = await supabase.from('fitbuddyai_userdata').select('*').eq('user_id', userRow.user_id).maybeSingle();
+      const resolved = finalRow || userRow;
+      const token = signJwtForRow(resolved);
+      const safeUser = buildSafeUser(resolved);
+      return res.status(200).json({ user: safeUser, token });
     }
 
     return res.status(404).json({ message: 'Not found' });

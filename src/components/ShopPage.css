@@ -283,11 +283,13 @@ body.theme-dark .inventory-value {
   cursor: pointer;
 }
 .preview-img {
-  width: 96px;
-  height: 96px;
-  border-radius: 12px;
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
   object-fit: cover;
-  margin-bottom: 10px;
+  margin-bottom: 14px;
+  border: 8px solid #fff;
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.28);
 }
 .preview-actions {
   display: flex;
@@ -681,21 +683,31 @@ body.theme-dark .streak-saver-available {
 
 /* Top accent area for avatar/icon */
 .shop-card-top {
-  background: linear-gradient(135deg, rgba(30,203,123,0.10), rgba(30,144,203,0.06));
-  padding: 22px 18px;
+  background: transparent;
+  padding: 32px 18px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.shop-avatar-circle {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ecf5ff, #fefefe 80%);
+  border: 10px solid rgba(255, 255, 255, 0.95);
+  box-shadow: 0 16px 35px rgba(30, 203, 123, 0.18);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 .shop-avatar-img {
-  width: 96px;
-  height: 96px;
-  border-radius: 18px;
-  background: var(--gradient-primary, linear-gradient(135deg, #1ecb7b 0%, #1e90cb 100%));
-  margin-bottom: 0;
-  border: 6px solid #fff;
+  width: 118px;
+  height: 118px;
+  border-radius: 50%;
   object-fit: cover;
-  box-shadow: 0 8px 22px rgba(30,203,123,0.10);
+  display: block;
+  border: 6px solid #fff;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.15);
 }
 
 .shop-card-body {

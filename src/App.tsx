@@ -3,7 +3,7 @@ import Questionnaire from './components/Questionnaire';
 import { useNavigate, Navigate } from 'react-router-dom';
 import WorkoutCalendar from './components/WorkoutCalendar';
 import AgreementGuard from './components/AgreementGuard';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -20,7 +20,7 @@ import EmailVerifyPage from './components/EmailVerifyPage';
 
 import { WorkoutPlan, DayWorkout, Exercise } from './types';
 import { loadUserData, loadWorkoutPlan, saveUserData, saveWorkoutPlan, clearUserData, getAuthToken, loadSupabaseSession, saveSupabaseSession, clearSupabaseSession, saveAuthToken } from './services/localStorage';
-import { fetchUserById } from './services/authService';
+import { fetchUserById, ensureSupabaseProfileForSession } from './services/authService';
 import { format } from 'date-fns';
 import { getPrimaryType, isWorkoutCompleteForStreak, resolveWorkoutTypes } from './utils/streakUtils';
 import { supabase } from './services/supabaseClient';
@@ -52,6 +52,20 @@ function App() {
   const [profileVersion, setProfileVersion] = useState(0);
   const [isHydratingUser, setIsHydratingUser] = useState(true);
   const useSupabase = Boolean(import.meta.env.VITE_LOCAL_USE_SUPABASE || import.meta.env.VITE_SUPABASE_URL);
+  const syncSupabaseProfile = useCallback(async (event: string, session: any) => {
+    if (!session?.user) return;
+    if (!['SIGNED_IN', 'INITIAL_SESSION'].includes(event)) return;
+    try {
+      const profile = await ensureSupabaseProfileForSession(session);
+      if (profile) {
+        setUserData(profile);
+        setProfileVersion(v => v + 1);
+        try { window.dispatchEvent(new Event('fitbuddyai-login')); } catch {}
+      }
+    } catch (err) {
+      console.warn('[App] supabase profile sync failed', err);
+    }
+  }, [ensureSupabaseProfileForSession, setProfileVersion, setUserData]);
   // themeMode: 'auto' | 'light' | 'dark'
   const [themeMode, setThemeMode] = useState<'auto' | 'light' | 'dark'>(() => {
     if (typeof window === 'undefined') return 'auto';
@@ -69,12 +83,13 @@ function App() {
 
   useEffect(() => {
     if (!useSupabase) return;
-    const { data: authListener } = supabase.auth.onAuthStateChange((_, session) => {
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       if (session) {
         try { saveSupabaseSession(session); } catch {}
         if (session.access_token) {
           try { saveAuthToken(session.access_token); } catch {}
         }
+        void syncSupabaseProfile(event, session);
       } else {
         try { clearSupabaseSession(); } catch {}
       }
@@ -82,7 +97,7 @@ function App() {
     return () => {
       try { authListener?.subscription?.unsubscribe(); } catch {}
     };
-  }, [useSupabase]);
+  }, [useSupabase, syncSupabaseProfile]);
   // Apply effective theme to document based on themeMode and OS preference
   useEffect(() => {
     const applyEffective = (mode: 'auto' | 'light' | 'dark') => {
@@ -180,7 +195,7 @@ function App() {
     const handleLogout = () => setUserData(null);
     window.addEventListener('fitbuddyai-logout', handleLogout);
     return () => window.removeEventListener('fitbuddyai-logout', handleLogout);
-  }, []);
+  }, [useSupabase, syncSupabaseProfile]);
 
   // Listen for login event (dispatched after sign-in/restore) and sync saved data into state
   useEffect(() => {
@@ -269,6 +284,16 @@ function App() {
             if (storedSession.access_token) {
               try { saveAuthToken(storedSession.access_token); } catch {}
             }
+            if (storedSession.access_token) {
+              try {
+                const restored = await supabase.auth.getSession();
+                if (restored?.data?.session) {
+                  void syncSupabaseProfile('SIGNED_IN', restored.data.session);
+                }
+              } catch (err) {
+                console.warn('[App] failed to sync restored Supabase session', err);
+              }
+            }
           }
         } catch (err) {
           console.warn('[App] Supabase session restore failed', err);
@@ -297,7 +322,7 @@ function App() {
       if (!cancelled) setIsHydratingUser(false);
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [useSupabase, syncSupabaseProfile]);
 
   // Save data when it changes, but do not save if userData is null (prevents refresh after logout)
   useEffect(() => {

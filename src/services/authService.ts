@@ -2,6 +2,7 @@
 import attachAuthHeaders from './apiAuth';
 import { supabase } from './supabaseClient';
 import { saveUserData, saveAuthToken, clearAuthToken, loadUserData, saveSupabaseSession, clearSupabaseSession } from './localStorage';
+import { restoreUserDataFromServer } from './cloudBackupService';
 import { ensureUserId } from '../utils/userHelpers';
 
 const DEFAULT_ENERGY = 10000;
@@ -72,6 +73,74 @@ export async function fetchUserById(id: string): Promise<User | null> {
   } catch {
     return null;
   }
+}
+
+function normalizeEmailForProfile(value?: string | null): string {
+  if (!value) return '';
+  return String(value).trim().toLowerCase();
+}
+
+function normalizeUsernameCandidate(value?: string | null): string | null {
+  if (!value) return null;
+  let normalized = String(value).trim();
+  normalized = normalized.replace(/[^A-Za-z0-9_ ]+/g, ' ');
+  normalized = normalized.replace(/\s+/g, ' ').trim();
+  if (!normalized) return null;
+  if (normalized.length > 20) {
+    normalized = normalized.slice(0, 20).trim();
+  }
+  return normalized || null;
+}
+
+function deriveUsernameFromSupabaseUser(user: any): string {
+  const metadata = user?.user_metadata || {};
+  const candidates = [
+    metadata.username,
+    metadata.display_name,
+    metadata.name,
+    metadata.full_name,
+    metadata.given_name,
+    metadata.family_name
+  ];
+  for (const candidate of candidates) {
+    const normalized = normalizeUsernameCandidate(candidate);
+    if (normalized) return normalized;
+  }
+  if (user?.email) {
+    const emailCandidate = user.email.split('@')[0];
+    const normalizedEmail = normalizeUsernameCandidate(emailCandidate);
+    if (normalizedEmail) return normalizedEmail;
+  }
+  const fallbackId = String(user?.id || '').slice(0, 6);
+  return `fitbuddy-${fallbackId || 'user'}`;
+}
+
+export async function ensureSupabaseProfileForSession(session: any): Promise<User | null> {
+  if (!session || !session.user) return null;
+  const user = session.user as any;
+  if (!user.id) return null;
+  const normalizedEmail = normalizeEmailForProfile(user.email);
+  if (!normalizedEmail) return null;
+
+  let profile = await fetchUserById(user.id);
+  if (profile) return profile;
+
+  const username = deriveUsernameFromSupabaseUser(user);
+  try {
+    await fetch('/api/auth?action=create_profile', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: user.id, email: normalizedEmail, username })
+    });
+  } catch (e) {
+    console.warn('[authService] ensureSupabaseProfileForSession create_profile request failed', e);
+  }
+
+  profile = await fetchUserById(user.id);
+  if (!profile) {
+    console.warn('[authService] ensureSupabaseProfileForSession profile still missing after create_profile');
+  }
+  return profile;
 }
 // src/services/authService.ts
 export interface User {
@@ -271,6 +340,12 @@ export async function signInWithGoogleCredential(idToken: string): Promise<any> 
     // If the server returned a consolidated user payload, persist it locally
     if (data && data.user) {
       try { saveUserData({ data: data.user, token: data.token ?? null }, { skipBackup: true } as any); } catch {}
+      try {
+        await restoreUserDataFromServer(data.user.id);
+      } catch (err) {
+        console.warn('[authService] restoreUserDataFromServer failed after Google sign-in', err);
+      }
+      try { window.dispatchEvent(new Event('fitbuddyai-login')); } catch {}
     }
     return data;
   } catch (e) {

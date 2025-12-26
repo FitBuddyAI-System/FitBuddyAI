@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { saveAssessmentData, saveWorkoutPlan, saveUserData } from '../services/localStorage';
 import { signIn } from '../services/authService';
 import GoogleIdentityButton from './GoogleIdentityButton';
@@ -15,6 +15,14 @@ const SignInPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [resendModalOpen, setResendModalOpen] = useState(false);
   const [resendEmail, setResendEmail] = useState('');
+
+  useEffect(() => {
+    const handleLogin = () => {
+      navigate('/profile');
+    };
+    window.addEventListener('fitbuddyai-login', handleLogin);
+    return () => window.removeEventListener('fitbuddyai-login', handleLogin);
+  }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

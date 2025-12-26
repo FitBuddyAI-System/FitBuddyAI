@@ -3,24 +3,8 @@ import './ShopPage.css';
 import BackgroundDots from './BackgroundDots';
 import { fetchUserById, buyShopItem } from '../services/authService';
 import { saveUserData } from '../services/localStorage';
+import { SHOP_AVATARS } from '../data/shopAvatars';
 import { Dumbbell, Sparkles, Smile, RefreshCw, ShoppingCart, Search, Filter, Flame, ShieldCheck } from 'lucide-react';
-
-// Example shop items
-const AVATARS = [
-  { id: 'avatar1', name: 'Bot Buddy', image: 'https://api.dicebear.com/7.x/bottts/svg?seed=FitBuddyAI1', price: 100, type: 'avatar', description: 'A friendly robot avatar.' },
-  { id: 'avatar2', name: 'Dragon Head', image: 'https://api.dicebear.com/7.x/bottts/svg?seed=DragonHead', price: 200, type: 'avatar', description: 'Unleash your inner dragon!' },
-  { id: 'avatar3', name: 'Duolingo Owl', image: 'https://api.dicebear.com/7.x/bottts/svg?seed=Duolingo', price: 250, type: 'avatar', description: 'Inspired by the language learning legend.' },
-  { id: 'avatar4', name: 'Neo Cat', image: 'https://api.dicebear.com/7.x/croodles/svg?seed=NeoCat', price: 120, type: 'avatar', description: 'A sleek cyber cat.' },
-  { id: 'avatar5', name: 'Mountain Goat', image: 'https://api.dicebear.com/7.x/bottts/svg?seed=Goat', price: 140, type: 'avatar', description: 'Sturdy and sure-footed.' },
-  { id: 'avatar6', name: 'Galaxy Fox', image: 'https://api.dicebear.com/7.x/bottts/svg?seed=GalaxyFox', price: 220, type: 'avatar', description: 'Out-of-this-world style.' },
-  { id: 'avatar7', name: 'Pixel Pup', image: 'https://api.dicebear.com/7.x/bottts/svg?seed=PixelPup', price: 80, type: 'avatar', description: 'Cute pixel-styled puppy.' },
-  { id: 'avatar8', name: 'Samurai', image: 'https://api.dicebear.com/7.x/bottts/svg?seed=Samurai', price: 300, type: 'avatar', description: 'Honor and style.' },
-  { id: 'avatar9', name: 'Astronaut', image: 'https://api.dicebear.com/7.x/bottts/svg?seed=Astronaut', price: 260, type: 'avatar', description: 'Reach for the stars.' },
-  { id: 'avatar10', name: 'Vintage Robot', image: 'https://api.dicebear.com/7.x/bottts/svg?seed=VintageBot', price: 110, type: 'avatar', description: 'Retro charm.' },
-  { id: 'avatar11', name: 'Neon Ninja', image: 'https://api.dicebear.com/7.x/bottts/svg?seed=NeonNinja', price: 210, type: 'avatar', description: 'Stealthy and bright.' },
-  { id: 'avatar12', name: 'Forest Sprite', image: 'https://api.dicebear.com/7.x/bottts/svg?seed=ForestSprite', price: 130, type: 'avatar', description: 'Whimsical woodland friend.' },
-  { id: 'avatar13', name: 'Forest Sprite', image: '/images/ChatGPT_Image_Clan_Of_27_Fire.png', price: 130, type: 'avatar', description: 'Whimsical woodland friend.' }
-];
 
 const STREAK_SAVER_OPTIONS = [
   { id: 'streak-saver-1', name: 'Streak Saver 1x', quantity: 1, price: 1000 },
@@ -296,12 +280,20 @@ const ShopPage: React.FC<ShopPageProps> = ({ user, onPurchase, onRedeemStreakSav
             </div>
           </div>
         )}
-        {selectedTab === 'avatars' && filteredItems(AVATARS).map(item => {
+        {selectedTab === 'avatars' && filteredItems(SHOP_AVATARS).map(item => {
           const alreadyOwned = Array.isArray(user.inventory) && user.inventory.some((inv: any) => inv.id === item.id);
           return (
             <div className="shop-card" key={item.id} onClick={()=>setPreview(item)}>
               <div className="shop-card-top">
-                <img src={item.image} alt={item.name} className="shop-avatar-img" />
+                <div className="shop-avatar-circle">
+                  <img
+                    src={item.image}
+                    alt={item.name}
+                    className="shop-avatar-img"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                </div>
               </div>
               <div className="shop-card-body">
                 <h2 className="shop-item-title">{item.name} {alreadyOwned && <span className="owned-badge">Owned</span>}</h2>
@@ -352,7 +344,13 @@ const ShopPage: React.FC<ShopPageProps> = ({ user, onPurchase, onRedeemStreakSav
               <div className="preview-demo">
                 {/* Avatar preview if present */}
                 {preview.type === 'avatar' && preview.image && (
-                  <img src={preview.image} alt={preview.name} className="preview-img" />
+                  <img
+                    src={preview.image}
+                    alt={preview.name}
+                    className="preview-img"
+                    loading="lazy"
+                    decoding="async"
+                  />
                 )}
 
                 {/* Powerup demos mapped by id */}

@@ -1,0 +1,52 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Neon ninja avatar">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="40%" r="80%">
+      <stop offset="0%" stop-color="#1b2759" />
+      <stop offset="70%" stop-color="#050719" />
+      <stop offset="100%" stop-color="#01010f" />
+    </radialGradient>
+    <linearGradient id="hood" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#131845" />
+      <stop offset="100%" stop-color="#05070f" />
+    </linearGradient>
+    <linearGradient id="sword" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6be7ff" />
+      <stop offset="100%" stop-color="#a918ff" />
+    </linearGradient>
+    <linearGradient id="mask" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#040c31" />
+      <stop offset="100%" stop-color="#030615" />
+    </linearGradient>
+    <filter id="glow"><feGaussianBlur stdDeviation="8" result="coloredBlur"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#bg)" />
+  <circle cx="512" cy="512" r="420" fill="none" stroke="#2f2a8f" stroke-width="8" opacity="0.45" />
+
+  <g filter="url(#glow)">
+    <path d="M200 720 Q512 240 824 720 L824 812 Q512 380 200 812 Z" fill="url(#hood)" stroke="#8a5cff" stroke-width="5" />
+    <path d="M266 788 Q512 460 758 788 Q512 580 266 788 Z" fill="rgba(29,31,48,0.9)" stroke="#48f0ff" stroke-width="4" />
+  </g>
+
+  <rect x="320" y="520" width="384" height="220" rx="110" fill="url(#mask)" filter="url(#glow)" />
+  <g stroke="#58f6ff" stroke-width="22" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M410 550 Q460 520 510 540" fill="none" />
+    <path d="M510 540 Q560 520 610 550" fill="none" />
+  </g>
+  <g fill="#6bedff">
+    <circle cx="448" cy="540" r="10" />
+    <circle cx="576" cy="540" r="10" />
+  </g>
+
+  <path d="M256 620 L220 240 L380 320 L420 360 Q512 280 604 360 L644 320 L804 240 L768 620 Z" fill="none" stroke="#5600ff" stroke-width="16" stroke-linecap="round" />
+
+  <rect x="90" y="320" width="128" height="520" fill="url(#sword)" rx="24" />
+  <rect x="74" y="300" width="160" height="40" rx="12" fill="#7c2dfd" />
+  <path d="M102 320 L210 320" stroke="#ff66d9" stroke-width="14" stroke-linecap="round" />
+
+  <circle cx="512" cy="220" r="18" fill="#4ef0ff" stroke="#ffffff" stroke-width="4" />
+  <circle cx="820" cy="180" r="14" fill="#57f6ff" />
+  <circle cx="190" cy="188" r="10" fill="#4af8c8" />
+  <circle cx="720" cy="340" r="12" fill="#ff68e1" />
+
+  <circle cx="520" cy="740" r="90" fill="none" stroke="#8c2bff" stroke-width="8" opacity="0.35" />
+</svg>

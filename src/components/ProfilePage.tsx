@@ -7,6 +7,7 @@ import { ensureUserId } from '../utils/userHelpers';
 // Supabase auth metadata updates are handled server-side; no client import needed here
 import { useNavigate } from 'react-router-dom';
 import SignOutButton from './SignOutButton';
+import { SHOP_AVATARS } from '../data/shopAvatars';
 
 
 
@@ -80,11 +81,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ userData, onProfileUpdate, pr
   }
 
   // Shop avatars (must match ShopPage)
-  const shopAvatars = [
-    'https://api.dicebear.com/7.x/bottts/svg?seed=FitBuddyAI1',
-    'https://api.dicebear.com/7.x/bottts/svg?seed=DragonHead',
-    'https://api.dicebear.com/7.x/bottts/svg?seed=Duolingo',
-  ];
+  const shopAvatars = SHOP_AVATARS.map(item => item.image);
   const premadeAvatars = [
     '/images/fitbuddy_head.png',
     ...shopAvatars,

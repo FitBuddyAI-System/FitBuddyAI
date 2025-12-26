@@ -154,7 +154,7 @@ const questions: Question[] = [
   },
   {
     id: 'energyLevels',
-    title: "How would you rate your current energy levels?",
+    title: "Pick a number between 1 and 10 that reflects how energized you feel right now",
     subtitle: "This helps us design workouts that match your vitality",
     type: 'slider',
     min: 1,
@@ -175,7 +175,6 @@ const questions: Question[] = [
       'Olympic Weightlifting',
       'Stretching',
       'Strongman',
-      'Rest Day'
     ],
     icon: <Heart size={32} />
   },
@@ -1242,6 +1241,9 @@ const Questionnaire: React.FC<QuestionnaireProps> = ({ onComplete }) => {
       case 'slider': {
         const sliderValue = answer ?? question.min ?? 0;
         const unitLabel = question.unitLabel ?? 'minutes';
+        const formattedValue = question.id === 'energyLevels'
+          ? sliderValue.toString()
+          : `${sliderValue} ${unitLabel}`;
         return (
           <div className="slider-container">
             <input
@@ -1255,7 +1257,7 @@ const Questionnaire: React.FC<QuestionnaireProps> = ({ onComplete }) => {
               aria-label={question.title}
             />
             <div className="slider-value">
-              {sliderValue} {unitLabel}
+              {formattedValue}
             </div>
           </div>
         );
