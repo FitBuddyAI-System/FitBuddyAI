@@ -73,6 +73,30 @@ export async function fetchUserById(id: string): Promise<User | null> {
     return null;
   }
 }
+
+// Quick reachability test for the configured Supabase URL. We attempt a
+// simple fetch to the Supabase auth root so we can detect DNS failures
+// or network issues early and fall back to server-side auth endpoints.
+async function isSupabaseReachable(): Promise<boolean> {
+  try {
+    const rawUrl = (import.meta.env.VITE_SUPABASE_URL || (process && process.env && process.env.SUPABASE_URL) || '');
+    if (!rawUrl) return false;
+    // Trim trailing slash and hit the auth endpoint; DNS failures surface as fetch errors.
+    const url = rawUrl.replace(/\/$/, '') + '/auth/v1';
+    // Use a short timeout to avoid blocking the UI for long
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), 3000);
+    try {
+      await fetch(url, { method: 'GET', signal: controller.signal, cache: 'no-store' });
+      clearTimeout(id);
+      return true;
+    } finally {
+      clearTimeout(id);
+    }
+  } catch (e) {
+    return false;
+  }
+}
 // src/services/authService.ts
 export interface User {
   id: string;
@@ -91,7 +115,8 @@ export interface User {
 export async function signIn(email: string, password: string): Promise<User> {
   const normalizedEmail = String(email).trim().toLowerCase();
   const useSupabase = Boolean(import.meta.env.VITE_LOCAL_USE_SUPABASE || import.meta.env.VITE_SUPABASE_URL);
-  if (useSupabase) {
+  const reachable = useSupabase ? await isSupabaseReachable() : false;
+  if (useSupabase && reachable) {
     const result = await supabase.auth.signInWithPassword({ email: normalizedEmail, password });
     // Supabase may return error with status 400 and message indicating "User is not confirmed" or similar.
     if (result.error || !result.data?.session) {
@@ -166,7 +191,8 @@ export async function signIn(email: string, password: string): Promise<User> {
 export async function signUp(email: string, username: string, password: string): Promise<User> {
   const normalizedEmail = String(email).trim().toLowerCase();
   const useSupabase = Boolean(import.meta.env.VITE_LOCAL_USE_SUPABASE || import.meta.env.VITE_SUPABASE_URL);
-  if (useSupabase) {
+  const reachable = useSupabase ? await isSupabaseReachable() : false;
+  if (useSupabase && reachable) {
     const result = await supabase.auth.signUp({ email: normalizedEmail, password, options: { data: { username, energy: DEFAULT_ENERGY } } });
     if (result.error) throw new Error(result.error.message || 'Sign up failed');
     // Supabase may not return a session depending on config; if a session exists save token
@@ -227,7 +253,8 @@ export async function signUp(email: string, username: string, password: string):
 // unsupported.
 export async function signInWithGoogle(): Promise<void> {
   const useSupabase = Boolean(import.meta.env.VITE_LOCAL_USE_SUPABASE || import.meta.env.VITE_SUPABASE_URL);
-  if (useSupabase) {
+  const reachable = useSupabase ? await isSupabaseReachable() : false;
+  if (useSupabase && reachable) {
     try {
       // Prefer an explicit public app URL (so Supabase redirects back to your
       // branded domain after it finishes the provider exchange). If you set
